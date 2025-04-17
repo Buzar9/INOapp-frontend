@@ -1,0 +1,27 @@
+<!-- If nickname is not set, show the start screen -->
+<start-screen *ngIf="!nickname && !isOrganizer()" (userSignUp)="onUserSignUp($event)"></start-screen>
+
+<!-- Participant view -->
+<div *ngIf="nickname && !isOrganizer()" class="participant-view">
+  <!-- dodo odkomentuj -->
+  <h2>INOapp</h2>
+  <p><strong>Nickname:</strong> {{ nickname }}</p>
+  <p><strong>Team:</strong> {{ team }}</p>
+  <p><strong>Route:</strong> {{ routeName }}</p>
+  <p><strong>Race Time:</strong> {{ raceTimeDisplay }}</p>
+  <p *ngIf="!isRunFinished"><strong>Current Time:</strong> {{ currentTime }}</p>
+  <!-- QR scanner component -->
+  <!-- <app-qr-scanner (startDetected)="onStartDetected()"></app-qr-scanner> -->
+
+  <div *ngIf="isScanResultVisible" class="alert alert-info"> {{scanResultMessage}}</div>
+
+  <div *ngIf="!isRunFinished">
+    <qr-scanner (qrCodeScanned)="receiveQrData($event)"></qr-scanner>
+  </div>
+
+  <div *ngIf="isRunFinished">
+    <button (click)="onNewRoute()">Rozpocznij nową trasę</button>
+  </div>
+</div>
+<router-outlet *ngIf="isOrganizer()"></router-outlet>
+

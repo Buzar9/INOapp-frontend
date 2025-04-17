@@ -1,6 +1,30 @@
+import { enableProdMode, importProvidersFrom } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
-import { AppComponent } from './app/app.component';
+import { provideRouter } from '@angular/router';
+import { AppComponent } from './app/components/app/app.component';
+import { environment } from './environments/environment';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
-bootstrapApplication(AppComponent, appConfig)
-  .catch((err) => console.error(err));
+// AngularFire (Standalone)
+import { AngularFireModule } from '@angular/fire/compat';
+import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
+import { provideHttpClient } from '@angular/common/http';
+import { routes } from './app/app.routes';
+
+import './styles.css'
+
+if (environment.production) {
+  enableProdMode();
+}
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideAnimations(),
+    provideHttpClient(),
+    importProvidersFrom(
+      AngularFireModule.initializeApp(environment.firebase),
+      AngularFirestoreModule
+    ),
+    provideRouter(routes)
+  ]
+}).catch(err => console.error(err));

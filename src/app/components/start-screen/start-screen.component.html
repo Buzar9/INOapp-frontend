@@ -1,0 +1,22 @@
+<div class="start-screen">
+  <!-- dodo odkomentuj -->
+  <!-- <h1>Welcome to INOapp!</h1> -->
+  <input type="text" [(ngModel)]="nickname" placeholder="Enter your nickname"/>
+  <input type="text" [(ngModel)]="team" placeholder="Enter your team"/>
+  <br/>
+  <label for="route">Select Route:</label>
+  <select [(ngModel)]="routeName" id="route">
+    <option *ngFor="let entry of routeNameEntries" [value]="entry[1]">
+      {{ entry[1] }}
+    </option>
+  </select>
+  <br/>
+  <label for="category">Select Category:</label>
+  <select [(ngModel)]="competitionCategory" id="category">
+    <option value="NARNIA">Narnia</option>
+    <option value="TOPOR">Topór</option>
+    <option value="KPH">KPH</option>
+  </select>
+  <br/>
+  <button (click)="onSubmit()" [disabled]="isFormNotCompleted">Submit</button>
+</div>

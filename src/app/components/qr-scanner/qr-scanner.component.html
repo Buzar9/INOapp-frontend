@@ -1,0 +1,76 @@
+<div class="container">
+
+  <!-- ngx-scanner-qrcode -->
+  <ngx-scanner-qrcode #action="scanner" [config]="config" (event)="onEvent($event, action)"></ngx-scanner-qrcode>
+
+  <!-- dodo jak włącza się aparat to daje informacje ze sie ładuje -->
+  <!-- loading -->
+  <p *ngIf="action.isLoading">⌛ Loading...</p>
+
+  <!-- włącza kamerę -->
+  <!-- start/stop -->
+  <button class="btn" [class.btn-info]="!action.isStart" [class.btn-warning]="action.isStart"
+          [disabled]="action.isLoading" (click)="handle(action, action.isStart ? 'stop' : 'start')">
+    <img
+      [src]="action.isStart ? 'https://id1945.github.io/images/svg/camera-off.svg' : 'https://id1945.github.io/images/svg/camera-on.svg'"
+      width="30px"/>
+  </button>
+
+  <!-- dodo zatrzymuje kadr z kamery -->
+  <!-- play/pause -->
+  <!-- <button class="btn" [class.btn-info]="!action.isStart" [class.btn-warning]="action.isStart" [disabled]="!action.isStart" (click)="handle(action, action.isPause ? 'play' : 'pause')">
+    <img [src]="action.isPause ? 'https://id1945.github.io/images/svg/play.svg': 'https://id1945.github.io/images/svg/pause.svg'" width="30px"/>
+  </button> -->
+
+  <!-- isTorch -->
+  <button class="btn" [class.btn-info]="!action.isStart" [class.btn-warning]="action.isStart"
+          [disabled]="!action.isStart" (click)="action.isTorch = !action.isTorch; handle(action, 'torcher')">
+    <img
+      [src]="action.isTorch ? 'https://id1945.github.io/images/svg/flash-off.svg' : 'https://id1945.github.io/images/svg/flash-on.svg'"
+      width="30px"/>
+  </button>
+
+  <!-- dodo zapisuje zatrzymane zdjęcie -->
+  <!-- download -->
+  <button class="btn" [class.btn-info]="!action.isStart" [class.btn-warning]="action.isStart"
+          [disabled]="!action.isStart" (click)="handle(action, 'download')">
+    <img src="https://id1945.github.io/images/svg/capture.svg" width="30px"/>
+  </button>
+  <br>
+
+  <!-- for select files -->
+  <input #file type="file" (change)="onSelects(file.files)" [multiple]="'multiple'" [accept]="'.jpg, .png, .gif, .jpeg'"
+         class="btn btn-success my-2"/>
+  <br>
+  <!-- <input #file2 type="file" (change)="onSelects2(file2.files)" [multiple]="'multiple'" [accept]="'.jpg, .png, .gif, .jpeg'" class="btn btn-success my-2"/> -->
+  <br>
+
+  <!-- dodo nie wiem co to robi -->
+  <!-- <button (click)="onGetConstraints()" class="btn btn-success">Get</button>
+  <button (click)="applyConstraints()" class="btn btn-success">App</button> -->
+
+  <!-- dodo opcje ekranu -->
+  <!-- <div class="d-flex justify-content-center my-2">
+    <div class="col-xs-12 col-md-3 m-1">
+      <select #select3 (change)="percentage = +select3.value" class="form-select form-select-md">
+        <option *ngFor="let item of [10,20,30,40,50,60,70,80,90,100]" [value]="item" [selected]="item == percentage">Scale {{item}}%</option>
+      </select>
+    </div>
+    <div class="col-xs-12 col-md-3 m-1">
+      <select #select4 (change)="quality = +select4.value" class="form-select form-select-md">
+        <option *ngFor="let item of [10,20,30,40,50,60,70,80,90,100]" [value]="item" [selected]="item == quality">Quality {{item}}%</option>
+      </select>
+    </div>
+  </div> -->
+
+  <div *ngFor="let item of qrCodeResult">
+    <ngx-scanner-qrcode #actionFile="scanner" [src]="item.url" [config]="config"
+                        (event)="onEvent($event)"></ngx-scanner-qrcode>
+    <!-- <p class="data">{{ actionFile.data | async }}</p> -->
+  </div>
+
+  <!-- <div *ngFor="let item of qrCodeResult2">
+    <img [src]="item.url | safe: 'url'" alt="" style="max-width: 100%"> -->
+  <!-- <p class="data">{{ item | json }}</p> -->
+  <!-- </div> -->
+</div>

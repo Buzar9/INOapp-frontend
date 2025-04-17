@@ -1,0 +1,85 @@
+<div *ngIf="accessGranted">
+  <div class="fixed-details" *ngIf="expandedRowNickname === expandedRowData?.nickname">
+    <div style="padding: 1em">
+      <table>
+        <thead>
+          <!-- dodo zamienic kolejnoscia ale przykleic -->
+          <tr *ngIf="expandedRowNickname === expandedRowData?.nickname">
+            <td colspan="7">
+              <div>
+                <h4>Nickname: {{ expandedRowData?.nickname }}</h4>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th>Start time</th>
+            <th>Finish time</th>
+            <th>Main time</th>
+            <th>Total time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ expandedRowData?.startTime }}</td>
+            <td>{{ expandedRowData?.finishTime }}</td>
+            <td>{{ expandedRowData?.mainTime }}</td>
+            <td>{{ expandedRowData?.totalTime }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <thead>
+          <tr>
+            <th>Station</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let detail of expandedRowData?.validationsStationResult">
+            <td>{{ detail.checkpointId }}</td>
+            <td>{{ detail.type }}</td>
+            <td>
+              <i [ngClass]="getStatusIcon(detail.status)"></i>
+            </td>
+            <td>{{ detail.details }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <h3>Race Results</h3>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Nickname</th>
+        <th>Team</th>
+        <th>Route</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let result of raceResults">
+        <td>
+          <button (click)="toggleRow(result)">
+            <i [ngClass]="expandedRowNickname === result.nickname ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+          </button>
+        </td>
+        <td>{{ result.nickname }}</td>
+        <td>{{ result.team }}</td>
+        <td>{{ result.routeName }}</td>
+        <td>{{ result.competitionCategory }}</td>
+        <td>{{ result.status }}</td>
+        <td>{{ result.visitedCheckpointsNumber }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div *ngIf="!accessGranted">
+  <p>Nie ma takiego hackerowania</p>
+</div>
