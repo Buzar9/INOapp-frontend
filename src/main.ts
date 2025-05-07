@@ -11,7 +11,7 @@ import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 import { provideHttpClient } from '@angular/common/http';
 import { routes } from './app/app.routes';
 
-import './styles.css'
+import './styles.css';
 
 if (environment.production) {
   enableProdMode();
@@ -25,6 +25,15 @@ bootstrapApplication(AppComponent, {
       AngularFireModule.initializeApp(environment.firebase),
       AngularFirestoreModule
     ),
-    provideRouter(routes)
-  ]
-}).catch(err => console.error(err));
+    provideRouter(routes),
+  ],
+})
+  .then(() => {
+    if ('serviceWorker' in navigator && environment.production) {
+      navigator.serviceWorker
+        .register('service-worker.js')
+        .then((reg) => console.log('SW zarejestrowany:', reg.scope))
+        .catch((err) => console.error('Błąd rejestracji SW:', err));
+    }
+  })
+  .catch((err) => console.error(err));
