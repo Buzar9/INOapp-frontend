@@ -1,0 +1,102 @@
+.container {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+}
+
+.top-texts {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-panel);
+  color: var(--color-text);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 10;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.top-texts span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.top-texts i {
+  font-size: 1.1rem;
+  color: var(--color-accent);
+}
+
+.qr-scanner-icon {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 10;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: var(--color-accent) !important;
+  color: var(--color-text-light) !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+  transition: background var(--transition);
+}
+
+.qr-scanner-icon:hover {
+  background: var(--color-accent-hover) !important;
+}
+
+participant-map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+qr-scanner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  background: var(--color-panel);
+}
+
+@media (max-width: 360px) {
+  .top-texts {
+    font-size: 0.8rem;
+    padding: 0.75rem;
+  }
+
+  .qr-scanner-icon {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.2rem;
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
+
+/* Przykładowe style dla komponentu skanera, aby był widoczny jako "okno" */
+/* Te style możesz dodać do scanner.component.css lub zagnieździć w scanner-overlay */
+app-scanner {
+    /* Upewnij się, że Twój scanner.component.css ma odpowiednie style dla wewnętrznej zawartości skanera */
+    /* Na przykład, jeśli chcesz, aby skaner miał białe tło i zajmował część ekranu */
+    /* width: 80%; */
+    /* height: 60%; */
+    /* background-color: white; */
+    /* border-radius: 10px; */
+    /* padding: 20px; */
+}

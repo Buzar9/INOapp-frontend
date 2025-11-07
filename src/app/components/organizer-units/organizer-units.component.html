@@ -1,0 +1,72 @@
+<div>
+  <p-table [value]="units">
+    <ng-template #header>
+      <tr>
+        <th>
+          Jednostka
+          <button
+            pButton
+            icon="pi pi-plus"
+            (click)="onAddUnitClick()">
+          </button>
+        </th>
+        <th style="width: 5rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-unit>
+      <tr>
+        <td>{{ unit.name }}</td>
+        <td>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button
+              pButton pRipple
+              type="button"
+              icon="pi pi-pencil"
+              (click)="onEditUnitClick(unit)">
+            </button>
+            <button
+              pButton pRipple
+              type="button"
+              icon="pi pi-trash"
+              (click)="onDeleteUnitClick(unit.id)">
+            </button>
+            <button
+              pButton pRipple
+              type="button"
+              (click)="onQrCodeGenerateClick(unit)">
+              Inicjuj
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+  <p-dialog header="Dodaj jednostkę" [modal]="true" [(visible)]="showAddUnitForm">
+    <form [formGroup]="addUnitForm" (ngSubmit)="onAddUnitFormSubmit()">
+      <input type="text" pInputText formControlName="name" placeholder="Nazwa"/>
+      <button pButton type="submit" [disabled]="addUnitForm.invalid">Dodaj</button>
+    </form>
+  </p-dialog>
+  <p-dialog header="Zmień nazwe" [modal]="true" [(visible)]="showEditUnitForm">
+    <form [formGroup]="editUnitForm" (ngSubmit)="onEditUnitFormSubmit()">
+      <input type="text" pInputText formControlName="name" placeholder="Nazwa"/>
+      <button pButton type="submit" [disabled]="editUnitForm.invalid">Dodaj</button>
+    </form>
+  </p-dialog>
+  <p-dialog [modal]="true" [(visible)]="showGenerateQrCodeDialog">
+    <ng-template pTemplate="header">
+      <div>
+        Stwórz kody inicjujące kategorie<br>
+        <strong>{{ selectedUnit?.name }}</strong>
+      </div>
+    </ng-template>
+    <p-multiselect [options]="categories" [(ngModel)]="selectedCategories" placeholder="kategorie" optionLabel="name" display="chip"
+                   [appendTo]="'body'"/>
+    <button
+      pButton
+      icon="pi pi-qrcode"
+      (click)="onQrCodeDownloadClick()"
+    ></button>
+  </p-dialog>
+</div>
+

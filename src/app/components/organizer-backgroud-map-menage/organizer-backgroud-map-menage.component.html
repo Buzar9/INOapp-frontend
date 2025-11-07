@@ -1,0 +1,39 @@
+<form [formGroup]="uploadForm" class="p-fluid p-formgrid p-grid">
+  <div class="p-field p-col-12">
+    <label for="name">Name</label>
+    <input id="name" pInputText formControlName="name" />
+  </div>
+
+  <div class="p-field p-col-6">
+    <!-- dodo zablokowac minimalna minimalna wartosc zoom -->
+    <label for="minZoom">Min Zoom</label>
+    <input id="minZoom" type="number" pInputText formControlName="minZoom" />
+  </div>
+
+  <div class="p-field p-col-6">
+    <!-- dodo zablokowac maksymalna maksymalna wartosc zoom -->
+    <label for="maxZoom">Max Zoom</label>
+    <input id="maxZoom" type="number" pInputText formControlName="maxZoom" />
+  </div>
+
+  <div class="p-field p-col-12">
+    <p-fileUpload
+      name="file"
+      customUpload="true"
+      (uploadHandler)="onUpload($event)"
+      [auto]="false"
+      [showUploadButton]="true"
+      [showCancelButton]="true"
+      [accept]="'.tiff,image/tiff'"
+      chooseLabel="Wybierz plik">
+    </p-fileUpload>
+  </div>
+
+  <div class="p-col-12" *ngIf="uploadProgress > 0">
+    <p-progressBar [value]="uploadProgress"></p-progressBar>
+  </div>
+
+  <div class="p-col-12" *ngIf="uploadMessage">
+    <p>{{ uploadMessage }}</p>
+  </div>
+</form>

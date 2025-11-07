@@ -1,0 +1,105 @@
+<div>
+  <p-splitter [panelSizes]="[40, 60]">
+    <ng-template #panel>
+      <p-table [value]="categories" dataKey="id" selectionMode="single" [(selection)]="selectedCategory" [scrollable]="true"
+               scrollHeight="600px">
+        <ng-template #header>
+          <tr>
+            <th>
+              Kategoria
+            </th>
+            <th>
+              <button
+                pButton pRipple
+                type="button"
+                icon="pi pi-plus"
+                (click)="onCreateCategoryClick()">
+              </button>
+            </th>
+            <th style="width: 5rem"></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-category let-expanded="expanded">
+          <tr [pSelectableRow]="category">
+            <td>{{ category.name }}</td>
+            <td>{{ category.routeName }}</td>
+            <!-- dodo wyswietlanie maksymalnego czasu -->
+            <td>
+              <div style="display: flex; gap: 8px; align-items: center">
+                <button
+                  pButton pRipple
+                  type="button"
+                  icon="pi pi-trash"
+                  (click)="onDeleteCategoryClick(category.id)">
+                </button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </ng-template>
+    <ng-template #panel>
+      <div style="width: 800px; height: 600px; position: relative; z-index: 1;">
+        <backoffice-map
+          [stationsToShow]="getStationsForCategory()"
+          [backgroundMapId]="getSelectedBackgroundMapId()"
+          [minZoom]="getSelectedMinZoom()"
+          [maxZoom]="getSelectedMaxZoom()"
+          [northEast]="getSelectedNorthEast()"
+          [southWest]="getSelectedSouthWest()"
+        >
+        </backoffice-map>
+        <p-dialog header="Dodaj kategorię" [modal]="true" [(visible)]="showAddCategoryForm">
+          <form [formGroup]="addCategoryForm" (ngSubmit)="onSubmitAddCategoryForm()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            <p-dropdown
+              [appendTo]="'body'"
+              [options]="routeOptions"
+              formControlName="routeId"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Trasa">
+            </p-dropdown>
+            <p-select
+              [appendTo]="'body'"
+              [options]="backgroundMapsOptions"
+              formControlName="backgroundMapId"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Mapa">
+            </p-select>
+            <button pButton type="submit" [disabled]="addCategoryForm.invalid">Dodaj</button>
+          </form>
+        </p-dialog>
+        <!-- <p-dialog header="Dodaj stanowisko" [modal]="true" [(visible)]="showAddStationForm">
+          <form [formGroup]="addStationForm" (ngSubmit)="onSubmitAddStationForm()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            <input type="text" pInputText formControlName="type" placeholder="Typ"/>
+            <input type="text" pInputText formControlName="note" placeholder="Notatka"/>
+            <input type="number" pInputText formControlName="accuracy" placeholder="Dokładność"/>
+            <input type="number" pInputText formControlName="lat" placeholder="Lat"/>
+            <input type="number" pInputText formControlName="lng" placeholder="Lng"/>
+            <button pButton type="submit" [disabled]="addStationForm.invalid">Dodaj</button>
+          </form>
+        </p-dialog>
+        <p-dialog header="Edytuj stanowisko" [modal]="true" [(visible)]="showEditStationForm">
+          <form [formGroup]="editStationForm" (ngSubmit)="onSubmitEditStationForm()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            <input type="text" pInputText formControlName="type" placeholder="Typ"/>
+            <input type="text" pInputText formControlName="note" placeholder="Notatka"/>
+            <input type="number" pInputText formControlName="accuracy" placeholder="Dokładność"/>
+            <input type="number" pInputText formControlName="lat" placeholder="Lat"/>
+            <input type="number" pInputText formControlName="lng" placeholder="Lng"/>
+            <button pButton type="submit" [disabled]="editStationForm.invalid">Edytuj</button>
+          </form>
+        </p-dialog>
+        <p-dialog header="Edytuj trase" [modal]="true" [(visible)]="showEditRouteForm">
+          <form [formGroup]="editRouteForm" (ngSubmit)="onEditRouteSubmit()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            <button pButton type="submit" [disabled]="editStationForm.invalid">Edytuj</button>
+          </form>
+        </p-dialog> -->
+      </div>
+    </ng-template>
+  </p-splitter>
+</div>

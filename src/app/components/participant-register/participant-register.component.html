@@ -1,0 +1,20 @@
+<div class="start-screen">
+  <h1>Witaj w INOapp!</h1>
+  <div *ngIf="showScanner">
+    <span>Zeskanuj kod QR od organizatora, aby rozpocząć bieg</span>
+    <qr-scanner (qrCodeScanned)="receiveInitScan($event)"></qr-scanner>
+  </div>
+  <div>
+    <form *ngIf="showForm" [formGroup]="participantForm" (ngSubmit)="onSubmit()">
+      <input type="text" pInputText formControlName="participantName" placeholder="Twój pseudonim"/>
+      <button pButton type="submit" [disabled]="participantForm.invalid || isLoading">
+        <i *ngIf="isLoading" class="pi pi-spin pi-spinner"></i>
+        <span>{{isLoading ? 'Pobieranie mapy...' : 'Rozpocznij'}}</span>
+      </button>
+    </form>
+    <div *ngIf="isLoading" class="loading-indicator">
+        <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+        <p>Trwa pobieranie mapy, proszę czekać...</p>
+    </div>
+  </div>
+</div>

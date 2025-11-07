@@ -1,229 +1,446 @@
 /* =========================
-   1. ZMIENNE – łatwa podmiana stylu
+   IMPORTY FONTÓW I IKON
    ========================= */
-   :root {
-    --color-bg: #0d1b10;               /* głębokie tło lasu */
-    --color-panel: rgba(15, 25, 15, 0.8); /* półprzezroczysty panel */
-    --color-text: #e2e2dc;            /* główny tekst */
-    --color-text-light: #ffffff;      /* jaśniejszy tekst w participant-view */
-    --color-accent: #b87333;          /* akcent (linki, przyciski) */
-    --color-accent-hover: #d2691e;    /* akcent hover */
-    --radius: 12px;                   /* promień zaokrągleń */
-    --transition: 0.3s ease;          /* globalne przejścia */
-  }
-  
-  /* Import fonty typu maszyna do pisania */
-  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-  
-  /* =========================
-     2. RESET I GLOBAL
-     ========================= */
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Ustawienie fontu na cały dokument */
-  body {
-    position: relative;
-    min-height: 100vh;
-    font-family: 'Special Elite', monospace;
-    background: var(--color-bg);
-    color: var(--color-text);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    line-height: 1.5;
-  }
-  
-  /* =========================
-     3. GŁÓWNY KONTENER
-     ========================= */
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+/* @import "primeicons/primeicons.css"; */
+/* @import "leaflet/dist/leaflet.css"; */
+
+/* =========================
+   1. ZMIENNE
+   ========================= */
+:root {
+  --color-bg: #0d1b10;
+  --color-panel: rgba(15, 25, 15, 0.8);
+  --color-text: #e2e2dc;
+  --color-text-light: #ffffff;
+  --color-accent: #b87333;
+  --color-accent-hover: #d2691e;
+  --radius: 12px;
+  --transition: 0.3s ease;
+}
+
+/* =========================
+   2. RESET I GLOBALNE
+   ========================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  font-family: 'Special Elite', monospace;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: auto;
+  line-height: 1.5;
+}
+
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* =========================
+   3. GŁÓWNY KONTENER
+   ========================= */
+.container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  padding: 1.5rem;
+  background: var(--color-panel);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+  z-index: 1;
+}
+
+/* =========================
+   4. START SCREEN
+   ========================= */
+.start-screen {
+  width: 100%;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: var(--radius);
+  background: var(--color-panel);
+}
+
+.start-screen input[type="text"],
+.start-screen select,
+.start-screen button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: #2b3b32;
+  color: var(--color-text);
+  transition: background var(--transition);
+}
+
+.start-screen input:focus,
+.start-screen select:focus,
+.start-screen button:focus {
+  outline: none;
+  background: #37423b;
+}
+
+.start-screen button {
+  cursor: pointer;
+  background: var(--color-accent);
+  color: var(--color-text-light);
+}
+
+.start-screen button:hover {
+  background: var(--color-accent-hover);
+}
+
+/* =========================
+   5. RESPONSYWNOŚĆ MOBILE
+   ========================= */
+@media (max-width: 480px) {
   .container {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
-    padding: 1.5rem;
-    background: var(--color-panel);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
-    z-index: 1;
+    padding: 1rem;
+    margin: 0.5rem;
   }
-  
-  /* =========================
-     4. EKRAN STARTOWY (START SCREEN)
-     ========================= */
+
   .start-screen {
-    width: 100%;
-    padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    border-radius: var(--radius);
-    background: var(--color-panel);
+    padding: 1.5rem 1rem;
   }
-  
-  .start-screen input[type="text"],
+
+  .start-screen input,
   .start-screen select,
   .start-screen button {
-    width: 100%;
-    padding: 1rem;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: var(--radius);
-    background: #2b3b32;
-    color: var(--color-text);
-    transition: background var(--transition);
-  }
-  
-  .start-screen input:focus,
-  .start-screen select:focus,
-  .start-screen button:focus {
-    outline: none;
-    background: #37423b;
-  }
-  
-  .start-screen button {
-    cursor: pointer;
-    background: var(--color-accent);
-    color: var(--color-text-light);
-  }
-  
-  .start-screen button:hover {
-    background: var(--color-accent-hover);
-  }
-  
-  /* =========================
-     5. RESPONSYWNOŚĆ MOBILE
-     ========================= */
-  @media (max-width: 480px) {
-    .container {
-      padding: 1rem;
-      margin: 0.5rem;
-    }
-  
-    .start-screen {
-      padding: 1.5rem 1rem;
-    }
-  
-    .start-screen input,
-    .start-screen select,
-    .start-screen button {
-      font-size: 1.2rem;
-    }
-  }
-  
-  /* =========================
-     6. PARTICIPANT VIEW
-     ========================= */
-  .participant-view {
-    background: var(--color-panel) !important;
-    color: var(--color-text-light) !important;
-    text-shadow: 0 0 4px rgba(0,0,0,0.8);
-    border-radius: var(--radius);
-  }
-  .participant-view * {
-    color: var(--color-text-light) !important;
-    text-shadow: 0 0 4px rgba(0,0,0,0.8);
-  }
-  .participant-view strong,
-  .participant-view .current-time {
-    color: #ffdd88 !important;
-  }
-  
-  /* =========================
-     7. LINKI I PRZYCISKI
-     ========================= */
-  a {
-    color: var(--color-accent);
-    text-decoration: none;
-    transition: color var(--transition);
-  }
-  a:hover {
-    color: var(--color-accent-hover);
-  }
-  
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75em 1em;
-    margin: 0.5em 0;
-    border: none;
-    border-radius: var(--radius);
-    font-size: 1em;
-    cursor: pointer;
-    transition: background var(--transition), box-shadow var(--transition);
-    background: #2b3b32;
-    color: var(--color-text);
-  }
-  .btn:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-  }
-  .btn-info    { background: #556b2f; }
-  .btn-info:hover    { background: #6b8e23; }
-  .btn-warning { background: #8b2500; }
-  .btn-warning:hover { background: #a04000; }
-  .btn-success { background: #3a5f0b; }
-  .btn-success:hover { background: #557a0e; }
-  
-  /* =========================
-     8. ALERTY I TABELE
-     ========================= */
-  .alert {
-    padding: 1rem;
-    margin: 1rem 0;
-    border: 1px solid #8b2500;
-    border-radius: var(--radius);
-    background: #3b4a36;
-    color: var(--color-text);
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-    background: #2b3b32;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-    color: var(--color-text);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-  table thead tr { background: #37423b; }
-  table th,
-  table td {
-    padding: 0.8rem;
-    text-align: left;
-    border: 1px solid #556b2f;
-  }
-  table tbody tr:nth-child(even) { background: #273430; }
-  table button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-accent);
     font-size: 1.2rem;
   }
-  
-  /* =========================
-     9. ROZWIJANE SZCZEGÓŁY
-     ========================= */
-  .expanded-details {
-    display: table-row;
-    background: #37423b;
-    border-radius: var(--radius);
-  }
-  .expanded-details td {
-    border-top: none;
-    border-bottom: 2px solid #556b2f;
+}
+
+/* =========================
+   6. PARTICIPANT VIEW
+   ========================= */
+.participant-view {
+  background: var(--color-panel) !important;
+  color: var(--color-text-light) !important;
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+  border-radius: var(--radius);
+}
+
+.participant-view * {
+  color: var(--color-text-light) !important;
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+}
+
+.participant-view strong,
+.participant-view .current-time {
+  color: #ffdd88 !important;
+}
+
+/* =========================
+   7. LINKI I PRZYCISKI
+   ========================= */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75em 1em;
+  margin: 0.5em 0;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1em;
+  cursor: pointer;
+  transition: background var(--transition), box-shadow var(--transition);
+  background: #2b3b32;
+  color: var(--color-text);
+}
+
+.btn:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+
+.btn-info { background: #556b2f; }
+.btn-info:hover { background: #6b8e23; }
+.btn-warning { background: #8b2500; }
+.btn-warning:hover { background: #a04000; }
+.btn-success { background: #3a5f0b; }
+.btn-success:hover { background: #557a0e; }
+
+/* =========================
+   8. ALERTY I TABELE
+   ========================= */
+.alert {
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid #8b2500;
+  border-radius: var(--radius);
+  background: #3b4a36;
+  color: var(--color-text);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: #2b3b32;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  color: var(--color-text);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+table thead tr { background: #37423b; }
+
+table th,
+table td {
+  padding: 0.8rem;
+  text-align: left;
+  border: 1px solid #556b2f;
+}
+
+table tbody tr:nth-child(even) { background: #273430; }
+
+table button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-accent);
+  font-size: 1.2rem;
+}
+
+/* =========================
+   9. ROZWIJANE SZCZEGÓŁY
+   ========================= */
+.expanded-details {
+  display: table-row;
+  background: #37423b;
+  border-radius: var(--radius);
+}
+
+.expanded-details td {
+  border-top: none;
+  border-bottom: 2px solid #556b2f;
+  padding: 1rem;
+}
+
+.expanded-panel {
+  background: #37423b;
+  padding: 1rem;
+  border: 1px solid #556b2f;
+  border-radius: var(--radius);
+}
+
+/* =========================
+   10. MAPA (LEAFLET)
+   ========================= */
+#map {
+  background: linear-gradient(
+    to bottom right,
+    var(--color-bg),
+    var(--color-panel),
+    #346F34,
+    #556b2f
+  );
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--color-panel) !important;
+  color: var(--color-text-light) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6) !important;
+}
+
+.leaflet-popup-content {
+  font-family: 'Special Elite', monospace;
+  color: var(--color-text-light) !important;
+  font-size: 1.1rem;
+}
+
+.leaflet-popup-tip {
+  background: var(--color-panel) !important;
+}
+/* ======================= */
+
+.top-texts {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2rem;
+  padding: 0.5rem 0;
+  z-index: 10;
+  font-size: 1rem;          /* mniejsze czcionki */
+  color: var(--color-text-light);
+  text-shadow: 0 0 6px rgba(0,0,0,0.7); /* cień dla lepszej czytelności */
+  /* usunięte tło i zaokrąglenia */
+  background: transparent;
+  border-radius: 0;
+}
+
+.top-texts span {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+
+.top-texts i {
+  font-size: 1.1rem;
+  color: var(--color-accent);
+}
+
+.qr-scanner-icon {
+  position: absolute !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  z-index: 20 !important;
+  background-color: rgba(24, 36, 24, 0.75) !important; /* ciemne, półprzezroczyste tło */
+  border-radius: var(--radius) !important;
+  border: none !important;
+  padding: 0 !important;
+  width: 2.8rem !important;
+  height: 2.8rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+  transition: background var(--transition), color var(--transition) !important;
+  color: var(--color-accent) !important;
+  font-size: 1.7rem !important;
+}
+
+.qr-scanner-icon:hover {
+  background-color: rgba(24, 36, 24, 0.9) !important;
+  color: var(--color-accent-hover) !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important;
+}
+
+/* Mapa w tle na cały ekran */
+#map {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+
+/* Skanner na środku, nad mapą i resztą */
+qr-scanner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  background: var(--color-panel);
+  border-radius: var(--radius);
+  box-shadow: 0 0 20px rgba(0,0,0,0.9);
+  padding: 1rem;
+  width: 80vw;
+  max-width: 400px;
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* =========================
+   11. LOADING INDICATORS
+   ========================= */
+/* Loading indicator dla pobierania mapy */
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 1.5rem;
     padding: 1rem;
-  }
-  .expanded-panel {
-    background: #37423b;
-    padding: 1rem;
-    border: 1px solid #556b2f;
+    background: rgba(43, 59, 50, 0.6);
     border-radius: var(--radius);
-  }
-  
+}
+
+.loading-indicator p {
+    margin-top: 0.8rem;
+    color: var(--color-text);
+    font-size: 0.9rem;
+}
+
+/* PrimeNG Progress Spinner customization */
+.custom-spinner.p-progress-spinner {
+    width: 50px !important;
+    height: 50px !important;
+}
+
+.custom-spinner .p-progress-spinner-circle {
+    stroke: var(--color-accent) !important;
+    animation-duration: 1.5s !important;
+}
+
+/* Loading icon in buttons */
+.pi-spinner {
+    margin-right: 0.5rem;
+    color: inherit;
+}
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(43, 59, 50, 0.6);
+  border-radius: var(--radius);
+}
+
+.loading-indicator p {
+  margin-top: 0.8rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.p-progress-spinner {
+  width: 50px !important;
+  height: 50px !important;
+}
+
+.p-progress-spinner-circle {
+  stroke: var(--color-accent) !important;
+  stroke-width: 4 !important;
+}
+
+button .pi-spinner {
+  color: var(--color-text-light);
+  margin-right: 0.5rem;
+}
+
+/* overlay dla mapy podczas pobierania */
+.map-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 2000;
+}
+

@@ -1,0 +1,52 @@
+<div class="container">
+  <div class="top-texts">
+    <span *ngIf="wasRunActivate" title="Czas biegu">
+      <i class="pi pi-stopwatch"></i>
+      {{raceTimeDisplay}}
+    </span>
+    <span *ngIf="wasRunActivate && !isRunFinished" title="Aktualny czas">
+      <i class="pi pi-clock"></i>
+      {{currentTime}}
+    </span>
+    <span *ngIf="wasRunActivate" title="Punkty kontrolne">
+      <i class="pi pi-star"></i>
+      {{checkpointsNumber}}
+    </span>
+    <button
+      *ngIf="isRunFinished"
+      pButton
+      pRipple
+      type="button"
+      icon="pi pi-sign-out"
+      class="p-button-rounded p-button-danger"
+      title="Zakończ bieg"
+      (click)="onNewRoute()">
+    </button>
+  </div>
+
+  <participant-map
+    [stationsToShow]="stationsToShow"
+    [backgroundMapId]="backgroundMap?.id"
+    [minZoom]="backgroundMap?.minZoom"
+    [maxZoom]="backgroundMap?.maxZoom"
+    [northEast]="backgroundMap?.northEast"
+    [southWest]="backgroundMap?.southWest">
+  </participant-map>
+
+  <button
+    *ngIf="!isRunFinished"
+    pButton
+    pRipple
+    type="button"
+    icon="pi pi-qrcode"
+    class="qr-scanner-icon p-button-rounded"
+    title="Skanuj kod QR"
+    (click)="toggleScanner()">
+  </button>
+
+  <qr-scanner
+    *ngIf="showScanner"
+    (qrCodeScanned)="receiveScan($event)"
+    (close)="toggleScanner()">
+  </qr-scanner>
+</div>

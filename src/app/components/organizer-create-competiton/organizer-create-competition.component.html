@@ -1,0 +1,29 @@
+<div>
+  <button pButton (click)="showCreateCompetitonForm()">Stwórz zawody</button>
+  <button pButton (click)="showLogInForm()">Zaloguj</button>
+  <div class="start-screen" *ngIf="isCreateCompetitonFormVisible">
+    <h1>Stwórz zawody!</h1>
+    <form [formGroup]="createCompetitionForm" (ngSubmit)="onSubmitCreateCompetitionForm()">
+      <input type="text" pInputText formControlName="unit" placeholder="Jednostka"/>
+      <input type="text" pInputText formControlName="name" placeholder="Nazwa"/>
+      <input type="text" pInputText formControlName="year" placeholder="Rok"/>
+      <p-password formControlName="adminPassword" placeholder="Hasło" [toggleMask]="true"/>
+      <input type="text" pInputText formControlName="organizerNickname" placeholder="Pseudonim"/>
+      <button pButton type="submit">Submit</button>
+    </form>
+  </div>
+  <div class="start-screen" *ngIf="isLogInFormVisible">
+    <h1>Zaloguj</h1>
+    <form [formGroup]="logInForm" (ngSubmit)="onSubmitLogInForm()">
+      <input type="text" pInputText formControlName="unit" placeholder="Jednostka"/>
+      <input type="text" pInputText formControlName="name" placeholder="Nazwa"/>
+      <input type="text" pInputText formControlName="year" placeholder="Rok"/>
+      <input type="text" pInputText formControlName="adminPassword" placeholder="Hasło"/>
+      <input type="text" pInputText formControlName="organizerNickname" placeholder="Pseudonim"/>
+      <button pButton type="submit">Submit</button>
+    </form>
+  </div>
+  <div *ngIf="isUnautorizedVisible">
+    <span>Błędne hasło, spróbuj zalogowac sie jeszcze raz</span>
+  </div>
+</div>

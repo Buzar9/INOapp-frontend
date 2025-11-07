@@ -1,11 +1,13 @@
 import { DodoTest } from "../utils/DodoTest";
 import { QrData } from "../utils/QrData";
 
+// dodo slownikowane i cache
 export const ROUTE_NAMES: Map<string, string> = new Map([
     ['w', 'WYJADACZE'],
     ['ex', 'EXTREME']
 ])
 
+// dodo slownikowane i cache
 export const STATION_TYPES: Map<string, string> = new Map([
     ['sr', 'START_RUN'],
     ['c', 'CHECKPOINT'],

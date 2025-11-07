@@ -1,0 +1,180 @@
+<div>
+  <p-splitter [panelSizes]="[40, 60]">
+    <ng-template #panel>
+      <p-table [value]="routes" dataKey="id" [expandedRowKeys]="expandedRoutes" [scrollable]="true" scrollHeight="600px"
+               (onRowExpand)="onRouteExpand($event)"
+               (onRowCollapse)="onRouteCollapse($event)">
+        <ng-template #header>
+          <tr>
+            <th style="width: 5rem"></th>
+            <th>
+              Trasa
+              <button
+                pButton pRipple
+                type="button"
+                icon="pi pi-plus"
+                (click)="onCreateRouteClick()">
+              </button>
+            </th>
+            <th style="width: 5rem"></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-route let-expanded="expanded">
+          <tr>
+            <td>
+              <p-button type="button" pRipple [pRowToggler]="route" [text]="true" [rounded]="true" [plain]="true"
+                        [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"/>
+            </td>
+            <td>{{ route.name }}</td>
+            <td>
+              <div style="display: flex; gap: 8px; align-items: center">
+                <button
+                  *ngIf="isRouteSelected(route.id)"
+                  pButton pRipple
+                  type="button"
+                  icon="pi pi-pencil"
+                  (click)="onEditRouteClick()">
+                </button>
+                <button
+                  *ngIf="isRouteSelected(route.id)"
+                  pButton pRipple
+                  type="button"
+                  icon="pi pi-trash"
+                  (click)="onDeleteRouteClick()">
+                </button>
+                <button
+                  *ngIf="isRouteSelected(route.id)"
+                  pButton pRipple
+                  type="button"
+                  icon="pi pi-qrcode"
+                  (click)="onQrCodeRouteGenerateClick(route.stations)">
+                </button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #expandedrow let-route>
+          <tr>
+            <td colspan="7">
+              <div class="p-4">
+                <p-table [value]="route.stations">
+                  <ng-template #header>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Note</th>
+                      <th style="width: 5rem"></th>
+                    </tr>
+                  </ng-template>
+                  <ng-template #body let-station>
+                    <tr>
+                      <td>{{ station.properties.name }}</td>
+                      <td>{{ station.properties.type }}</td>
+                      <td>{{ station.properties.note }}</td>
+                      <td>
+                        <div style="display: flex; gap: 8px; align-items: center">
+                          <button
+                            pButton
+                            icon="pi pi-pencil"
+                            (click)="onEditStation(station.properties.id)">
+                          </button>
+                          <button
+                            pButton
+                            icon="pi pi-trash"
+                            (click)="onDeleteStation(station.properties.id)">
+                          </button>
+                          <button
+                            pButton
+                            icon="pi pi-qrcode"
+                            (click)="onQrCodeStationGenerateClick(station)">
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </ng-template>
+    <ng-template #panel>
+      <div style="width: 800px; height: 600px; position: relative; z-index: 1;">
+        <!-- dodo schowac gdy route nie jest wybrane -->
+         <!-- dodo pokazac wskaźnik gdzie ustawiamy punkt -->
+          <!-- dodo moliwość przesunięcia mapy poza granice, bo teraz nie da sie ustawic zadnego punktu tuz przy granicy mapy -->
+        <button
+          pButton pRipple
+          type="button"
+          icon="pi pi-plus-circle"
+          class="qr-scanner-icon"
+          (click)="onAddStationClick()">
+        </button>
+        <backoffice-map
+          [stationsToShow]="selectedRoute?.stations || []"
+          [backgroundMapId]="getSelectedBackgroundMapId()"
+          [minZoom]="getSelectedMinZoom()"
+          [maxZoom]="getSelectedMaxZoom()"
+          [northEast]="getSelectedNorthEast()"
+          [southWest]="getSelectedSouthWest()"
+          [showCenterCoordinates]="true"
+          (pickedCoordinates)="onReceivedPointedCoordinates($event)">
+        </backoffice-map>
+        <div *ngIf="isLoading" class="map-loading-overlay">
+          <div class="loading-indicator">
+            <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+            <p>Trwa pobieranie map, proszę czekać...</p>
+          </div>
+        </div>
+        <p-dialog header="Dodaj trase" [modal]="true" [(visible)]="showRouteNameForm">
+          <form [formGroup]="addRouteForm" (ngSubmit)="onSubmitAddRouteForm()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            <p-select
+              [appendTo]="'body'"
+              [options]="backgroundMapsOptions"
+              formControlName="backgroundMapId"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Mapa">
+            </p-select>
+            <button pButton type="submit" [disabled]="addStationForm.invalid">Dodaj</button>
+          </form>
+        </p-dialog>
+        <p-dialog header="Dodaj stanowisko" [modal]="true" [(visible)]="showAddStationForm">
+          <form [formGroup]="addStationForm" (ngSubmit)="onSubmitAddStationForm()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Oznaczenie"/>
+            <p-dropdown
+              [appendTo]="'body'"
+              [options]="stationTypeOptions"
+              formControlName="type"
+              placeholder="Typ">
+            </p-dropdown>
+            <input type="text" pInputText formControlName="note" placeholder="Notatka"/>
+            <input type="number" pInputText formControlName="accuracy" placeholder="Dokładność"/>
+            <input type="number" pInputText formControlName="lat" placeholder="Lat"/>
+            <input type="number" pInputText formControlName="lng" placeholder="Lng"/>
+            <button pButton type="submit" [disabled]="addStationForm.invalid">Dodaj</button>
+          </form>
+        </p-dialog>
+        <p-dialog header="Edytuj stanowisko" [modal]="true" [(visible)]="showEditStationForm">
+          <form [formGroup]="editStationForm" (ngSubmit)="onSubmitEditStationForm()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            <input type="text" pInputText formControlName="type" placeholder="Typ"/>
+            <input type="text" pInputText formControlName="note" placeholder="Notatka"/>
+            <input type="number" pInputText formControlName="accuracy" placeholder="Dokładność"/>
+            <input type="number" pInputText formControlName="lat" placeholder="Lat"/>
+            <input type="number" pInputText formControlName="lng" placeholder="Lng"/>
+            <button pButton type="submit" [disabled]="editStationForm.invalid">Edytuj</button>
+          </form>
+        </p-dialog>
+        <p-dialog header="Edytuj trase" [modal]="true" [(visible)]="showEditRouteForm">
+          <form [formGroup]="editRouteForm" (ngSubmit)="onEditRouteSubmit()">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            <button pButton type="submit" [disabled]="editStationForm.invalid">Edytuj</button>
+          </form>
+        </p-dialog>
+      </div>
+    </ng-template>
+  </p-splitter>
+</div>

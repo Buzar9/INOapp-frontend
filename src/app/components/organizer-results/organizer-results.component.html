@@ -1,85 +1,92 @@
-<div *ngIf="accessGranted">
-  <div class="fixed-details" *ngIf="expandedRowNickname === expandedRowData?.nickname">
-    <div style="padding: 1em">
-      <table>
-        <thead>
-          <!-- dodo zamienic kolejnoscia ale przykleic -->
-          <tr *ngIf="expandedRowNickname === expandedRowData?.nickname">
-            <td colspan="7">
-              <div>
-                <h4>Nickname: {{ expandedRowData?.nickname }}</h4>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <th>Start time</th>
-            <th>Finish time</th>
-            <th>Main time</th>
-            <th>Total time</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>{{ expandedRowData?.startTime }}</td>
-            <td>{{ expandedRowData?.finishTime }}</td>
-            <td>{{ expandedRowData?.mainTime }}</td>
-            <td>{{ expandedRowData?.totalTime }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <table>
-        <thead>
-          <tr>
-            <th>Station</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Details</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let detail of expandedRowData?.validationsStationResult">
-            <td>{{ detail.checkpointId }}</td>
-            <td>{{ detail.type }}</td>
-            <td>
-              <i [ngClass]="getStatusIcon(detail.status)"></i>
-            </td>
-            <td>{{ detail.details }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+<div>
   <h3>Race Results</h3>
-  <table>
-    <thead>
-      <tr>
-        <th></th>
-        <th>Nickname</th>
-        <th>Team</th>
-        <th>Route</th>
-        <th>Category</th>
-        <th>Status</th>
-        <th>Points</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let result of raceResults">
-        <td>
-          <button (click)="toggleRow(result)">
-            <i [ngClass]="expandedRowNickname === result.nickname ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-          </button>
-        </td>
-        <td>{{ result.nickname }}</td>
-        <td>{{ result.team }}</td>
-        <td>{{ result.routeName }}</td>
-        <td>{{ result.competitionCategory }}</td>
-        <td>{{ result.status }}</td>
-        <td>{{ result.visitedCheckpointsNumber }}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<div *ngIf="!accessGranted">
-  <p>Nie ma takiego hackerowania</p>
+  <p-splitter [panelSizes]="[70, 30]">
+    <ng-template #panel>
+      <div style="display: flex; flex-direction: column; height: 100%;">
+        <form [formGroup]="filterForm" (ngSubmit)="onFilterFormSubmit()">
+          <p-multiselect [options]="teamOptions" formControlName="teamSelectedOptions" placeholder="Select Team" [maxSelectedLabels]="3"
+                         display="chip"/>
+          <p-multiselect [options]="categoryOptions" formControlName="categorySelectedOptions" placeholder="Select Category"
+                         [maxSelectedLabels]="3" display="chip"/>
+          <p-multiselect [options]="statusOptions" formControlName="statusSelectedOptions" placeholder="Select Status"
+                         [maxSelectedLabels]="3" display="chip"/>
+          <button pButton type="submit">Filtruj</button>
+        </form>
+        <p-select [options]="backgroundMapsOptions" [(ngModel)]="selectedBackgroundMap" (onChange)="changeMap($event)" [checkmark]="true" optionLabel="name" optionValue="id" placeholder="Mapa"></p-select>
+        <p-table [value]="raceResults" dataKey="participantNickname" [expandedRowKeys]="expandedRows" (onRowExpand)="onRowExpand($event)"
+                 (onRowCollapse)="onRowCollapse($event)">
+          <ng-template #header>
+            <tr>
+              <th style="width: 5rem"></th>
+              <th>Nickname</th>
+              <th>Team</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Points</th>
+              <th>Time</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-result let-expanded="expanded">
+            <tr>
+              <td>
+                <p-button type="button" pRipple [pRowToggler]="result" [text]="true" [rounded]="true" [plain]="true"
+                          [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"/>
+              </td>
+              <td>{{ result.participantNickname }}</td>
+              <td>{{ result.participantUnit }}</td>
+              <td>{{ result.categoryName }}</td>
+              <td>{{ result.status }}</td>
+              <td>{{ getControlPointsNumber(result) }}</td>
+              <td>{{ result.mainTime }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #expandedrow let-result>
+            <tr>
+              <td colspan="7">
+                <div class="p-4">
+                  <p-table [value]="result.controlPoints">
+                    <ng-template #header>
+                      <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Timestamp</th>
+                        <th>Validation</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template #body let-controlPoint>
+                      <tr>
+                        <td>{{ controlPoint.name }}</td>
+                        <td>{{ controlPoint.type }}</td>
+                        <td>{{ controlPoint.timestamp }}</td>
+                        <td>
+                          <ng-container *ngFor="let validation of controlPoint!.ruleValidation">
+                            <p-tag value="{{validation.type}}" icon="{{getStatusIcon(validation.result)}}"
+                                   severity={{getSeverity(validation.result)}}/>
+                          </ng-container>
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </ng-template>
+    <ng-template #panel>
+      <div style="width: 800px; height: 600px; position: relative; z-index: 1;">
+        <backoffice-map
+          [dodoControlPoints]="selectedControlPoints"
+          [stationsToShow]="selectedRouteStations"
+          [backgroundMapId]="selectedBackgroundMap?.id"
+          [maxZoom]="selectedBackgroundMap?.maxZoom"
+          [minZoom]="selectedBackgroundMap?.minZoom"
+          [northEast]="selectedBackgroundMap?.northEast"
+          [southWest]="selectedBackgroundMap?.southWest"
+        >
+        </backoffice-map>
+      </div>
+    </ng-template>
+  </p-splitter>
 </div>

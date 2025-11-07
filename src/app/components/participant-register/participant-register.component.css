@@ -1,0 +1,42 @@
+.start-screen {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.loading-indicator p {
+  margin-top: 1rem;
+  color: var(--color-text);
+}
+
+qr-scanner {
+  width: 100%;
+  max-width: 320px;
+  margin: 1rem 0;
+  display: block;
+}
+
+span {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+form {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

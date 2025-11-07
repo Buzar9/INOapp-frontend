@@ -1,0 +1,4 @@
+{
+  "git.ignoreLimitWarning": true,
+  "git.sshCommand": "ssh -i ~/.ssh/id_ed25519_prv"
+}
