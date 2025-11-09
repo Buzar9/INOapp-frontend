@@ -22,15 +22,15 @@ import { BackgroundMap } from "./response/BackgroundMap";
 export class BackofficeSendService {
 
         // dodo z propertisow
-        private apiUrl = 'http://localhost:8080/backoffice';
+        private apiUrl = 'https://inoapp-backend-845892573651.europe-central2.run.app/backoffice';
 
         constructor(private http: HttpClient) {}
 
     createCompetition(request: CreateCompetitionRequest): Observable<any> {
         return this.http.post(
-            `${this.apiUrl}/create`, 
-            request, 
- 
+            `${this.apiUrl}/create`,
+            request,
+
             { responseType: 'text',
                 headers: new HttpHeaders({
                     'Content-Type': 'application/json'
@@ -134,7 +134,7 @@ export class BackofficeSendService {
       return this.http.get<DictionaryModel[]>(`${this.apiUrl}/dictionaries/status`, {headers: new HttpHeaders({
         'Content-Type': 'application/json'
       })})
-    } 
+    }
 
     uploadBackgroundMap(file: File, metadata: {name: string; minZoom: number; maxZoom: number}) {
       const formData = new FormData();

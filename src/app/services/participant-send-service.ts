@@ -21,7 +21,7 @@ import { BackgroundMap } from "./response/BackgroundMap";
 })
 export class ParticipantSendService {
     // dodo z propertisow
-    private apiUrl = 'http://localhost:8080';
+    private apiUrl = 'https://inoapp-backend-845892573651.europe-central2.run.app';
 
     constructor(private http: HttpClient) {}
 
