@@ -44,10 +44,6 @@ export const routes: Routes = [
         path: 'units',
         component: OrganizerUnitsComponent
       },
-      // {
-      //   path: 'maps',
-      //   component: OrganizerBackgroundMapImportComponent
-      // },
       {
         path: 'maps',
         component: OrganizerBackgroudMapMenageComponent
