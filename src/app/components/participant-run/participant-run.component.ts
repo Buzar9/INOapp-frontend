@@ -15,6 +15,7 @@ import { AddControlPointRequest } from '../../services/request/AddControlPointRe
 import { RunMetricAfterControlPoint } from '../../services/response/RunMetricAfterControlPoint';
 import { Station } from '../../services/response/Station';
 import { BackgroundMap } from '../../services/response/BackgroundMap';
+import { TileDbService } from '../../services/tile-db.service';
   
   @Component({
     selector: 'participant',
@@ -50,14 +51,13 @@ import { BackgroundMap } from '../../services/response/BackgroundMap';
   
     private subscriptions: Subscription = new Subscription();
   
-    constructor(
-      private router: Router, 
-      private sendService: ParticipantSendService, 
-      private participantStateService: ParticipantStateService, 
-      private networkService: NetworkService,
-    ){}
-  
-    ngOnInit(): void {
+  constructor(
+    private router: Router, 
+    private sendService: ParticipantSendService, 
+    private participantStateService: ParticipantStateService, 
+    private networkService: NetworkService,
+    private tileDbService: TileDbService,
+  ){}    ngOnInit(): void {
       let stationRequest = {
         categoryId: this.getLocalStorageItem('categoryId')
       }
@@ -231,14 +231,20 @@ import { BackgroundMap } from '../../services/response/BackgroundMap';
     }
   }
 
-  onNewRoute(): void {
+  async onNewRoute(): Promise<void> {
     this.runStartTime = 0;
     this.runFinishTime = 0;
     this.raceTimeDisplay = '00:00';
     this.wasRunActivate = true;
     localStorage.clear();
     this.participantStateService.clear();
-    localStorage.clear;
+    
+    try {
+      await this.tileDbService.clearAllMaps();
+    } catch (error) {
+      console.error('Błąd podczas usuwania map z IndexedDB:', error);
+    }
+    
     this.router.navigateByUrl('');
   }
 }
