@@ -1,8 +1,8 @@
 {
   "name": "INOapp-front",
   "short_name": "INOapp-front",
-  "theme_color": "#1976d2",
-  "background_color": "#fafafa",
+  "theme_color": "#0d1b10",
+  "background_color": "#0d1b10",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
