@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ViewChild, Output, EventEmitter } from '@angular/core';
-import { CommonModule, NgFor } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ScannerQRCodeConfig,
   ScannerQRCodeResult,
@@ -41,11 +41,13 @@ export class QrScannerComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.action.isReady.subscribe((res: any) => {
+      if (res) {
+        this.handle(this.action, 'start');
+      }
     });
   }
 
   public onEvent(scanResult: ScannerQRCodeResult[], action?: any): void {
-    // Zatrzymaj kamerę przed wysłaniem wyniku
     if (this.action && this.action.isStart) {
       this.action.stop();
     }
@@ -55,10 +57,9 @@ export class QrScannerComponent implements AfterViewInit {
 
   public handle(action: any, fn: string): void {
     const playDeviceFacingBack = (devices: any[]) => {
-      // front camera or back camera check here!
       const device = devices.find((f) =>
         /back|rear|environment/gi.test(f.label)
-      ); // Default Back Facing Camera
+      ); 
       action.playDevice(device ? device.deviceId : devices[0].deviceId);
     };
 
@@ -74,7 +75,6 @@ export class QrScannerComponent implements AfterViewInit {
   }
 
   closeScanner() {
-    // Zatrzymaj kamerę przed zamknięciem skanera
     if (this.action && this.action.isStart) {
       this.action.stop();
     }

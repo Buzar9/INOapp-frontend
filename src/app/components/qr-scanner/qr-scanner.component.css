@@ -1,9 +1,9 @@
-/* QR Scanner Component Styles - Mobile Optimized */
+/* QR Scanner Component Styles - Modern Earth Forest Theme */
 :host {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-panel);
+  background: var(--color-bg);
   overflow: hidden;
 }
 
@@ -15,6 +15,8 @@
   width: 100%;
   height: 100%;
   z-index: 2000;
+  background: linear-gradient(135deg, rgba(13, 27, 16, 0.98) 0%, rgba(15, 35, 20, 0.98) 100%);
+  backdrop-filter: blur(10px);
 }
 
 .scanner-container {
@@ -22,7 +24,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 2rem;
   width: 100%;
   height: 100%;
   padding: 2rem;
@@ -33,7 +35,7 @@
 .scanner-area {
   position: relative;
   width: 100%;
-  max-width: 350px;
+  max-width: 380px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -41,12 +43,32 @@
 
 ngx-scanner-qrcode {
   width: 100%;
-  max-height: 300px;
+  max-height: 380px;
   aspect-ratio: 1 / 1;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  background: var(--color-bg-dark, #1a1a1a);
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    0 0 0 3px rgba(184, 115, 51, 0.15),
+    inset 0 0 20px rgba(0, 0, 0, 0.2);
+  background: #0a0a0a;
+  position: relative;
+}
+
+ngx-scanner-qrcode::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, 
+    var(--color-accent) 0%, 
+    rgba(184, 115, 51, 0.3) 50%, 
+    var(--color-accent) 100%);
+  border-radius: 20px;
+  z-index: -1;
+  opacity: 0.3;
 }
 
 /* Loading overlay during scanner initialization */
@@ -56,21 +78,23 @@ ngx-scanner-qrcode {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(13, 27, 16, 0.95);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 20px;
   z-index: 2001;
+  backdrop-filter: blur(8px);
 }
 
 .loading-text {
-  color: var(--color-text-light, #ffffff);
+  color: var(--color-text-light);
   font-family: 'Special Elite', monospace;
   font-size: 1rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   text-align: center;
+  letter-spacing: 0.5px;
 }
 
 /* Controls section */
@@ -80,211 +104,289 @@ ngx-scanner-qrcode {
   gap: 1.5rem;
   flex-wrap: wrap;
   width: 100%;
-  max-width: 350px;
+  max-width: 380px;
 }
 
-/* Unified button styles - nadpisanie PrimeNG */
+/* Modern glassmorphic floating buttons - zgodne z resztą aplikacji */
 .control-button.p-button {
-  width: 60px !important;
-  height: 60px !important;
+  width: 4rem !important;
+  height: 4rem !important;
+  min-width: 4rem !important;
+  min-height: 4rem !important;
   border-radius: 50% !important;
-  background: var(--color-accent, #b87333) !important;
-  border: 2px solid var(--color-accent, #b87333) !important;
-  color: var(--color-text-light, #ffffff) !important;
+  background: var(--color-accent) !important;
+  border: none !important;
+  color: var(--color-text-light) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.2rem !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 4px 15px rgba(184, 115, 51, 0.3) !important;
+  font-size: 1.8rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.8),
+    0 0 0 0 rgba(184, 115, 51, 0.4) !important;
   z-index: 2002 !important;
+  position: relative !important;
+  padding: 0 !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
 
+/* Hover effect - subtle scale and glow */
 .control-button.p-button:hover:not(:disabled) {
-  background: var(--color-accent-hover, #d2691e) !important;
-  border-color: var(--color-accent-hover, #d2691e) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(210, 105, 30, 0.4) !important;
+  background: var(--color-accent-hover) !important;
+  transform: translateY(-3px) scale(1.08) !important;
+  box-shadow: 
+    0 12px 35px rgba(184, 115, 51, 0.5),
+    0 0 0 8px rgba(184, 115, 51, 0.15) !important;
 }
 
+/* Active state */
 .control-button.p-button:active {
-  transform: translateY(0) !important;
-  box-shadow: 0 4px 15px rgba(184, 115, 51, 0.3) !important;
+  transform: translateY(-1px) scale(1.02) !important;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.7),
+    0 0 0 4px rgba(184, 115, 51, 0.2) !important;
+  transition: all 0.1s !important;
 }
 
+/* Disabled state */
 .control-button.p-button:disabled {
-  opacity: 0.5 !important;
+  opacity: 0.4 !important;
   cursor: not-allowed !important;
   transform: none !important;
+  filter: grayscale(0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Active state for toggle buttons */
+/* Active toggle state for camera button */
 .control-button.p-button.active {
-  background: var(--color-accent-hover, #d2691e) !important;
-  border-color: var(--color-accent-hover, #d2691e) !important;
-  box-shadow: 0 6px 20px rgba(210, 105, 30, 0.4) !important;
+  background: var(--color-accent-hover) !important;
+  box-shadow: 
+    0 8px 25px rgba(210, 105, 30, 0.6),
+    0 0 0 4px rgba(184, 115, 51, 0.25),
+    inset 0 0 20px rgba(0, 0, 0, 0.2) !important;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-/* Specific button styling */
-.camera-button .pi-camera {
-  font-size: 1.2rem;
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 
+      0 8px 25px rgba(210, 105, 30, 0.6),
+      0 0 0 4px rgba(184, 115, 51, 0.25),
+      inset 0 0 20px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 8px 25px rgba(210, 105, 30, 0.8),
+      0 0 0 8px rgba(184, 115, 51, 0.35),
+      inset 0 0 20px rgba(0, 0, 0, 0.2);
+  }
 }
 
-.flash-button .pi-bolt {
-  font-size: 1.2rem;
+/* Icon sizing */
+.camera-button .pi-camera,
+.close-button .pi-times,
+.file-button .pi-folder-open {
+  font-size: 2.2rem;
+  position: relative;
+  z-index: 1;
 }
 
+/* Close button - subtle earth tone variant instead of red */
 .close-button.p-button {
-  background: var(--color-danger, #dc3545) !important;
-  border-color: var(--color-danger, #dc3545) !important;
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2) !important;
-  z-index: 2002 !important;
+  background: linear-gradient(135deg, rgba(80, 60, 50, 0.95) 0%, rgba(60, 45, 38, 0.95) 100%) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .close-button.p-button:hover:not(:disabled) {
-  background: #c82333 !important;
-  border-color: #c82333 !important;
-  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4) !important;
+  background: linear-gradient(135deg, rgba(100, 75, 60, 0.95) 0%, rgba(80, 60, 50, 0.95) 100%) !important;
+  box-shadow: 
+    0 12px 35px rgba(100, 75, 60, 0.5),
+    0 0 0 8px rgba(139, 90, 60, 0.15) !important;
 }
 
-.close-button .pi-times {
-  font-size: 1.2rem;
-}
-
-.file-button .pi-folder-open {
-  font-size: 1.2rem;
-}
-
-/* File scan results */
+/* File scan results - hidden by default */
 .file-scan-result {
   margin-top: 1rem;
   width: 100%;
-  max-width: 350px;
+  max-width: 380px;
+  display: none;
 }
 
 /* Progress Spinner customization */
 ::ng-deep .custom-spinner .p-progress-spinner-circle {
-  stroke: var(--color-accent, #b87333) !important;
+  stroke: var(--color-accent) !important;
+  stroke-width: 3 !important;
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
   .scanner-container {
-    gap: 1.2rem;
-    padding: 0 1rem;
+    gap: 1.8rem;
+    padding: 1.5rem;
   }
   
   .scanner-area {
-    max-width: 320px;
+    max-width: 340px;
   }
   
   ngx-scanner-qrcode {
-    max-height: 280px;
+    max-height: 340px;
+    border-radius: 18px;
   }
   
   .controls {
-    gap: 1.2rem;
-    max-width: 280px;
+    gap: 1.5rem;
+    max-width: 300px;
   }
   
   .control-button.p-button {
-    width: 55px !important;
-    height: 55px !important;
-    font-size: 1.1rem !important;
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    min-width: 3.5rem !important;
+    min-height: 3.5rem !important;
+    font-size: 1.5rem !important;
+  }
+  
+  .camera-button .pi-camera,
+  .close-button .pi-times,
+  .file-button .pi-folder-open {
+    font-size: 1.9rem;
   }
 }
 
 @media (max-width: 480px) {
   .scanner-container {
-    gap: 1rem;
-    padding: 0 0.5rem;
+    gap: 1.5rem;
+    padding: 1rem;
   }
   
   .scanner-area {
-    max-width: 280px;
+    max-width: 300px;
   }
   
   ngx-scanner-qrcode {
-    max-height: 250px;
+    max-height: 300px;
+    border-radius: 16px;
   }
   
   .controls {
-    gap: 1rem;
-    max-width: 240px;
-    flex-wrap: wrap;
-    justify-content: space-around;
+    gap: 1.3rem;
+    max-width: 260px;
   }
   
   .control-button.p-button {
-    width: 50px !important;
-    height: 50px !important;
-    font-size: 1rem !important;
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    min-width: 3.5rem !important;
+    min-height: 3.5rem !important;
+    font-size: 1.5rem !important;
+  }
+  
+  .camera-button .pi-camera,
+  .close-button .pi-times,
+  .file-button .pi-folder-open {
+    font-size: 1.9rem;
   }
   
   .loading-text {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 }
 
 @media (max-width: 360px) {
   .scanner-area {
-    max-width: 250px;
+    max-width: 270px;
   }
   
   ngx-scanner-qrcode {
-    max-height: 220px;
+    max-height: 270px;
+    border-radius: 14px;
   }
   
   .controls {
-    gap: 0.8rem;
-    max-width: 200px;
-    flex-wrap: wrap;
-    justify-content: space-around;
+    gap: 1.2rem;
+    max-width: 230px;
   }
   
   .control-button.p-button {
-    width: 45px !important;
-    height: 45px !important;
-    font-size: 0.9rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    font-size: 1.3rem !important;
+  }
+  
+  .camera-button .pi-camera,
+  .close-button .pi-times,
+  .file-button .pi-folder-open {
+    font-size: 1.6rem;
   }
 }
 
 @media (max-width: 320px) {
+  .scanner-area {
+    max-width: 240px;
+  }
+  
+  ngx-scanner-qrcode {
+    max-height: 240px;
+  }
+  
   .controls {
-    gap: 0.6rem;
-    max-width: 180px;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 1rem;
+    max-width: 200px;
   }
   
   .control-button.p-button {
-    width: 42px !important;
-    height: 42px !important;
-    font-size: 0.8rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    font-size: 1.3rem !important;
+  }
+  
+  .camera-button .pi-camera,
+  .close-button .pi-times,
+  .file-button .pi-folder-open {
+    font-size: 1.6rem;
   }
 }
 
 /* Landscape orientation adjustments */
 @media (orientation: landscape) and (max-height: 500px) {
   .scanner-container {
-    gap: 0.8rem;
+    gap: 1rem;
   }
   
   .scanner-area {
-    max-width: 250px;
+    max-width: 280px;
   }
   
   ngx-scanner-qrcode {
-    max-height: 180px;
+    max-height: 220px;
+    border-radius: 14px;
   }
   
   .control-button.p-button {
-    width: 45px !important;
-    height: 45px !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    font-size: 1.3rem !important;
+  }
+  
+  .camera-button .pi-camera,
+  .close-button .pi-times,
+  .file-button .pi-folder-open {
+    font-size: 1.6rem;
   }
   
   .loading-text {
-    font-size: 0.8rem;
-    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    margin-top: 0.8rem;
   }
 }

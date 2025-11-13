@@ -77,4 +77,12 @@
     (qrCodeScanned)="receiveScan($event)"
     (close)="toggleScanner()">
   </qr-scanner>
+
+  <div *ngIf="isScanning" class="scanning-overlay">
+    <div class="scanning-content">
+      <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+      <h2>Przetwarzanie...</h2>
+      <p>Zapisywanie punktu kontrolnego</p>
+    </div>
+  </div>
 </div>

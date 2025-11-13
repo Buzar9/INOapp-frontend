@@ -10,6 +10,7 @@
   import { ButtonModule } from 'primeng/button';
   import { RippleModule } from 'primeng/ripple';
   import { MessageModule } from 'primeng/message';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { QrScannerComponent } from '../qr-scanner/qr-scanner.component';
 import { AddControlPointRequest } from '../../services/request/AddControlPointRequest';
 
@@ -22,7 +23,7 @@ import { ViewChild } from '@angular/core';
   @Component({
     selector: 'participant',
     standalone: true,
-    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, QrScannerComponent],
+    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, ProgressSpinnerModule, QrScannerComponent],
     templateUrl: './participant-run.component.html',
     styleUrls: ['./participant-run.component.css']
   })
@@ -34,6 +35,7 @@ import { ViewChild } from '@angular/core';
     stationsToShow: Station[] = []
 
   showScanner: boolean = false;
+  isScanning: boolean = false;
   wasRunActivate: boolean = false;
   isRunFinished: boolean = false;
   isPortraitMode: boolean = false;
@@ -116,6 +118,9 @@ import { ViewChild } from '@angular/core';
     }
 
     async receiveScan(scan: string) {
+      this.showScanner = false;
+      this.isScanning = true;
+      
       const timestamp = new Date().getTime().toString();
       const location = await this.getLocationWithTimeout(5000) || {lat:"0.0", lng:"0.0", accuracy:"0.0"}
       let requestId = crypto.randomUUID()
@@ -129,8 +134,6 @@ import { ViewChild } from '@angular/core';
 
       this.addRequestToSendingQueue(request, requestId)
       this.sendRequestDodo(request, requestId)
-
-      this.showScanner = false;
     }
   
   private getLocationWithTimeout(timeout: number): Promise<{ lat: string, lng: string, accuracy: string } | null> {
@@ -176,10 +179,12 @@ import { ViewChild } from '@angular/core';
       next: (response) => {
         this.removePendingRequest(requestId)
         this.handleAddControlPointResponse(response)
+        this.isScanning = false;
       },
       error: (err) => {
         console.log('dodo nie udalo sie wyslac', err)
         this.removePendingRequest(requestId)
+        this.isScanning = false;
       }
     })
   }

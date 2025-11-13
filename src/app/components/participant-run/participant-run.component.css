@@ -425,3 +425,63 @@ qr-scanner {
   }
 }
 
+/* Fullscreen mode for scanner */
+.fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: var(--color-background);
+}
+
+/* Scanning overlay */
+.scanning-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.scanning-content {
+  text-align: center;
+  color: var(--color-text-light);
+  padding: 2rem;
+  background: var(--color-panel);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  min-width: 280px;
+}
+
+.scanning-content h2 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.scanning-content p {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+.scanning-content ::ng-deep .custom-spinner {
+  width: 60px;
+  height: 60px;
+}
+
+.scanning-content ::ng-deep .custom-spinner .p-progress-spinner-circle {
+  stroke: var(--color-accent);
+  animation: p-progress-spinner-dash 1.5s ease-in-out infinite;
+}
+
+
