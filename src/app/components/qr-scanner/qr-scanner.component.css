@@ -1,11 +1,32 @@
 /* QR Scanner Component Styles - Mobile Optimized */
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-panel);
+  overflow: hidden;
+}
+
+/* Fullscreen mode dla participant-run */
+:host(.fullscreen-mode) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+}
+
 .scanner-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
   width: 100%;
-  padding: 0;
+  height: 100%;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
 /* Scanner area with loading overlay */
@@ -41,7 +62,7 @@ ngx-scanner-qrcode {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  z-index: 10;
+  z-index: 2001;
 }
 
 .loading-text {
@@ -76,6 +97,7 @@ ngx-scanner-qrcode {
   font-size: 1.2rem !important;
   transition: all 0.3s ease !important;
   box-shadow: 0 4px 15px rgba(184, 115, 51, 0.3) !important;
+  z-index: 2002 !important;
 }
 
 .control-button.p-button:hover:not(:disabled) {
@@ -116,6 +138,7 @@ ngx-scanner-qrcode {
   background: var(--color-danger, #dc3545) !important;
   border-color: var(--color-danger, #dc3545) !important;
   box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2) !important;
+  z-index: 2002 !important;
 }
 
 .close-button.p-button:hover:not(:disabled) {

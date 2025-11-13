@@ -14,7 +14,9 @@ import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'qr-scanner',
+  standalone: true,
   templateUrl: './qr-scanner.component.html',
+  styleUrl: './qr-scanner.component.css',
   imports: [NgxScannerQrcodeComponent, CommonModule, ButtonModule, RippleModule, ProgressSpinnerModule, TooltipModule],
 })
 export class QrScannerComponent implements AfterViewInit {

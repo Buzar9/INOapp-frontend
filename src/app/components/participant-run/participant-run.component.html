@@ -60,6 +60,7 @@
 
   <qr-scanner
     *ngIf="showScanner"
+    class="fullscreen-mode"
     (qrCodeScanned)="receiveScan($event)"
     (close)="toggleScanner()">
   </qr-scanner>
