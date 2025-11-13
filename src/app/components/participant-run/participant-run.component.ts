@@ -16,17 +16,19 @@ import { RunMetricAfterControlPoint } from '../../services/response/RunMetricAft
 import { Station } from '../../services/response/Station';
 import { BackgroundMap } from '../../services/response/BackgroundMap';
 import { TileDbService } from '../../services/tile-db.service';
+import { ViewChild } from '@angular/core';
   
   @Component({
     selector: 'participant',
     standalone: true,
     imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, QrScannerComponent],
-  
     templateUrl: './participant-run.component.html',
+    styleUrls: ['./participant-run.component.css']
   })
   export class ParticipantRunComponent implements OnInit, OnDestroy {
     @Output() 
     navigationRequested = new EventEmitter<void>();
+    @ViewChild('mapComponent') mapComponent!: ParticipantMapComponent;
 
     stationsToShow: Station[] = []
 
@@ -100,6 +102,9 @@ import { TileDbService } from '../../services/tile-db.service';
     }
 
     toggleScanner() {
+      if (this.mapComponent) {
+        this.mapComponent.hidePopups();
+      }
       this.showScanner = !this.showScanner;
     }
 
@@ -208,10 +213,7 @@ import { TileDbService } from '../../services/tile-db.service';
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    // const seconds = totalSeconds % 60;
-    // console.log('formattime ' + `${ms} ${hours} ${minutes}` +`${this.pad(hours)}:${this.pad(minutes)}`)
     return `${this.pad(hours)}:${this.pad(minutes)}`;
-    // :${this.pad(seconds)}
   }
   
   private pad(num: number): string {
@@ -246,5 +248,11 @@ import { TileDbService } from '../../services/tile-db.service';
     }
     
     this.router.navigateByUrl('');
+  }
+
+  resetMapView() {
+    if (this.mapComponent) {
+      this.mapComponent.resetMapView();
+    }
   }
 }

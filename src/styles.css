@@ -309,7 +309,8 @@ table button {
   color: var(--color-accent);
 }
 
-.qr-scanner-icon {
+/* Style dla QR scanner w organizer views (absolute positioning) */
+organizer-route-view .qr-scanner-icon {
   position: absolute !important;
   top: 1rem !important;
   right: 1rem !important;
@@ -330,7 +331,7 @@ table button {
   font-size: 1.7rem !important;
 }
 
-.qr-scanner-icon:hover {
+organizer-route-view .qr-scanner-icon:hover {
   background-color: rgba(24, 36, 24, 0.9) !important;
   color: var(--color-accent-hover) !important;
   box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important;
@@ -590,5 +591,130 @@ button .pi-spinner {
   background: rgba(184, 115, 51, 0.5) !important;
   border-color: rgba(184, 115, 51, 0.5) !important;
   color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* =========================
+   FLOATING BUTTONS - GLOBALNE STYLE
+   ========================= */
+
+/* Przycisk po lewej stronie - globalne nadpisanie */
+.floating-left.p-button {
+  position: fixed !important;
+  bottom: 1.5rem !important;
+  left: 1.5rem !important;
+  z-index: 1001 !important;
+  width: 4rem !important;
+  height: 4rem !important;
+  min-width: 4rem !important;
+  min-height: 4rem !important;
+  border-radius: 50% !important;
+  background: var(--color-accent) !important;
+  border: none !important;
+  color: var(--color-text-light) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8) !important;
+  font-size: 1.8rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Przycisk po prawej stronie - globalne nadpisanie */
+.floating-right.p-button {
+  position: fixed !important;
+  bottom: 1.5rem !important;
+  right: 1.5rem !important;
+  z-index: 1001 !important;
+  width: 4rem !important;
+  height: 4rem !important;
+  min-width: 4rem !important;
+  min-height: 4rem !important;
+  border-radius: 50% !important;
+  background: var(--color-accent) !important;
+  border: none !important;
+  color: var(--color-text-light) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8) !important;
+  font-size: 1.8rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Hover states */
+.floating-left.p-button:hover,
+.floating-left.p-button:active,
+.floating-right.p-button:hover,
+.floating-right.p-button:active {
+  background: var(--color-accent-hover) !important;
+  border: none !important;
+  color: var(--color-text-light) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+  .floating-left.p-button {
+    bottom: 1rem !important;
+    left: 1rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    font-size: 1.4rem !important;
+  }
+  
+  .floating-right.p-button {
+    bottom: 1rem !important;
+    right: 1rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    font-size: 1.4rem !important;
+  }
+}
+
+/* Responsive - Small mobile */
+@media (max-width: 360px) {
+  .floating-left.p-button {
+    bottom: 1.2rem !important;
+    left: 1.2rem !important;
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    min-width: 3.5rem !important;
+    min-height: 3.5rem !important;
+    font-size: 1.6rem !important;
+  }
+  
+  .floating-right.p-button {
+    bottom: 1.2rem !important;
+    right: 1.2rem !important;
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    min-width: 3.5rem !important;
+    min-height: 3.5rem !important;
+    font-size: 1.6rem !important;
+  }
+}
+
+/* Responsive - Landscape */
+@media (orientation: landscape) and (max-height: 500px) {
+  .floating-left.p-button {
+    bottom: 0.8rem !important;
+    left: 0.8rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    font-size: 1.3rem !important;
+  }
+  
+  .floating-right.p-button {
+    bottom: 0.8rem !important;
+    right: 0.8rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    font-size: 1.3rem !important;
+  }
 }
 

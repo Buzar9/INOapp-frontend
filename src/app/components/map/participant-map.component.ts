@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, Input, OnChanges, SimpleChanges, OnInit } from '@angular/core';
+import { Component, AfterViewInit, Input, OnChanges, SimpleChanges, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import L from 'leaflet';
 import { Station } from '../../services/response/Station';
@@ -10,11 +10,10 @@ import { idbTileLayer } from '../../shared/tile-layer-indexeddb';
   selector: 'participant-map',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div id="map" style="height: 500px; position: relative;"></div>
-  `,
+  templateUrl: './participant-map.component.html',
+  styleUrls: ['./participant-map.component.css']
 })
-export class ParticipantMapComponent implements OnInit, OnChanges {
+export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   defaultMapId: string = '3857_mala_2'
   defaultMinZoom = 15;
   defaultMaxZoom = 15;
@@ -41,7 +40,9 @@ export class ParticipantMapComponent implements OnInit, OnChanges {
   
   private map!: L.Map;
   private currentTileLayer?: L.TileLayer;
-  private useIndexedDb: boolean = true;
+  private openPopups: L.Popup[] = []; 
+  private documentClickListener?: (event: Event) => void;
+  private hidePopupsTimeout?: number; 
 
   constructor(
     private participantSendService: ParticipantSendService,
@@ -59,9 +60,14 @@ export class ParticipantMapComponent implements OnInit, OnChanges {
       this.switchBaseMap(this.backgroundMapId);
     }
 
-
     if (this.stationsToShow != undefined && changes['stationsToShow']) {
       this.addStations(this.stationsToShow)
+    }
+
+    if (changes['northEast'] || changes['southWest'] || changes['minZoom'] || changes['maxZoom']) {
+      setTimeout(() => {
+        this.centerMapProperly();
+      }, 100);
     }
   }
 
@@ -78,11 +84,27 @@ export class ParticipantMapComponent implements OnInit, OnChanges {
       zoom: this.minZoom,
       minZoom: this.minZoom,
       maxZoom: this.maxZoom,
-      maxBounds: bounds,
-      maxBoundsViscosity: 1.0,
       dragging: true,
-      zoomControl: false,
+      zoomControl: true,
+      touchZoom: true,
+      doubleClickZoom: true,
+      scrollWheelZoom: true,
+      boxZoom: false,
+      keyboard: false,
+      zoomSnap: 0.5,
+      zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 60
     });
+
+    this.setupPopupAutoHide();
+
+    this.map.whenReady(() => {
+      this.centerMapProperly();
+    });
+
+    setTimeout(() => {
+      this.centerMapProperly();
+    }, 100);
   }
 
   private async switchBaseMap(mapId: string | undefined | null) {
@@ -92,35 +114,27 @@ export class ParticipantMapComponent implements OnInit, OnChanges {
       this.northEast = this.northEast || this.defaultNorthEast;
       this.southWest = this.southWest || this.defaultSouthWest;
 
-      // Usuń poprzednią warstwę jeśli istnieje
       if (this.currentTileLayer && this.map.hasLayer(this.currentTileLayer)) {
           this.map.removeLayer(this.currentTileLayer);
       }
 
-      if (this.useIndexedDb) {
-          // Użyj warstwy z IndexedDB
-          this.currentTileLayer = idbTileLayer(this.tileDb, mapId, {
-              minZoom: this.minZoom,
-              maxZoom: this.maxZoom
-          });
-      } else {
-          // Fallback do assets jako backup
-          const url = `assets/maps/${mapId}/{z}/{x}/{y}.png`;
-          this.currentTileLayer = L.tileLayer(url, {
-              minZoom: this.minZoom,
-              maxZoom: this.maxZoom,
-          });
-      }
+      this.currentTileLayer = idbTileLayer(this.tileDb, mapId, {
+          minZoom: this.minZoom,
+          maxZoom: this.maxZoom
+      });
 
       this.currentTileLayer.addTo(this.map);
   
-      let bounds = L.latLngBounds(L.latLng(this.southWest?.[0], this.southWest?.[1]), L.latLng(this.northEast?.[0], this.northEast?.[1]));
-      
       this.map.setMinZoom(this.minZoom);
       this.map.setMaxZoom(this.maxZoom);
-      this.map.setMaxBounds(bounds);
-      this.map.panTo(bounds.getCenter());
-      this.map.setZoom(this.minZoom);
+      
+      this.currentTileLayer.once('load', () => {
+        this.centerMapProperly();
+      });
+
+      setTimeout(() => {
+        this.centerMapProperly();
+      }, 500);
     }
 
   private addStations(stations: Station[]) {
@@ -132,6 +146,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges {
 
         const circle = L.circle(coordinates, {
           color: '#ff2e00',
+          fillColor: '#ff2e00',
           radius: 1,
           interactive: false,
         })
@@ -141,7 +156,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges {
         const interactiveCircle = L.circle(coordinates, {
           color: 'transparent',
           fillColor: 'transparent',
-          radius: 50,
+          radius: 30,
           interactive: true
         })
 
@@ -150,8 +165,124 @@ export class ParticipantMapComponent implements OnInit, OnChanges {
                   </div>
                   <span>${station.properties['note']}</span>`
 
-        interactiveCircle.bindPopup(popup)
+        const leafletPopup = L.popup().setContent(popup);
+        interactiveCircle.bindPopup(leafletPopup);
+        
+        interactiveCircle.on('popupopen', (e) => {
+          const openedPopup = e.popup;
+          if (!this.openPopups.includes(openedPopup)) {
+            this.openPopups.push(openedPopup);
+          }
+        });
+
+        interactiveCircle.on('popupclose', (e) => {
+          const closedPopup = e.popup;
+          const index = this.openPopups.indexOf(closedPopup);
+          if (index > -1) {
+            this.openPopups.splice(index, 1);
+          }
+        });
+
         interactiveCircle.addTo(this.map)
+    }
+    
+    setTimeout(() => {
+      this.centerMapProperly();
+    }, 200);
+  }
+
+  public resetMapView(): void {
+    this.closeAllPopups(); 
+    this.centerMapProperly(); 
+  }
+
+  public hidePopups(): void {
+    this.closeAllPopups();
+  }
+
+  private centerMapProperly(): void {
+    if (this.map && this.northEast && this.southWest) {
+      const bounds = L.latLngBounds(
+        L.latLng(this.southWest[0], this.southWest[1]),
+        L.latLng(this.northEast[0], this.northEast[1])
+      );
+      
+      this.map.fitBounds(bounds, {
+        padding: [20, 20],
+        maxZoom: this.minZoom || this.defaultMinZoom
+      });
+    }
+  }
+
+  private setupPopupAutoHide(): void {
+    if (!this.map) return;
+
+    this.map.on('click', (e: any) => {
+
+      const target = e.originalEvent?.target as HTMLElement;
+      if (!target || !target.closest('.leaflet-popup')) {
+        this.closeAllPopups();
+      }
+    });
+
+    this.map.on('dragstart', () => {
+      this.closePopupsWithDelay(50);
+    });
+
+    this.map.on('zoomstart', () => {
+      this.closePopupsWithDelay(50);
+    });
+
+    this.map.on('touchstart', (e: any) => {
+      const target = e.originalEvent?.target as HTMLElement;
+      if (!target || !target.closest('.leaflet-popup')) {
+        this.closeAllPopups();
+      }
+    });
+
+    this.map.on('wheel', () => {
+      this.closeAllPopups();
+    });
+
+    this.documentClickListener = (event: Event) => {
+      const mapElement = document.getElementById('map');
+      if (mapElement && !mapElement.contains(event.target as Node)) {
+        this.closeAllPopups();
+      }
+    };
+    document.addEventListener('click', this.documentClickListener);
+  }
+
+  private closeAllPopups(): void {
+    this.openPopups.forEach(popup => {
+      this.map.closePopup(popup);
+    });
+    this.openPopups = [];
+  }
+
+  private closePopupsWithDelay(delay: number = 100): void {
+    if (this.hidePopupsTimeout) {
+      clearTimeout(this.hidePopupsTimeout);
+    }
+    
+    this.hidePopupsTimeout = window.setTimeout(() => {
+      this.closeAllPopups();
+    }, delay);
+  }
+
+  ngOnDestroy(): void {
+    if (this.hidePopupsTimeout) {
+      clearTimeout(this.hidePopupsTimeout);
+    }
+    
+    if (this.documentClickListener) {
+      document.removeEventListener('click', this.documentClickListener);
+    }
+    
+    this.closeAllPopups();
+    
+    if (this.map) {
+      this.map.remove();
     }
   }
 }

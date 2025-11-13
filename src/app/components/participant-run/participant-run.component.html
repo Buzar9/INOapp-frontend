@@ -25,6 +25,7 @@
   </div>
 
   <participant-map
+    #mapComponent
     [stationsToShow]="stationsToShow"
     [backgroundMapId]="backgroundMap?.id"
     [minZoom]="backgroundMap?.minZoom"
@@ -33,13 +34,26 @@
     [southWest]="backgroundMap?.southWest">
   </participant-map>
 
+  <!-- Przycisk reset po lewej stronie -->
+  <button
+    *ngIf="!isRunFinished"
+    pButton
+    pRipple
+    type="button"
+    icon="pi pi-home"
+    class="reset-view-button p-button-rounded floating-left"
+    title="Powrót do centrum mapy"
+    (click)="resetMapView()">
+  </button>
+
+  <!-- Przycisk QR po prawej stronie -->
   <button
     *ngIf="!isRunFinished"
     pButton
     pRipple
     type="button"
     icon="pi pi-qrcode"
-    class="qr-scanner-icon p-button-rounded"
+    class="qr-scanner-icon p-button-rounded floating-right"
     title="Skanuj kod QR"
     (click)="toggleScanner()">
   </button>
