@@ -1,14 +1,14 @@
 <div class="container">
-  <div class="top-texts">
-    <span *ngIf="wasRunActivate" title="Czas biegu">
+  <div class="top-texts" *ngIf="wasRunActivate">
+    <span title="Czas biegu">
       <i class="pi pi-stopwatch"></i>
       {{raceTimeDisplay}}
     </span>
-    <span *ngIf="wasRunActivate && !isRunFinished" title="Aktualny czas">
+    <span *ngIf="!isRunFinished" title="Aktualny czas">
       <i class="pi pi-clock"></i>
       {{currentTime}}
     </span>
-    <span *ngIf="wasRunActivate" title="Punkty kontrolne">
+    <span title="Punkty kontrolne">
       <i class="pi pi-star"></i>
       {{checkpointsNumber}}
     </span>
