@@ -1,26 +1,61 @@
-<div class="container">
-  <ngx-scanner-qrcode #action="scanner" [config]="config" (event)="onEvent($event, action)"></ngx-scanner-qrcode>
-  <p *ngIf="action.isLoading">⌛ Loading...</p>
+<div class="scanner-container">
+  <!-- Scanner area -->
+  <div class="scanner-area">
+    <ngx-scanner-qrcode #action="scanner" [config]="config" (event)="onEvent($event, action)"></ngx-scanner-qrcode>
+    
+    <!-- Loading indicator during scanner initialization -->
+    <div *ngIf="action.isLoading" class="loading-overlay">
+      <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+      <p class="loading-text">Uruchamianie kamery...</p>
+    </div>
+  </div>
 
-  <button pButton pRipple class="btn" [class.btn-info]="!action.isStart" [class.btn-warning]="action.isStart"
-          [disabled]="action.isLoading" icon="pi pi-camera" (click)="handle(action, action.isStart ? 'stop' : 'start')">
-  </button>
+  <!-- Controls -->
+  <div class="controls">
+    <button pButton pRipple 
+            class="control-button camera-button" 
+            [class.active]="action.isStart"
+            [disabled]="action.isLoading" 
+            icon="pi pi-camera" 
+            (click)="handle(action, action.isStart ? 'stop' : 'start')"
+            pTooltip="{{action.isStart ? 'Zatrzymaj' : 'Uruchom'}} kamerę"
+            tooltipPosition="bottom">
+    </button>
 
-  <button pButton pRipple class="btn" [class.btn-info]="!action.isStart" [class.btn-warning]="action.isStart"
-          [disabled]="!action.isStart" icon="pi pi-bolt" (click)="action.isTorch = !action.isTorch; handle(action, 'torcher')">
-  </button>
+    <button pButton pRipple 
+            *ngIf="action.isStart"
+            class="control-button flash-button" 
+            [class.active]="action.isTorch"
+            icon="pi pi-bolt" 
+            (click)="action.isTorch = !action.isTorch; handle(action, 'torcher')"
+            pTooltip="{{action.isTorch ? 'Wyłącz' : 'Włącz'}} latarkę"
+            tooltipPosition="bottom">
+    </button>
 
-  <button pButton pRipple type="button" icon="pi pi-times" (click)="closeScanner()">
-  </button>
-  <br>
+    <button pButton pRipple 
+            class="control-button file-button" 
+            icon="pi pi-folder-open" 
+            (click)="fileInput.click()"
+            pTooltip="Wybierz plik z QR kodem"
+            tooltipPosition="bottom">
+    </button>
 
-  <!-- dodo tylko do testów -->
-  <input #file type="file" (change)="onSelects(file.files)" [multiple]="'multiple'" [accept]="'.jpg, .png, .gif, .jpeg'"
-         class="btn btn-success my-2"/>
+    <button pButton pRipple 
+            class="control-button close-button" 
+            icon="pi pi-times" 
+            (click)="closeScanner()"
+            pTooltip="Zamknij skaner"
+            tooltipPosition="bottom">
+    </button>
+  </div>
 
-  <div *ngFor="let item of qrCodeResult">
+  <!-- Hidden file input -->
+  <input #fileInput type="file" (change)="onSelects(fileInput.files)" [multiple]="'multiple'" [accept]="'.jpg, .png, .gif, .jpeg'"
+         style="display: none;"/>
+
+  <!-- File scan results -->
+  <div *ngFor="let item of qrCodeResult" class="file-scan-result">
     <ngx-scanner-qrcode #actionFile="scanner" [src]="item.url" [config]="config"
                         (event)="onEvent($event)"></ngx-scanner-qrcode>
-
   </div>
 </div>

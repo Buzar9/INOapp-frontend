@@ -1,20 +1,50 @@
-<div class="start-screen">
-  <h1>Witaj w INOapp!</h1>
-  <div *ngIf="showScanner">
-    <span>Zeskanuj kod QR od organizatora, aby rozpocząć bieg</span>
-    <qr-scanner (qrCodeScanned)="receiveInitScan($event)"></qr-scanner>
+<div class="main-screen">
+  <!-- Ekran instrukcji - domyślny widok -->
+  <div *ngIf="!showScanner && !showForm && !isLoading" class="instructions-section">    
+    <div class="instruction-content">
+      <h2>Przed rozpoczęciem</h2>
+      <p>Udaj się do organizatora zawodów po kod QR. Kod zawiera informacje kategorii w jakiej bierzesz udział.</p>
+    </div>
+    
+    <div class="button-container">
+      <button pButton label="Zeskanuj kod QR" (click)="toggleScanner()" class="scan-button"></button>
+    </div>
   </div>
-  <div>
-    <form *ngIf="showForm" [formGroup]="participantForm" (ngSubmit)="onSubmit()">
-      <input type="text" pInputText formControlName="participantName" placeholder="Twój pseudonim"/>
-      <button pButton type="submit" [disabled]="participantForm.invalid || isLoading">
-        <i *ngIf="isLoading" class="pi pi-spin pi-spinner"></i>
-        <span>{{isLoading ? 'Pobieranie mapy...' : 'Rozpocznij'}}</span>
-      </button>
+
+  <!-- Ekran skanera -->
+  <div *ngIf="showScanner" class="scanner-section">
+    <div class="scanner-header">
+      <h2>Zeskanuj kod QR</h2>
+      <p>Skieruj kamerę na kod QR otrzymany od organizatora</p>
+    </div>
+    <qr-scanner (qrCodeScanned)="receiveInitScan($event)" (close)="toggleScanner()"></qr-scanner>
+  </div>
+
+  <!-- Formularz z pseudonimem -->
+  <div *ngIf="showForm && !isLoading" class="form-section">
+    <div class="form-header">
+      <h2>Prawie gotowe!</h2>
+      <p>Wpisz swój pseudonim i rozpocznij bieg</p>
+    </div>
+    
+    <form [formGroup]="participantForm" (ngSubmit)="onSubmit()">
+      <div class="input-container">
+        <input type="text" pInputText formControlName="participantName" placeholder="Twój pseudonim" class="participant-input"/>
+      </div>
+      <div class="button-container">
+        <button pButton type="submit" [disabled]="participantForm.invalid || isLoading" class="start-button">
+          <span>Rozpocznij bieg</span>
+        </button>
+      </div>
     </form>
-    <div *ngIf="isLoading" class="loading-indicator">
-        <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
-        <p>Trwa pobieranie mapy, proszę czekać...</p>
+  </div>
+
+  <!-- Loading indicator -->
+  <div *ngIf="isLoading" class="loading-section">
+    <div class="loading-content">
+      <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+      <h2>Przygotowujemy mapę...</h2>
+      <p>Trwa pobieranie danych o trasie, proszę czekać</p>
     </div>
   </div>
 </div>

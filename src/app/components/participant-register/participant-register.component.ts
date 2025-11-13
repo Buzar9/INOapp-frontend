@@ -26,7 +26,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
     styleUrl: './participant-register.component.css'
 })
 export class ParticipantRegisterComponent {
-    showScanner: boolean = true;
+    showScanner: boolean = false;
     showForm: boolean = false;
     isLoading: boolean = false;
     participantForm: FormGroup
@@ -41,6 +41,10 @@ export class ParticipantRegisterComponent {
             participantName: ['']
         })
         }
+
+    toggleScanner() {
+        this.showScanner = !this.showScanner;
+    }
 
     async receiveInitScan(scan: string) {
         this.showScanner = false;

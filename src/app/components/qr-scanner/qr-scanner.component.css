@@ -1,0 +1,267 @@
+/* QR Scanner Component Styles - Mobile Optimized */
+.scanner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 0;
+}
+
+/* Scanner area with loading overlay */
+.scanner-area {
+  position: relative;
+  width: 100%;
+  max-width: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+ngx-scanner-qrcode {
+  width: 100%;
+  max-height: 300px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-dark, #1a1a1a);
+}
+
+/* Loading overlay during scanner initialization */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  z-index: 10;
+}
+
+.loading-text {
+  color: var(--color-text-light, #ffffff);
+  font-family: 'Special Elite', monospace;
+  font-size: 1rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* Controls section */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 350px;
+}
+
+/* Unified button styles - nadpisanie PrimeNG */
+.control-button.p-button {
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 50% !important;
+  background: var(--color-accent, #b87333) !important;
+  border: 2px solid var(--color-accent, #b87333) !important;
+  color: var(--color-text-light, #ffffff) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.2rem !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(184, 115, 51, 0.3) !important;
+}
+
+.control-button.p-button:hover:not(:disabled) {
+  background: var(--color-accent-hover, #d2691e) !important;
+  border-color: var(--color-accent-hover, #d2691e) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(210, 105, 30, 0.4) !important;
+}
+
+.control-button.p-button:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 4px 15px rgba(184, 115, 51, 0.3) !important;
+}
+
+.control-button.p-button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Active state for toggle buttons */
+.control-button.p-button.active {
+  background: var(--color-accent-hover, #d2691e) !important;
+  border-color: var(--color-accent-hover, #d2691e) !important;
+  box-shadow: 0 6px 20px rgba(210, 105, 30, 0.4) !important;
+}
+
+/* Specific button styling */
+.camera-button .pi-camera {
+  font-size: 1.2rem;
+}
+
+.flash-button .pi-bolt {
+  font-size: 1.2rem;
+}
+
+.close-button.p-button {
+  background: var(--color-danger, #dc3545) !important;
+  border-color: var(--color-danger, #dc3545) !important;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2) !important;
+}
+
+.close-button.p-button:hover:not(:disabled) {
+  background: #c82333 !important;
+  border-color: #c82333 !important;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4) !important;
+}
+
+.close-button .pi-times {
+  font-size: 1.2rem;
+}
+
+.file-button .pi-folder-open {
+  font-size: 1.2rem;
+}
+
+/* File scan results */
+.file-scan-result {
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 350px;
+}
+
+/* Progress Spinner customization */
+::ng-deep .custom-spinner .p-progress-spinner-circle {
+  stroke: var(--color-accent, #b87333) !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .scanner-container {
+    gap: 1.2rem;
+    padding: 0 1rem;
+  }
+  
+  .scanner-area {
+    max-width: 320px;
+  }
+  
+  ngx-scanner-qrcode {
+    max-height: 280px;
+  }
+  
+  .controls {
+    gap: 1.2rem;
+    max-width: 280px;
+  }
+  
+  .control-button.p-button {
+    width: 55px !important;
+    height: 55px !important;
+    font-size: 1.1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .scanner-container {
+    gap: 1rem;
+    padding: 0 0.5rem;
+  }
+  
+  .scanner-area {
+    max-width: 280px;
+  }
+  
+  ngx-scanner-qrcode {
+    max-height: 250px;
+  }
+  
+  .controls {
+    gap: 1rem;
+    max-width: 240px;
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
+  
+  .control-button.p-button {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1rem !important;
+  }
+  
+  .loading-text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .scanner-area {
+    max-width: 250px;
+  }
+  
+  ngx-scanner-qrcode {
+    max-height: 220px;
+  }
+  
+  .controls {
+    gap: 0.8rem;
+    max-width: 200px;
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
+  
+  .control-button.p-button {
+    width: 45px !important;
+    height: 45px !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+@media (max-width: 320px) {
+  .controls {
+    gap: 0.6rem;
+    max-width: 180px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .control-button.p-button {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+  .scanner-container {
+    gap: 0.8rem;
+  }
+  
+  .scanner-area {
+    max-width: 250px;
+  }
+  
+  ngx-scanner-qrcode {
+    max-height: 180px;
+  }
+  
+  .control-button.p-button {
+    width: 45px !important;
+    height: 45px !important;
+  }
+  
+  .loading-text {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+}

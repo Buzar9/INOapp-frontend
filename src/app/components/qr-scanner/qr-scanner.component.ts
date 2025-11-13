@@ -7,14 +7,15 @@ import {
   NgxScannerQrcodeComponent,
   ScannerQRCodeSelectedFiles,
 } from 'ngx-scanner-qrcode';
-import { SafePipe } from './safe.pipe';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'qr-scanner',
   templateUrl: './qr-scanner.component.html',
-  imports: [NgxScannerQrcodeComponent, SafePipe, CommonModule, ButtonModule, RippleModule],
+  imports: [NgxScannerQrcodeComponent, CommonModule, ButtonModule, RippleModule, ProgressSpinnerModule, TooltipModule],
 })
 export class QrScannerComponent implements AfterViewInit {
   @Output() qrCodeScanned = new EventEmitter<any>();
@@ -42,8 +43,9 @@ export class QrScannerComponent implements AfterViewInit {
   }
 
   public onEvent(scanResult: ScannerQRCodeResult[], action?: any): void {
-    if (action != undefined) {
-      action['stop']();
+    // Zatrzymaj kamerę przed wysłaniem wyniku
+    if (this.action && this.action.isStart) {
+      this.action.stop();
     }
 
     this.qrCodeScanned.emit(scanResult[0].value)
@@ -70,6 +72,10 @@ export class QrScannerComponent implements AfterViewInit {
   }
 
   closeScanner() {
+    // Zatrzymaj kamerę przed zamknięciem skanera
+    if (this.action && this.action.isStart) {
+      this.action.stop();
+    }
     this.close.emit();
   }
 }
