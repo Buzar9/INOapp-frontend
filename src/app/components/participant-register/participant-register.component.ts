@@ -64,6 +64,9 @@ export class ParticipantRegisterComponent {
     // dodo qr do podgladu mapy na trasie po zakonczonym biegu
 
     onSubmit() {
+        // Natychmiast włącz loading
+        this.isLoading = true;
+        
         this.participantStateService.setParticipantName(this.participantForm.value)
         let formData = this.participantStateService.getData()
         
@@ -76,9 +79,6 @@ export class ParticipantRegisterComponent {
 
         this.participantSendService.initiateRun(request).subscribe ({
             next: async (response) => {
-                // Włącz loading podczas pobierania mapy
-                this.isLoading = true;
-                
                 this.setLocalStorageItem('categoryId', formData.categoryId)
                 this.setLocalStorageItem('runId', response.runId)
                 
