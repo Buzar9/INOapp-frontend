@@ -76,13 +76,27 @@ export class ParticipantRegisterComponent {
 
         this.participantSendService.initiateRun(request).subscribe ({
             next: async (response) => {
+                // Włącz loading podczas pobierania mapy
+                this.isLoading = true;
+                
                 this.setLocalStorageItem('categoryId', formData.categoryId)
                 this.setLocalStorageItem('runId', response.runId)
-                await this.mapDownloader.downloadMap(response.backgroundMapId)
-                this.router.navigate(['/participant/scan']);
-                console.log('dodo response', response)
+                
+                try {
+                    await this.mapDownloader.downloadMap(response.backgroundMapId)
+                    this.router.navigate(['/participant/scan']);
+                    console.log('dodo response', response)
+                } catch (error) {
+                    console.error('Błąd podczas pobierania mapy:', error);
+                } finally {
+                    // Wyłącz loading niezależnie od wyniku
+                    this.isLoading = false;
+                }
             },
-            error: (err) => console.log('dodo error', err)
+            error: (err) => {
+                console.log('dodo error', err)
+                this.isLoading = false;
+            }
         })
     }
 
