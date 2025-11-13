@@ -8,7 +8,7 @@ import { ButtonModule } from 'primeng/button';
   standalone: true,
   imports: [ButtonModule],
   templateUrl: './welcome-screen.component.html',
-  styleUrls: []
+  styleUrls: ['./welcome-screen.component.css']
 })
 export class WelcomeScreenComponent {
     constructor(private router: Router) {}

@@ -31,10 +31,11 @@
 body {
   position: relative;
   min-height: 100vh;
+  width: 100%;
   font-family: 'Special Elite', monospace;
   background: var(--color-bg);
   color: var(--color-text);
-  overflow: auto;
+  overflow-x: hidden;
   line-height: 1.5;
 }
 

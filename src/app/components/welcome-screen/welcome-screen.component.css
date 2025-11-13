@@ -1,0 +1,332 @@
+/* =========================
+   WELCOME SCREEN COMPONENT
+   ========================= */
+
+/* Reset dla mobilnych przeglądarek */
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+}
+
+.main-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--color-bg) 0%, #0a1a0d 100%);
+  text-align: center;
+  gap: 1.5rem;
+  box-sizing: border-box;
+}
+
+/* Kontener tekstu powitalnego */
+.welcome-text {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.welcome-text h1 {
+  font-family: 'Special Elite', monospace;
+  font-size: 2.8rem;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.welcome-text .subtitle {
+  font-size: 1.1rem;
+  color: var(--color-text);
+  font-weight: 300;
+  line-height: 1.4;
+  max-width: 400px;
+  margin: 0 auto;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Sekcja z pytaniem o rolę */
+.role-question {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.role-question h2 {
+  font-family: 'Special Elite', monospace;
+  font-size: 1.4rem;
+  color: var(--color-text-light);
+  font-weight: 400;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.05em;
+}
+
+/* Stylizacja przycisków */
+.main-screen .p-button {
+  min-width: 200px;
+  min-height: 60px;
+  font-size: 1.2rem;
+  font-family: 'Special Elite', monospace;
+  background: var(--color-accent);
+  border: 2px solid var(--color-accent);
+  color: var(--color-text-light);
+  border-radius: var(--radius);
+  transition: var(--transition);
+  box-shadow: 0 4px 15px rgba(184, 115, 51, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.main-screen .p-button:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(210, 105, 30, 0.4);
+}
+
+.main-screen .p-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.5);
+}
+
+.main-screen .p-button:active {
+  transform: translateY(0);
+}
+
+/* Kontener przycisków */
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+   ========================= */
+
+/* Tablety pionowe (768px i mniej) */
+@media (max-width: 768px) {
+  .main-screen {
+    padding: 1.5rem 1rem;
+    gap: 1.2rem;
+  }
+  
+  .welcome-text {
+    margin-bottom: 1.2rem;
+  }
+  
+  .welcome-text h1 {
+    font-size: 2.2rem;
+  }
+  
+  .welcome-text .subtitle {
+    font-size: 1rem;
+    max-width: 350px;
+  }
+  
+  .role-question {
+    margin-bottom: 1.2rem;
+  }
+  
+  .role-question h2 {
+    font-size: 1.3rem;
+  }
+  
+  .main-screen .p-button {
+    min-width: 180px;
+    min-height: 55px;
+    font-size: 1.1rem;
+  }
+}
+
+/* Telefony poziome (480px i mniej) */
+@media (max-width: 480px) {
+  .main-screen {
+    padding: 1rem 0.75rem;
+    gap: 1rem;
+  }
+  
+  .welcome-text {
+    margin-bottom: 1rem;
+  }
+  
+  .welcome-text h1 {
+    font-size: 1.8rem;
+    line-height: 1.2;
+  }
+  
+  .welcome-text .subtitle {
+    font-size: 0.9rem;
+    max-width: 300px;
+  }
+  
+  .role-question {
+    margin-bottom: 1rem;
+  }
+  
+  .role-question h2 {
+    font-size: 1.2rem;
+  }
+  
+  .main-screen .p-button {
+    min-width: 160px;
+    min-height: 50px;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Małe telefony (360px i mniej) */
+@media (max-width: 360px) {
+  .main-screen {
+    padding: 0.75rem 0.5rem;
+    gap: 0.8rem;
+  }
+  
+  .welcome-text {
+    margin-bottom: 0.8rem;
+  }
+  
+  .welcome-text h1 {
+    font-size: 1.6rem;
+  }
+  
+  .welcome-text .subtitle {
+    font-size: 0.85rem;
+    max-width: 280px;
+  }
+  
+  .role-question {
+    margin-bottom: 0.8rem;
+  }
+  
+  .role-question h2 {
+    font-size: 1.1rem;
+  }
+  
+  .main-screen .p-button {
+    min-width: 140px;
+    min-height: 48px;
+    font-size: 0.9rem;
+    padding: 0.7rem 0.8rem;
+  }
+}
+
+/* Bardzo małe ekrany (320px i mniej) */
+@media (max-width: 320px) {
+  .main-screen {
+    padding: 0.5rem;
+    gap: 0.7rem;
+  }
+  
+  .welcome-text {
+    margin-bottom: 0.7rem;
+  }
+  
+  .welcome-text h1 {
+    font-size: 1.4rem;
+  }
+  
+  .welcome-text .subtitle {
+    font-size: 0.8rem;
+    max-width: 250px;
+  }
+  
+  .role-question {
+    margin-bottom: 0.7rem;
+  }
+  
+  .role-question h2 {
+    font-size: 1rem;
+  }
+  
+  .main-screen .p-button {
+    min-width: 120px;
+    min-height: 45px;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.7rem;
+  }
+}
+
+/* Orientacja pozioma na telefonach */
+@media (max-height: 500px) and (orientation: landscape) {
+  .main-screen {
+    min-height: 100vh;
+    padding: 0.5rem;
+    gap: 0.3rem;
+  }
+  
+  .welcome-text {
+    margin-bottom: 0.3rem;
+  }
+  
+  .welcome-text h1 {
+    font-size: 1.5rem;
+  }
+  
+  .welcome-text .subtitle {
+    font-size: 0.8rem;
+    max-width: 300px;
+  }
+  
+  .role-question {
+    margin-bottom: 0.3rem;
+  }
+  
+  .role-question h2 {
+    font-size: 1rem;
+  }
+  
+  .main-screen .p-button {
+    min-height: 40px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Accessibility - zwiększony kontrast dla urządzeń z preferencją */
+@media (prefers-contrast: high) {
+  .main-screen .p-button {
+    border-width: 3px;
+    background: #8B4513;
+    border-color: #8B4513;
+  }
+  
+  .main-screen .p-button:hover {
+    background: #A0522D;
+    border-color: #A0522D;
+  }
+}
+
+/* Redukcja animacji dla użytkowników z preferencją */
+@media (prefers-reduced-motion: reduce) {
+  .main-screen .p-button {
+    transition: none;
+  }
+  
+  .main-screen .p-button:hover {
+    transform: none;
+  }
+}
+
+
+
+/* Optymalizacja dla urządzeń dotykowych */
+@media (hover: none) {
+  .main-screen .p-button:hover {
+    transform: none;
+  }
+  
+  .main-screen .p-button:active {
+    background: var(--color-accent-hover);
+  }
+}
