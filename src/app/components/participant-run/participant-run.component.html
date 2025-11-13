@@ -1,4 +1,17 @@
 <div class="container">
+  <div class="orientation-warning-container" *ngIf="isPortraitMode && showOrientationWarning">
+    <p-message 
+      severity="warn" 
+      styleClass="orientation-message"
+      [closable]="true"
+      (onClose)="dismissOrientationWarning()">
+      <div class="message-content">
+        <i class="pi pi-mobile rotating-phone"></i>
+        <span class="message-text">Obróć urządzenie poziomo</span>
+      </div>
+    </p-message>
+  </div>
+
   <div class="top-texts" *ngIf="wasRunActivate">
     <span title="Czas biegu">
       <i class="pi pi-stopwatch"></i>

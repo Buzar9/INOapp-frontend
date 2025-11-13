@@ -50,12 +50,15 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // z kazdym odswiezeniem probuje to inicjalizowac co wywoluje blad
-    console.log('dodo init map', this.backgroundMapId)
     this.initMap();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    // Sprawdź czy mapa została już zainicjalizowana
+    if (!this.map) {
+      return;
+    }
+
     if (changes['backgroundMapId']) {
       this.switchBaseMap(this.backgroundMapId);
     }
@@ -100,6 +103,10 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
 
     this.map.whenReady(() => {
       this.centerMapProperly();
+
+      if (this.stationsToShow && this.stationsToShow.length > 0) {
+        this.addStations(this.stationsToShow);
+      }
     });
 
     setTimeout(() => {
@@ -138,7 +145,11 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     }
 
   private addStations(stations: Station[]) {
-       for (const station of stations) {
+    if (!this.map || !stations || stations.length === 0) {
+      return;
+    }
+    
+    for (const station of stations) {
         const lat = station.geometry.coordinates[1]
         const lng = station.geometry.coordinates[0]
 

@@ -9,6 +9,7 @@
   import { ParticipantMapComponent } from '../map/participant-map.component';
   import { ButtonModule } from 'primeng/button';
   import { RippleModule } from 'primeng/ripple';
+  import { MessageModule } from 'primeng/message';
 import { QrScannerComponent } from '../qr-scanner/qr-scanner.component';
 import { AddControlPointRequest } from '../../services/request/AddControlPointRequest';
 
@@ -21,7 +22,7 @@ import { ViewChild } from '@angular/core';
   @Component({
     selector: 'participant',
     standalone: true,
-    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, QrScannerComponent],
+    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, QrScannerComponent],
     templateUrl: './participant-run.component.html',
     styleUrls: ['./participant-run.component.css']
   })
@@ -32,11 +33,11 @@ import { ViewChild } from '@angular/core';
 
     stationsToShow: Station[] = []
 
-    showScanner: boolean = false;
-    wasRunActivate: boolean = false;
-    isRunFinished: boolean = false;
-
-    runStartTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
+  showScanner: boolean = false;
+  wasRunActivate: boolean = false;
+  isRunFinished: boolean = false;
+  isPortraitMode: boolean = false;
+  showOrientationWarning: boolean = true;    runStartTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
     runFinishTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
     raceTimeDisplay: string = '00:00';
     currentTime: string = '';
@@ -93,6 +94,12 @@ import { ViewChild } from '@angular/core';
         this.isOnline = status;
         this.retryPendingRequests()
       });
+
+      this.checkOrientation();
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => this.checkOrientation(), 100);
+      });
+      window.addEventListener('resize', () => this.checkOrientation());
     }
   
     ngOnDestroy(): void {
@@ -254,5 +261,21 @@ import { ViewChild } from '@angular/core';
     if (this.mapComponent) {
       this.mapComponent.resetMapView();
     }
+  }
+
+  private checkOrientation(): void {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    this.isPortraitMode = isPortrait;
+    
+    if (isPortrait) {
+      this.showOrientationWarning = true;
+    } else {
+      this.showOrientationWarning = false;
+    }
+  }
+
+  dismissOrientationWarning(): void {
+    this.showOrientationWarning = false;
   }
 }
