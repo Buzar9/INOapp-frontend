@@ -4,13 +4,13 @@ import { ButtonModule } from 'primeng/button';
 import { BackofficeSendService } from '../../services/backoffice-send-service';
 import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
-import { toDataURL } from 'qrcode';
 import { Category } from '../../services/response/Category';
 import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card'
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Unit } from '../../services/response/Unit';
 import { MultiSelect } from 'primeng/multiselect';
+import { QrCodeGeneratorService } from '../../services/qr-code-generator.service';
 
 
 @Component({
@@ -35,7 +35,8 @@ export class OrganizerUnitsComponent implements OnInit {
 
     constructor(
         private formBuilder: FormBuilder,
-        private backofficeSendService: BackofficeSendService
+        private backofficeSendService: BackofficeSendService,
+        private qrCodeGenerator: QrCodeGeneratorService
     ) {
         this.addUnitForm = this.formBuilder.group({
             name: ['']
@@ -106,14 +107,13 @@ export class OrganizerUnitsComponent implements OnInit {
 
     onQrCodeDownloadClick() {
         for (let category of this.selectedCategories) {
-            const fileName = `INIT-${this.selectedUnit?.name}-${category.name}`
             const data = JSON.stringify({
                 competitionId: "Competition123", 
                 categoryId: category.id, 
                 participantUnitName: this.selectedUnit?.name
             })
 
-            this.downloadQrCode(fileName, data)
+            this.downloadQrCode(category, data)
         }
 
         this.selectedCategories = []
@@ -121,17 +121,11 @@ export class OrganizerUnitsComponent implements OnInit {
         this.showGenerateQrCodeDialog = false
     }
 
-    private async downloadQrCode(fileName: string, data: string) {
-        const dataUrl = await toDataURL(data, {
-        errorCorrectionLevel: 'M',
-        width: 256,
-        margin: 3
-        });
-
-        const a = document.createElement('a');
-        a.href = dataUrl;
-
-        a.download = `${fileName}.png`;
-        a.click();
-  }
+    private async downloadQrCode(category: Category, data: string) {
+        await this.qrCodeGenerator.generateQrCodeWithText(
+            data,
+            `INIT - ${this.selectedUnit?.name || ''}`,
+            category.name
+        );
+    }
 }

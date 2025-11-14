@@ -10,7 +10,6 @@ import { TableModule, TableRowCollapseEvent, TableRowExpandEvent } from 'primeng
 import { Route } from '../../services/response/Route';
 import { Station } from '../../services/response/Station';
 import { SplitterModule } from 'primeng/splitter';
-import { toDataURL } from 'qrcode';
 import { TabsModule } from 'primeng/tabs';
 import { Category } from '../../services/response/Category';
 import { RouteOption } from '../../services/response/RouteOption';

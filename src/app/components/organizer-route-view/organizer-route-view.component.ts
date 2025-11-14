@@ -12,14 +12,13 @@ import { Coordinates } from '../model/Coordinates';
 import { Station } from '../../services/response/Station';
 import { SplitterModule } from 'primeng/splitter';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { toDataURL } from 'qrcode';
 import { TabsModule } from 'primeng/tabs';
 import { DictionaryModel } from '../../services/response/DictionaryModel';
 import { DropdownModule } from 'primeng/dropdown';
 import { Select } from 'primeng/select';
 import { BackgroundMapOption } from '../../services/response/BackgroundMapOption';
-// import { MapDownloaderService } from '../../services/map-downloader.service';
 import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
+import { QrCodeGeneratorService } from '../../services/qr-code-generator.service';
 
 
 @Component({
@@ -57,7 +56,8 @@ export class OrganizerRouteViewComponent implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private backofficeSendService: BackofficeSendService,
-    private mapDownloader: MapDownloaderService
+    private mapDownloader: MapDownloaderService,
+    private qrCodeGenerator: QrCodeGeneratorService
   ) {
       this.addRouteForm = this.formBuilder.group({
         name: [''],
@@ -350,20 +350,15 @@ export class OrganizerRouteViewComponent implements OnInit {
     }
   }
 
-  // dodo totalnie wywalic do komponentu
   async onQrCodeStationGenerateClick(station: Station) {
-    const dataUrl = await toDataURL(station.properties["id"], {
-      errorCorrectionLevel: 'M',
-      width: 256,
-      margin: 3
-    });
-
-    const a = document.createElement('a');
-    a.href = dataUrl;
-
-    const fileName = `${this.selectedRoute?.name}-${station.properties["name"]}`
-    a.download = `${fileName}.png`;
-    a.click();
+    const routeName = this.selectedRoute?.name || '';
+    const stationName = station.properties["name"] || '';
+    
+    await this.qrCodeGenerator.generateQrCodeWithText(
+      station.properties["id"],
+      routeName,
+      stationName
+    );
   }
 
   private selectRoute(route: Route) {
