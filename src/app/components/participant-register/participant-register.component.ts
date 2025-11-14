@@ -59,12 +59,7 @@ export class ParticipantRegisterComponent {
         })
     }
 
-
-
-    // dodo qr do podgladu mapy na trasie po zakonczonym biegu
-
     onSubmit() {
-        // Natychmiast włącz loading
         this.isLoading = true;
         
         this.participantStateService.setParticipantName(this.participantForm.value)
@@ -89,7 +84,6 @@ export class ParticipantRegisterComponent {
                 } catch (error) {
                     console.error('Błąd podczas pobierania mapy:', error);
                 } finally {
-                    // Wyłącz loading niezależnie od wyniku
                     this.isLoading = false;
                 }
             },

@@ -44,7 +44,7 @@ import { ViewChild } from '@angular/core';
     raceTimeDisplay: string = '00:00';
     currentTime: string = '';
 
-    checkpointsNumber: number = 0
+    checkpointsNumber: number = Number(this.getLocalStorageItem('checkpointsNumber')) || 0;
   
     isOnline: boolean = navigator.onLine;
     // dodo mock
@@ -63,6 +63,20 @@ import { ViewChild } from '@angular/core';
     private networkService: NetworkService,
     private tileDbService: TileDbService,
   ){}    ngOnInit(): void {
+      const savedWasRunActivate = this.getLocalStorageItem('wasRunActivate');
+      const savedIsRunFinished = this.getLocalStorageItem('isRunFinished');
+      const savedRaceTimeDisplay = this.getLocalStorageItem('raceTimeDisplay');
+      
+      if (savedWasRunActivate === 'true') {
+        this.wasRunActivate = true;
+      }
+      if (savedIsRunFinished === 'true') {
+        this.isRunFinished = true;
+      }
+      if (savedRaceTimeDisplay) {
+        this.raceTimeDisplay = savedRaceTimeDisplay;
+      }
+      
       let stationRequest = {
         categoryId: this.getLocalStorageItem('categoryId')
       }
@@ -85,7 +99,7 @@ import { ViewChild } from '@angular/core';
 
       this.timerSubscription = interval(1000).subscribe(() => {
         const now = new Date();
-        this.currentTime = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+        this.currentTime = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: false});
         if (this.runStartTime > 0 && this.wasRunActivate) {
           const elapsed = Date.now() - this.runStartTime;
           this.raceTimeDisplay = this.formatTime(elapsed);
@@ -201,14 +215,19 @@ import { ViewChild } from '@angular/core';
 
     if (response.checkpointsNumber != null) {
       this.checkpointsNumber = response.checkpointsNumber
+      this.setLocalStorageItem('checkpointsNumber', `${response.checkpointsNumber}`)
     }
 
     if(response.mainTime != null || response.mainTime != undefined) {
       this.raceTimeDisplay = this.formatTime(response.mainTime); 
+      this.setLocalStorageItem('raceTimeDisplay', this.raceTimeDisplay)
     }
 
     this.wasRunActivate = response.wasActivate;
+    this.setLocalStorageItem('wasRunActivate', `${response.wasActivate}`)
+    
     this.isRunFinished = response.isFinished
+    this.setLocalStorageItem('isRunFinished', `${response.isFinished}`)
   }
 
 // dodo kiedy tego uzyc
