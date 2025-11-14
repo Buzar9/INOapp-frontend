@@ -62,6 +62,8 @@ export class ParticipantRegisterComponent {
     onSubmit() {
         this.isLoading = true;
         
+        this.clearOldRunData();
+        
         this.participantStateService.setParticipantName(this.participantForm.value)
         let formData = this.participantStateService.getData()
         
@@ -92,6 +94,15 @@ export class ParticipantRegisterComponent {
                 this.isLoading = false;
             }
         })
+    }
+
+    private clearOldRunData(): void {
+        const keysToRemove = ['wasRunActivate', 'isRunFinished', 'raceTimeDisplay', 'runStartTime', 'checkpointsNumber', 'pendingRequests'];
+        keysToRemove.forEach(key => {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                window.localStorage.removeItem(key);
+            }
+        });
     }
 
     private setLocalStorageItem(key: string, value: string): void {

@@ -1,5 +1,5 @@
   import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
-  import { interval, min, Subscription } from 'rxjs';
+  import { interval, Subscription } from 'rxjs';
 
   import { CommonModule } from '@angular/common';
   import { ParticipantSendService } from '../../services/participant-send-service';
@@ -63,18 +63,22 @@ import { ViewChild } from '@angular/core';
     private networkService: NetworkService,
     private tileDbService: TileDbService,
   ){}    ngOnInit(): void {
-      const savedWasRunActivate = this.getLocalStorageItem('wasRunActivate');
-      const savedIsRunFinished = this.getLocalStorageItem('isRunFinished');
-      const savedRaceTimeDisplay = this.getLocalStorageItem('raceTimeDisplay');
+      const runId = this.getLocalStorageItem('runId');
       
-      if (savedWasRunActivate === 'true') {
-        this.wasRunActivate = true;
-      }
-      if (savedIsRunFinished === 'true') {
-        this.isRunFinished = true;
-      }
-      if (savedRaceTimeDisplay) {
-        this.raceTimeDisplay = savedRaceTimeDisplay;
+      if (runId) {
+        const savedWasRunActivate = this.getLocalStorageItem('wasRunActivate');
+        const savedIsRunFinished = this.getLocalStorageItem('isRunFinished');
+        const savedRaceTimeDisplay = this.getLocalStorageItem('raceTimeDisplay');
+        
+        if (savedWasRunActivate === 'true') {
+          this.wasRunActivate = true;
+        }
+        if (savedIsRunFinished === 'true') {
+          this.isRunFinished = true;
+        }
+        if (savedRaceTimeDisplay) {
+          this.raceTimeDisplay = savedRaceTimeDisplay;
+        }
       }
       
       let stationRequest = {
@@ -82,7 +86,7 @@ import { ViewChild } from '@angular/core';
       }
 
       this.sendService.getStations(stationRequest).subscribe({
-        next: (response) => {this.stationsToShow = response},
+        next: (response) => {this.stationsToShow = response, console.log('dodo stacje', response)},
         error: (err) => console.log('dodo error', err)
       })
 
@@ -264,11 +268,35 @@ import { ViewChild } from '@angular/core';
     }
   }
 
+  private clearRunData(): void {
+    const keysToRemove = ['wasRunActivate', 'isRunFinished', 'raceTimeDisplay', 'runStartTime', 'checkpointsNumber', 'pendingRequests'];
+    keysToRemove.forEach(key => {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(key);
+      }
+    });
+    
+    this.runStartTime = 0;
+    this.runFinishTime = 0;
+    this.raceTimeDisplay = '00:00';
+    this.checkpointsNumber = 0;
+    this.wasRunActivate = false;
+    this.isRunFinished = false;
+  }
+
   async onNewRoute(): Promise<void> {
     this.runStartTime = 0;
     this.runFinishTime = 0;
     this.raceTimeDisplay = '00:00';
-    this.wasRunActivate = true;
+    this.checkpointsNumber = 0;
+    this.wasRunActivate = false;
+    this.isRunFinished = false;
+    this.showScanner = false;
+    this.isScanning = false;
+    
+    this.stationsToShow = [];
+    this.backgroundMap = null;
+    
     localStorage.clear();
     this.participantStateService.clear();
     

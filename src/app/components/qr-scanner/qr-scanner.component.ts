@@ -30,6 +30,9 @@ export class QrScannerComponent implements AfterViewInit {
     }
   };
 
+  private lastScanTime = 0;
+  private scanCooldown = 500;
+
   public qrCodeResult: ScannerQRCodeSelectedFiles[] = [];
 
   @ViewChild('action') action!: NgxScannerQrcodeComponent;
@@ -48,11 +51,74 @@ export class QrScannerComponent implements AfterViewInit {
   }
 
   public onEvent(scanResult: ScannerQRCodeResult[], action?: any): void {
+    if (!scanResult || scanResult.length === 0 || !scanResult[0]?.value) {
+      return;
+    }
+    
+    // Debouncing - zapobiegaj zbyt częstemu skanowaniu
+    const now = Date.now();
+    if (now - this.lastScanTime < this.scanCooldown) {
+      return;
+    }
+    this.lastScanTime = now;
+    
+    this.downloadQrCodeImage();
+    
     if (this.action && this.action.isStart) {
       this.action.stop();
     }
 
-    this.qrCodeScanned.emit(scanResult[0].value)
+    const qrValue = scanResult[0].value;
+    
+    this.qrCodeScanned.emit(qrValue)
+  }
+
+  private downloadQrCodeImage(): void {
+    try {
+      const video = this.action.video?.nativeElement;
+      
+      if (!video) {
+        console.error('Nie znaleziono video elementu');
+        return;
+      }
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return;
+      }
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob((blob: Blob | null) => {
+        if (!blob) {
+          return;
+        }
+        
+        const filename = new Date().toLocaleString('sv-SE', { hour12: false }) + '.png';
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        
+        requestAnimationFrame(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        });
+        
+      }, 'image/png');
+      
+    } catch (error) {
+      console.error('Błąd podczas pobierania obrazu:', error);
+    }
   }
 
   public handle(action: any, fn: string): void {

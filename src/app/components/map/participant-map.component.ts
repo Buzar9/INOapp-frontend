@@ -42,7 +42,11 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   private currentTileLayer?: L.TileLayer;
   private openPopups: L.Popup[] = []; 
   private documentClickListener?: (event: Event) => void;
-  private hidePopupsTimeout?: number; 
+  private hidePopupsTimeout?: number;
+  private centerMapTimeout?: number;
+  private loadMapTimeout?: number;
+  private addStationsTimeout?: number;
+  private destroyed = false; 
 
   constructor(
     private participantSendService: ParticipantSendService,
@@ -68,7 +72,11 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     if (changes['northEast'] || changes['southWest'] || changes['minZoom'] || changes['maxZoom']) {
-      setTimeout(() => {
+      if (this.centerMapTimeout) {
+        clearTimeout(this.centerMapTimeout);
+      }
+      this.centerMapTimeout = window.setTimeout(() => {
+        if (this.destroyed) return;
         this.centerMapProperly();
       }, 100);
     }
@@ -102,6 +110,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     this.setupPopupAutoHide();
 
     this.map.whenReady(() => {
+      if (this.destroyed) return;
       this.centerMapProperly();
 
       if (this.stationsToShow && this.stationsToShow.length > 0) {
@@ -109,7 +118,11 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
 
-    setTimeout(() => {
+    if (this.centerMapTimeout) {
+      clearTimeout(this.centerMapTimeout);
+    }
+    this.centerMapTimeout = window.setTimeout(() => {
+      if (this.destroyed) return;
       this.centerMapProperly();
     }, 100);
   }
@@ -136,10 +149,15 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
       this.map.setMaxZoom(this.maxZoom);
       
       this.currentTileLayer.once('load', () => {
+        if (this.destroyed) return;
         this.centerMapProperly();
       });
 
-      setTimeout(() => {
+      if (this.loadMapTimeout) {
+        clearTimeout(this.loadMapTimeout);
+      }
+      this.loadMapTimeout = window.setTimeout(() => {
+        if (this.destroyed) return;
         this.centerMapProperly();
       }, 500);
     }
@@ -197,12 +215,17 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
         interactiveCircle.addTo(this.map)
     }
     
-    setTimeout(() => {
+    if (this.addStationsTimeout) {
+      clearTimeout(this.addStationsTimeout);
+    }
+    this.addStationsTimeout = window.setTimeout(() => {
+      if (this.destroyed) return;
       this.centerMapProperly();
     }, 200);
   }
 
   public resetMapView(): void {
+    if (this.destroyed) return;
     this.closeAllPopups(); 
     this.centerMapProperly(); 
   }
@@ -212,7 +235,11 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private centerMapProperly(): void {
-    if (this.map && this.northEast && this.southWest) {
+    if (this.destroyed || !this.map || !this.northEast || !this.southWest) {
+      return;
+    }
+    
+    try {
       const bounds = L.latLngBounds(
         L.latLng(this.southWest[0], this.southWest[1]),
         L.latLng(this.northEast[0], this.northEast[1])
@@ -222,6 +249,8 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
         padding: [20, 20],
         maxZoom: this.minZoom || this.defaultMinZoom
       });
+    } catch (error) {
+      console.error('Błąd podczas centrowania mapy:', error);
     }
   }
 
@@ -282,8 +311,22 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
+    
     if (this.hidePopupsTimeout) {
       clearTimeout(this.hidePopupsTimeout);
+    }
+    
+    if (this.centerMapTimeout) {
+      clearTimeout(this.centerMapTimeout);
+    }
+    
+    if (this.loadMapTimeout) {
+      clearTimeout(this.loadMapTimeout);
+    }
+    
+    if (this.addStationsTimeout) {
+      clearTimeout(this.addStationsTimeout);
     }
     
     if (this.documentClickListener) {
@@ -292,8 +335,15 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     
     this.closeAllPopups();
     
+    if (this.currentTileLayer) {
+      this.currentTileLayer.off();
+      this.currentTileLayer = undefined;
+    }
+    
     if (this.map) {
+      this.map.off();
       this.map.remove();
+      this.map = null as any;
     }
   }
 }

@@ -1,21 +1,14 @@
-import { AfterViewInit, Component, OnInit, ViewChild} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { BackofficeSendService } from '../../services/backoffice-send-service';
-import { BackofficeMapComponent } from '../map/backoffice-map.component';
 import { DialogModule } from 'primeng/dialog';
-import { AutoFocusModule } from 'primeng/autofocus';
-import { TableModule, TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
-import { Route } from '../../services/response/Route';
-import { Station } from '../../services/response/Station';
-import { SplitterModule } from 'primeng/splitter';
+import { TableModule } from 'primeng/table';
 import { toDataURL } from 'qrcode';
 import { Category } from '../../services/response/Category';
-import { RouteOption } from '../../services/response/RouteOption';
 import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card'
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Select } from 'primeng/select';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Unit } from '../../services/response/Unit';
 import { MultiSelect } from 'primeng/multiselect';
 
@@ -23,7 +16,7 @@ import { MultiSelect } from 'primeng/multiselect';
 @Component({
   selector: 'organizer-units',
   standalone: true,
-  imports: [CommonModule, CardModule, MultiSelect, FormsModule, Select, TableModule, DropdownModule, DialogModule, ButtonModule, ReactiveFormsModule],
+  imports: [CommonModule, CardModule, MultiSelect, FormsModule, TableModule, DropdownModule, DialogModule, ButtonModule, ReactiveFormsModule],
   templateUrl: './organizer-units.component.html'
 })
 export class OrganizerUnitsComponent implements OnInit {
