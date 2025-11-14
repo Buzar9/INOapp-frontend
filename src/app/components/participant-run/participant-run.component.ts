@@ -6,19 +6,20 @@
   import { NetworkService } from '../../services/request/NetworkService';
   import { ParticipantStateService } from '../../services/participant-state.service';
   import { Router } from '@angular/router';
+  import { Location } from '@angular/common';
   import { ParticipantMapComponent } from '../map/participant-map.component';
   import { ButtonModule } from 'primeng/button';
   import { RippleModule } from 'primeng/ripple';
   import { MessageModule } from 'primeng/message';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { QrScannerComponent } from '../qr-scanner/qr-scanner.component';
-import { AddControlPointRequest } from '../../services/request/AddControlPointRequest';
+  import { ProgressSpinnerModule } from 'primeng/progressspinner';
+  import { QrScannerComponent } from '../qr-scanner/qr-scanner.component';
+  import { AddControlPointRequest } from '../../services/request/AddControlPointRequest';
 
-import { RunMetricAfterControlPoint } from '../../services/response/RunMetricAfterControlPoint';
-import { Station } from '../../services/response/Station';
-import { BackgroundMap } from '../../services/response/BackgroundMap';
-import { TileDbService } from '../../services/tile-db.service';
-import { ViewChild } from '@angular/core';
+  import { RunMetricAfterControlPoint } from '../../services/response/RunMetricAfterControlPoint';
+  import { Station } from '../../services/response/Station';
+  import { BackgroundMap } from '../../services/response/BackgroundMap';
+  import { TileDbService } from '../../services/tile-db.service';
+  import { ViewChild } from '@angular/core';
 
   @Component({
     selector: 'participant',
@@ -34,12 +35,12 @@ import { ViewChild } from '@angular/core';
 
     stationsToShow: Station[] = []
 
-  showScanner: boolean = false;
-  isScanning: boolean = false;
-  wasRunActivate: boolean = false;
-  isRunFinished: boolean = false;
-  isPortraitMode: boolean = false;
-  showOrientationWarning: boolean = true;    runStartTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
+    showScanner: boolean = false;
+    isScanning: boolean = false;
+    wasRunActivate: boolean = false;
+    isRunFinished: boolean = false;
+    isPortraitMode: boolean = false;
+    showOrientationWarning: boolean = true;    runStartTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
     runFinishTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
     raceTimeDisplay: string = '00:00';
     currentTime: string = '';
@@ -47,8 +48,6 @@ import { ViewChild } from '@angular/core';
     checkpointsNumber: number = Number(this.getLocalStorageItem('checkpointsNumber')) || 0;
 
     isOnline: boolean = navigator.onLine;
-    // dodo mock
-    // isOnline: boolean = true
 
     backgroundMap: BackgroundMap | null = null;
 
@@ -62,6 +61,7 @@ import { ViewChild } from '@angular/core';
     private participantStateService: ParticipantStateService,
     private networkService: NetworkService,
     private tileDbService: TileDbService,
+    private location: Location
   ){}    ngOnInit(): void {
       const runId = this.getLocalStorageItem('runId');
 

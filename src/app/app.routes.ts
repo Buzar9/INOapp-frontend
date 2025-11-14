@@ -12,6 +12,7 @@ import { OrganizerCategoryViewComponent } from './components/organizer-category-
 import { OrganizerUnitsComponent } from './components/organizer-units/organizer-units.component';
 import { OrganizerBackgroudMapMenageComponent } from './components/organizer-backgroud-map-menage/organizer-backgroud-map-menage.component';
 import { OrganizerBackgroundMapImportComponent } from './components/organizer-background-map-import/organizer-background-map-import.component';
+import { RunGuard } from './guards/run.guard';
 
 // lazy loading komponentow, bo aplikacja jest zbyt duza
 export const routes: Routes = [
@@ -61,7 +62,8 @@ export const routes: Routes = [
   },
   {
     path: 'participant/scan',
-    component: ParticipantRunComponent
+    component: ParticipantRunComponent,
+    canDeactivate: [RunGuard]
   },
   {
     path: '**',
