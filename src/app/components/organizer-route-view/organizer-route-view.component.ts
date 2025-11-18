@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import { Component, OnInit, ViewChild} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { BackofficeSendService } from '../../services/backoffice-send-service';
@@ -14,8 +14,7 @@ import { SplitterModule } from 'primeng/splitter';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TabsModule } from 'primeng/tabs';
 import { DictionaryModel } from '../../services/response/DictionaryModel';
-import { DropdownModule } from 'primeng/dropdown';
-import { Select } from 'primeng/select';
+import { SelectModule } from 'primeng/select';
 import { BackgroundMapOption } from '../../services/response/BackgroundMapOption';
 import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
 import { QrCodeGeneratorService } from '../../services/qr-code-generator.service';
@@ -24,8 +23,9 @@ import { QrCodeGeneratorService } from '../../services/qr-code-generator.service
 @Component({
   selector: 'organizer-route-view',
   standalone: true,
-  imports: [CommonModule, TableModule, Select, BackofficeMapComponent, DropdownModule, ReactiveFormsModule, DialogModule, AutoFocusModule, ButtonModule, AutoFocusModule, SplitterModule, TabsModule, ProgressSpinnerModule],
-  templateUrl: './organizer-route-view.component.html'
+  imports: [CommonModule, TableModule, SelectModule, BackofficeMapComponent, ReactiveFormsModule, DialogModule, AutoFocusModule, ButtonModule, SplitterModule, TabsModule, ProgressSpinnerModule],
+  templateUrl: './organizer-route-view.component.html',
+  styleUrl: './organizer-route-view.component.css'
 })
 export class OrganizerRouteViewComponent implements OnInit {
   @ViewChild(BackofficeMapComponent)
@@ -52,6 +52,7 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   backgroundMapsOptions: BackgroundMapOption[] = [];
   isLoading: boolean = false;
+  isMapFullscreen: boolean = false;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -90,8 +91,9 @@ export class OrganizerRouteViewComponent implements OnInit {
   ngOnInit(): void {
     let request = {competitionId: 'Competition123'}
     this.backofficeSendService.getRoutes(request).subscribe ({
-        next: (response) => {
+        next: async (response) => {
           this.routes = response
+          await this.downloadMapsForExistingRoutes()
         },
         error: (err) => console.log('dodo problem', err)
     })
@@ -106,26 +108,6 @@ export class OrganizerRouteViewComponent implements OnInit {
     this.backofficeSendService.getBackgroundMapOptions(request).subscribe ({
         next: (response) => {
           this.backgroundMapsOptions = response;
-          // Pobierz wszystkie mapy z listy tła. Pokazuj loader dopóki trwa pobieranie.
-          (async () => {
-            this.isLoading = true;
-            try {
-              const downloads = (response || []).map(opt => {
-                if (!opt?.id) {
-                  return Promise.resolve({ status: 'skipped' });
-                }
-                return this.mapDownloader.downloadMap(opt.id)
-                  .then(() => ({ status: 'fulfilled', id: opt.id }))
-                  .catch(err => ({ status: 'rejected', id: opt.id, reason: err }));
-              });
-
-              const results = await Promise.allSettled(downloads);
-            } catch (err) {
-              console.error('Błąd podczas pobierania map:', err);
-            } finally {
-              this.isLoading = false;
-            }
-          })();
         },
         error: (err) => console.log('dodo problem dodo', err)
     })
@@ -138,22 +120,39 @@ export class OrganizerRouteViewComponent implements OnInit {
       competitionId: 'Competition123'
     }
 
-    await this.mapDownloader.downloadMap(this.addRouteForm.value.backgroundMapId)
+    this.isLoading = true;
+    try {
+      await this.mapDownloader.downloadMap(this.addRouteForm.value.backgroundMapId)
 
-    this.backofficeSendService.createRoute(request).subscribe({
-      next: (newRoute) => {
-        // dodo po dodaniu route niech backend zwraca liste nowych routes i niech aktualizuje sie jak przy delete
-        this.routes.push(newRoute)
-        this.selectRoute(newRoute)
-      },
-      error: (err) => console.log('dodo error createRoute', err)
-    })
+      this.backofficeSendService.createRoute(request).subscribe({
+        next: (newRoute) => {
+          // dodo po dodaniu route niech backend zwraca liste nowych routes i niech aktualizuje sie jak przy delete
+          this.routes.push(newRoute)
+          this.selectRoute(newRoute)
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.log('dodo error createRoute', err)
+          this.isLoading = false;
+        }
+      })
 
-    this.showRouteNameForm = !this.showRouteNameForm
+      this.showRouteNameForm = !this.showRouteNameForm
+    } catch (err) {
+      console.error('Błąd podczas pobierania mapy:', err);
+      this.isLoading = false;
+    }
   }
 
   onAddStationClick() {
-    this.mapComponent.emitCurrentCenter();
+    this.addStationForm.reset({
+      name: '',
+      type: '',
+      note: '',
+      lat: '',
+      lng: '',
+      accuracy: 10
+    });
     this.showAddStationForm = !this.showAddStationForm;
   }
 
@@ -220,7 +219,6 @@ export class OrganizerRouteViewComponent implements OnInit {
           },
           error: (err) => {
             console.error('Błąd podczas odświeżania listy tras po usunięciu:', err);
-            // Fallback: użyj zwróconej przez delete listy
             this.routes = [...updatedRoutes];
             if (updatedRoutes.length > 0) {
               this.expandedRoutes = { [`${updatedRoutes[0].id}`]: true };
@@ -247,6 +245,33 @@ export class OrganizerRouteViewComponent implements OnInit {
     });
   }
 
+  onUseMapCenterForEdit() {
+    const coordinates = this.mapComponent.getCurrentCenter();
+    this.editStationForm.patchValue({
+      lat: coordinates.lat,
+      lng: coordinates.lng
+    });
+  }
+
+  onUseMapCenterForAdd() {
+    const coordinates = this.mapComponent.getCurrentCenter();
+    this.addStationForm.patchValue({
+      lat: coordinates.lat,
+      lng: coordinates.lng
+    });
+  }
+
+  toggleMapFullscreen() {
+    this.isMapFullscreen = !this.isMapFullscreen;
+    
+    // Poczekaj na aktualizację DOM i invalidate size mapy
+    setTimeout(() => {
+      if (this.mapComponent) {
+        this.mapComponent.invalidateSizeAndKeepCenter();
+      }
+    }, 100);
+  }
+
   onSubmitAddStationForm() {
     if (!this.selectedRoute) {
       console.warn('Nie wybrano trasy – nie można dodać stacji.');
@@ -258,7 +283,11 @@ export class OrganizerRouteViewComponent implements OnInit {
       routeId: this.selectedRoute.id,
       name: formValue.name,
       type: formValue.type,
-      location: { lat: formValue.lat, lng: formValue.lng, accuracy: formValue.accuracy },
+      location: { 
+        lat: formValue.lat || 0.0, 
+        lng: formValue.lng || 0.0, 
+        accuracy: formValue.accuracy 
+      },
       note: formValue.note
     }
     this.backofficeSendService.addStationToRoute(request).subscribe({
@@ -284,9 +313,18 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   onEditStation(stationId: string) {
     this.selectedStation = this.selectedRoute?.stations.find( station => station.properties["id"] === stationId)
+    
+    const stationType = this.selectedStation?.properties["type"];
+    const matchingOption = this.stationTypeOptions?.find(opt => opt.label === stationType || opt.value === stationType);
+    const typeValue = matchingOption ? matchingOption.value : stationType;
+    
+    console.log('Edycja stanowiska - type:', stationType);
+    console.log('Dopasowana opcja:', matchingOption);
+    console.log('Ustawiana wartość:', typeValue);
+    
     this.editStationForm.patchValue({
       name: this.selectedStation?.properties["name"],
-      type: this.selectedStation?.properties["type"],
+      type: typeValue,
       note: this.selectedStation?.properties["note"],
       accuracy: this.selectedStation?.properties["accuracy"],
       lat: this.selectedStation?.geometry.coordinates[1],
@@ -386,5 +424,41 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   getSelectedSouthWest(): [number, number] {
     return this.selectedRoute?.backgroundMap?.southWest || [0,0]
+  }
+
+  private async downloadMapsForExistingRoutes(): Promise<void> {
+    if (!this.routes || this.routes.length === 0) {
+      return;
+    }
+
+    const uniqueMapIds = new Set<string>();
+    this.routes.forEach(route => {
+      if (route.backgroundMap?.id) {
+        uniqueMapIds.add(route.backgroundMap.id);
+      }
+    });
+
+    if (uniqueMapIds.size === 0) {
+      console.log('Brak map do pobrania dla istniejących tras');
+      return;
+    }
+
+    console.log(`Pobieranie ${uniqueMapIds.size} unikalnych map dla istniejących tras`);
+    this.isLoading = true;
+
+    try {
+      const downloads = Array.from(uniqueMapIds).map(mapId =>
+        this.mapDownloader.downloadMap(mapId)
+          .then(() => ({ status: 'fulfilled', id: mapId }))
+          .catch(err => ({ status: 'rejected', id: mapId, reason: err }))
+      );
+
+      const results = await Promise.allSettled(downloads);
+      console.log('Wyniki pobierania map dla tras:', results);
+    } catch (err) {
+      console.error('Błąd podczas pobierania map dla tras:', err);
+    } finally {
+      this.isLoading = false;
+    }
   }
 }

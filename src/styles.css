@@ -430,6 +430,26 @@ button .pi-spinner {
 }
 
 /* =========================
+   DIALOGI PRIMENG - ZWIĘKSZONY Z-INDEX
+   ========================= */
+.p-dialog {
+  z-index: 10000 !important;
+}
+
+.p-dialog-mask {
+  z-index: 9999 !important;
+}
+
+/* Select overlay wewnątrz dialogu - relatywny z-index */
+.p-dialog .p-select-overlay,
+.p-dialog .p-dropdown-overlay,
+.p-dialog .p-dropdown-panel,
+.p-select-overlay {
+  z-index: 1100 !important;
+  position: fixed !important;
+}
+
+/* =========================
    GLOBALNE NADPISANIE PRIMENG - USUNIĘCIE SELEDYNOWYCH KOLORÓW
    ========================= */
 

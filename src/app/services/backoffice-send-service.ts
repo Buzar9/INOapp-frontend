@@ -23,6 +23,7 @@ export class BackofficeSendService {
 
         // dodo z propertisow
         private apiUrl = 'https://inoapp-backend-845892573651.europe-central2.run.app/backoffice';
+        // private apiUrl = 'http://localhost:8080/backoffice';
 
         constructor(private http: HttpClient) {}
 

@@ -1,39 +1,185 @@
-<form [formGroup]="uploadForm" class="p-fluid p-formgrid p-grid">
-  <div class="p-field p-col-12">
-    <label for="name">Name</label>
-    <input id="name" pInputText formControlName="name" />
-  </div>
+<div class="map-management-container">
+  <p-splitter [panelSizes]="[40, 60]" [style]="{'height': 'calc(100vh - 60px)'}">
+    <!-- Panel listy map -->
+    <ng-template #panel>
+      <div class="table-panel">
+        <p-table 
+          [value]="backgroundMaps" 
+          dataKey="id"
+          [expandedRowKeys]="expandedMaps"
+          [scrollable]="true"
+          scrollHeight="flex"
+          styleClass="maps-table"
+          (onRowExpand)="onMapExpand($event)"
+          (onRowCollapse)="onMapCollapse($event)">
+          
+          <ng-template #header>
+            <tr>
+              <th style="width: 9rem">
+                <div class="header-actions">
+                  <button
+                    pButton
+                    pRipple
+                    type="button"
+                    icon="pi pi-plus"
+                    [rounded]="true"
+                    (click)="onAddMapClick()">
+                  </button>
+                </div>
+              </th>
+              <th style="width: 2.5rem"></th>
+              <th>Mapa</th>
+            </tr>
+          </ng-template>
+          
+          <ng-template #body let-map let-expanded="expanded">
+            <tr>
+              <td>
+                <button
+                  pButton
+                  type="button"
+                  pRipple
+                  [pRowToggler]="map"
+                  [text]="true"
+                  [rounded]="true"
+                  [plain]="true"
+                  [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'">
+                </button>
+              </td>
+              <td colspan="2">
+                <div>{{ map.name }}</div>
+                <div *ngIf="isMapSelected(map.id)" class="map-management-actions">
+                  <button
+                    pButton
+                    pRipple
+                    type="button"
+                    icon="pi pi-trash"
+                    [rounded]="true"
+                    severity="danger">
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          
+          <ng-template #rowexpansion let-map>
+            <tr>
+              <td colspan="3">
+                <div class="map-details-expanded">
+                  <div class="detail-row">
+                    <span class="detail-label">ID:</span>
+                    <span class="detail-value id">{{ map.id }}</span>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <span class="detail-label">Zoom:</span>
+                    <span class="detail-value">
+                      <p-tag [value]="'Min: ' + map.minZoom" severity="info" [style]="{'margin-right': '0.5rem'}"></p-tag>
+                      <p-tag [value]="'Max: ' + map.maxZoom" severity="success"></p-tag>
+                    </span>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <span class="detail-label">Granice:</span>
+                    <span class="detail-value bounds">{{ getMapBounds(map) }}</span>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <span class="detail-label">URL:</span>
+                    <span class="detail-value url">{{ map.fileUrl }}</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+        
+        <div *ngIf="isLoading" class="loading-overlay">
+          <p-progressSpinner></p-progressSpinner>
+        </div>
+      </div>
+    </ng-template>
 
-  <div class="p-field p-col-6">
-    <!-- dodo zablokowac minimalna minimalna wartosc zoom -->
-    <label for="minZoom">Min Zoom</label>
-    <input id="minZoom" type="number" pInputText formControlName="minZoom" />
-  </div>
+    <!-- Panel podglądu mapy -->
+    <ng-template #panel>
+      <div class="map-panel-content" [class.fullscreen]="isMapFullscreen">
+        <button 
+          pButton 
+          type="button" 
+          [icon]="isMapFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'" 
+          [rounded]="true"
+          (click)="toggleMapFullscreen()"
+          class="fullscreen-toggle-btn"
+          [title]="isMapFullscreen ? 'Zamknij pełny ekran' : 'Pełny ekran'">
+        </button>
+        <div class="map-wrapper">
+          <div class="map-container">
+            <backoffice-map
+              *ngIf="selectedMapForPreview"
+              [backgroundMapId]="selectedMapForPreview.id"
+              [minZoom]="selectedMapForPreview.minZoom"
+              [maxZoom]="selectedMapForPreview.maxZoom"
+              [northEast]="selectedMapForPreview.northEast"
+              [southWest]="selectedMapForPreview.southWest"
+              [showCenterCoordinates]="true"
+              [stationsToShow]="[]">
+            </backoffice-map>
+            
+            <div *ngIf="!selectedMapForPreview" class="no-map-selected">
+              <i class="pi pi-map" style="font-size: 3rem; color: #ccc;"></i>
+              <p>Wybierz mapę z listy aby zobaczyć podgląd</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </p-splitter>
+</div>
 
-  <div class="p-field p-col-6">
-    <!-- dodo zablokowac maksymalna maksymalna wartosc zoom -->
-    <label for="maxZoom">Max Zoom</label>
-    <input id="maxZoom" type="number" pInputText formControlName="maxZoom" />
-  </div>
+<!-- Dialog dodawania mapy -->
+<p-dialog 
+  [(visible)]="showAddMapForm"
+  header="Dodaj nową mapę"
+  [modal]="true"
+  [style]="{width: '450px'}"
+  [dismissableMask]="true">
+  <form [formGroup]="uploadForm" class="upload-form">
+    <div class="form-field">
+      <label for="name">Nazwa mapy</label>
+      <input id="name" pInputText formControlName="name" placeholder="np. Mapa Katowice 2024" [pAutoFocus]="true" />
+    </div>
 
-  <div class="p-field p-col-12">
-    <p-fileUpload
-      name="file"
-      customUpload="true"
-      (uploadHandler)="onUpload($event)"
-      [auto]="false"
-      [showUploadButton]="true"
-      [showCancelButton]="true"
-      [accept]="'.tiff,image/tiff'"
-      chooseLabel="Wybierz plik">
-    </p-fileUpload>
-  </div>
+    <div class="zoom-fields">
+      <div class="form-field">
+        <label for="minZoom">Min Zoom</label>
+        <input id="minZoom" type="number" pInputText formControlName="minZoom" />
+      </div>
 
-  <div class="p-col-12" *ngIf="uploadProgress > 0">
-    <p-progressBar [value]="uploadProgress"></p-progressBar>
-  </div>
+      <div class="form-field">
+        <label for="maxZoom">Max Zoom</label>
+        <input id="maxZoom" type="number" pInputText formControlName="maxZoom" />
+      </div>
+    </div>
 
-  <div class="p-col-12" *ngIf="uploadMessage">
-    <p>{{ uploadMessage }}</p>
-  </div>
-</form>
+    <div class="form-field">
+      <p-fileUpload
+        name="file"
+        customUpload="true"
+        (uploadHandler)="onUpload($event)"
+        [auto]="false"
+        [showUploadButton]="true"
+        [showCancelButton]="true"
+        [accept]="'.tiff,image/tiff'"
+        chooseLabel="Wybierz plik GeoTIFF">
+      </p-fileUpload>
+    </div>
+
+    <div *ngIf="uploadProgress > 0">
+      <p-progressBar [value]="uploadProgress"></p-progressBar>
+    </div>
+
+    <div *ngIf="uploadMessage" class="upload-message">
+      <p>{{ uploadMessage }}</p>
+    </div>
+  </form>
+</p-dialog>

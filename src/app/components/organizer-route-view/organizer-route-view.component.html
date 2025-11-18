@@ -1,22 +1,28 @@
-<div>
-  <p-splitter [panelSizes]="[40, 60]">
+<div class="route-view-container">
+  <p-splitter [panelSizes]="[40, 60]" [style]="{'height': 'calc(100vh - 60px)'}">
     <ng-template #panel>
-      <p-table [value]="routes" dataKey="id" [expandedRowKeys]="expandedRoutes" [scrollable]="true" scrollHeight="600px"
-               (onRowExpand)="onRouteExpand($event)"
-               (onRowCollapse)="onRouteCollapse($event)">
+      <div class="table-panel">
+        <p-table [value]="routes" dataKey="id" [expandedRowKeys]="expandedRoutes" [scrollable]="true" scrollHeight="flex"
+                 styleClass="routes-table"
+                 (onRowExpand)="onRouteExpand($event)"
+                 (onRowCollapse)="onRouteCollapse($event)">
         <ng-template #header>
           <tr>
-            <th style="width: 5rem"></th>
+            <th style="width: 9rem">
+              <div class="header-actions">
+                <button
+                  pButton pRipple
+                  type="button"
+                  icon="pi pi-plus"
+                  [rounded]="true"
+                  (click)="onCreateRouteClick()">
+                </button>
+              </div>
+            </th>
+            <th style="width: 2.5rem"></th>
             <th>
               Trasa
-              <button
-                pButton pRipple
-                type="button"
-                icon="pi pi-plus"
-                (click)="onCreateRouteClick()">
-              </button>
             </th>
-            <th style="width: 5rem"></th>
           </tr>
         </ng-template>
         <ng-template #body let-route let-expanded="expanded">
@@ -25,28 +31,35 @@
               <p-button type="button" pRipple [pRowToggler]="route" [text]="true" [rounded]="true" [plain]="true"
                         [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"/>
             </td>
-            <td>{{ route.name }}</td>
-            <td>
-              <div style="display: flex; gap: 8px; align-items: center">
+            <td colspan="2">
+              <div>{{ route.name }}</div>
+              <div *ngIf="isRouteSelected(route.id)" class="route-management-actions">
                 <button
-                  *ngIf="isRouteSelected(route.id)"
+                  pButton pRipple
+                  type="button"
+                  icon="pi pi-plus-circle"
+                  [rounded]="true"
+                  (click)="onAddStationClick()">
+                </button>
+                <button
                   pButton pRipple
                   type="button"
                   icon="pi pi-pencil"
+                  [rounded]="true"
                   (click)="onEditRouteClick()">
                 </button>
                 <button
-                  *ngIf="isRouteSelected(route.id)"
                   pButton pRipple
                   type="button"
                   icon="pi pi-trash"
+                  [rounded]="true"
                   (click)="onDeleteRouteClick()">
                 </button>
                 <button
-                  *ngIf="isRouteSelected(route.id)"
                   pButton pRipple
                   type="button"
                   icon="pi pi-qrcode"
+                  [rounded]="true"
                   (click)="onQrCodeRouteGenerateClick(route.stations)">
                 </button>
               </div>
@@ -60,32 +73,31 @@
                 <p-table [value]="route.stations">
                   <ng-template #header>
                     <tr>
-                      <th>Name</th>
-                      <th>Type</th>
-                      <th>Note</th>
-                      <th style="width: 5rem"></th>
+                      <th colspan="3">Punkty kontrolne</th>
                     </tr>
                   </ng-template>
                   <ng-template #body let-station>
                     <tr>
-                      <td>{{ station.properties.name }}</td>
-                      <td>{{ station.properties.type }}</td>
-                      <td>{{ station.properties.note }}</td>
-                      <td>
-                        <div style="display: flex; gap: 8px; align-items: center">
+                      <td colspan="3">
+                        <div><strong>{{ station.properties.name }}</strong> - {{ station.properties.type }}</div>
+                        <div style="font-size: 0.9em; color: #ccc; margin-top: 0.2rem;">{{ station.properties.note }}</div>
+                        <div class="route-management-actions" style="margin-top: 0.5rem;">
                           <button
                             pButton
                             icon="pi pi-pencil"
+                            [rounded]="true"
                             (click)="onEditStation(station.properties.id)">
                           </button>
                           <button
                             pButton
                             icon="pi pi-trash"
+                            [rounded]="true"
                             (click)="onDeleteStation(station.properties.id)">
                           </button>
                           <button
                             pButton
                             icon="pi pi-qrcode"
+                            [rounded]="true"
                             (click)="onQrCodeStationGenerateClick(station)">
                           </button>
                         </div>
@@ -98,80 +110,138 @@
           </tr>
         </ng-template>
       </p-table>
+      </div>
     </ng-template>
     <ng-template #panel>
-      <div style="width: 800px; height: 600px; position: relative; z-index: 1;">
-        <!-- dodo schowac gdy route nie jest wybrane -->
-         <!-- dodo pokazac wskaźnik gdzie ustawiamy punkt -->
-          <!-- dodo moliwość przesunięcia mapy poza granice, bo teraz nie da sie ustawic zadnego punktu tuz przy granicy mapy -->
-        <button
-          pButton pRipple
-          type="button"
-          icon="pi pi-plus-circle"
-          class="qr-scanner-icon"
-          (click)="onAddStationClick()">
+      <div class="map-panel-content" [class.fullscreen]="isMapFullscreen">
+        <button 
+          pButton 
+          type="button" 
+          [icon]="isMapFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'" 
+          [rounded]="true"
+          (click)="toggleMapFullscreen()"
+          class="fullscreen-toggle-btn"
+          [title]="isMapFullscreen ? 'Zamknij pełny ekran' : 'Pełny ekran'">
         </button>
-        <backoffice-map
-          [stationsToShow]="selectedRoute?.stations || []"
-          [backgroundMapId]="getSelectedBackgroundMapId()"
-          [minZoom]="getSelectedMinZoom()"
-          [maxZoom]="getSelectedMaxZoom()"
-          [northEast]="getSelectedNorthEast()"
-          [southWest]="getSelectedSouthWest()"
-          [showCenterCoordinates]="true"
-          (pickedCoordinates)="onReceivedPointedCoordinates($event)">
-        </backoffice-map>
-        <div *ngIf="isLoading" class="map-loading-overlay">
-          <div class="loading-indicator">
-            <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
-            <p>Trwa pobieranie map, proszę czekać...</p>
+        <div class="map-wrapper">
+          <div class="map-container">
+            <backoffice-map
+              [stationsToShow]="selectedRoute?.stations || []"
+              [backgroundMapId]="getSelectedBackgroundMapId()"
+              [minZoom]="getSelectedMinZoom()"
+              [maxZoom]="getSelectedMaxZoom()"
+              [northEast]="getSelectedNorthEast()"
+              [southWest]="getSelectedSouthWest()"
+              [showCenterCoordinates]="true"
+              (pickedCoordinates)="onReceivedPointedCoordinates($event)">
+            </backoffice-map>
+            <div *ngIf="isLoading" class="map-loading-overlay">
+              <div class="loading-indicator">
+                <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+                <p>Trwa pobieranie map, proszę czekać...</p>
+              </div>
+            </div>
           </div>
         </div>
-        <p-dialog header="Dodaj trase" [modal]="true" [(visible)]="showRouteNameForm">
-          <form [formGroup]="addRouteForm" (ngSubmit)="onSubmitAddRouteForm()">
-            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+        <p-dialog header="Dodaj trasę" [modal]="true" [(visible)]="showRouteNameForm" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
+          <form [formGroup]="addRouteForm" (ngSubmit)="onSubmitAddRouteForm()" class="dialog-form">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa trasy"/>
             <p-select
-              [appendTo]="'body'"
               [options]="backgroundMapsOptions"
               formControlName="backgroundMapId"
               optionLabel="name"
               optionValue="id"
-              placeholder="Mapa">
+              placeholder="Wybierz mapę">
             </p-select>
-            <button pButton type="submit" [disabled]="addStationForm.invalid">Dodaj</button>
+            <button pButton type="submit" [disabled]="addRouteForm.invalid" label="Dodaj trasę"></button>
           </form>
         </p-dialog>
-        <p-dialog header="Dodaj stanowisko" [modal]="true" [(visible)]="showAddStationForm">
-          <form [formGroup]="addStationForm" (ngSubmit)="onSubmitAddStationForm()">
-            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Oznaczenie"/>
-            <p-dropdown
-              [appendTo]="'body'"
-              [options]="stationTypeOptions"
-              formControlName="type"
-              placeholder="Typ">
-            </p-dropdown>
-            <input type="text" pInputText formControlName="note" placeholder="Notatka"/>
-            <input type="number" pInputText formControlName="accuracy" placeholder="Dokładność"/>
-            <input type="number" pInputText formControlName="lat" placeholder="Lat"/>
-            <input type="number" pInputText formControlName="lng" placeholder="Lng"/>
-            <button pButton type="submit" [disabled]="addStationForm.invalid">Dodaj</button>
+        <p-dialog header="Dodaj stanowisko" [modal]="true" [(visible)]="showAddStationForm" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
+          <form [formGroup]="addStationForm" (ngSubmit)="onSubmitAddStationForm()" class="dialog-form">
+            <div class="form-field">
+              <label for="add-station-name">Nazwa</label>
+              <input id="add-station-name" type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Oznaczenie"/>
+            </div>
+            <div class="form-field">
+              <label for="add-station-type">Typ</label>
+              <p-select
+                id="add-station-type"
+                [options]="stationTypeOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="type"
+                placeholder="Typ stanowiska">
+              </p-select>
+            </div>
+            <div class="form-field">
+              <label for="add-station-note">Notatka</label>
+              <input id="add-station-note" type="text" pInputText formControlName="note" placeholder="Notatka"/>
+            </div>
+            <div class="form-field">
+              <label for="add-station-accuracy">Dokładność (m)</label>
+              <input id="add-station-accuracy" type="number" pInputText formControlName="accuracy" placeholder="Dokładność (m)"/>
+            </div>
+            <div class="coordinates-section">
+              <button pButton type="button" icon="pi pi-bullseye" [rounded]="true" (click)="onUseMapCenterForAdd()" class="coordinate-button-center" title="Użyj centrum mapy"></button>
+              <div class="coordinates-inputs">
+                <div class="form-field">
+                  <label for="add-station-lat">Szerokość geograficzna</label>
+                  <input id="add-station-lat" type="number" step="any" pInputText formControlName="lat" placeholder="Szerokość geograficzna"/>
+                </div>
+                <div class="form-field">
+                  <label for="add-station-lng">Długość geograficzna</label>
+                  <input id="add-station-lng" type="number" step="any" pInputText formControlName="lng" placeholder="Długość geograficzna"/>
+                </div>
+              </div>
+            </div>
+            <button pButton type="submit" [disabled]="addStationForm.invalid" label="Dodaj stanowisko"></button>
           </form>
         </p-dialog>
-        <p-dialog header="Edytuj stanowisko" [modal]="true" [(visible)]="showEditStationForm">
-          <form [formGroup]="editStationForm" (ngSubmit)="onSubmitEditStationForm()">
-            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
-            <input type="text" pInputText formControlName="type" placeholder="Typ"/>
-            <input type="text" pInputText formControlName="note" placeholder="Notatka"/>
-            <input type="number" pInputText formControlName="accuracy" placeholder="Dokładność"/>
-            <input type="number" pInputText formControlName="lat" placeholder="Lat"/>
-            <input type="number" pInputText formControlName="lng" placeholder="Lng"/>
-            <button pButton type="submit" [disabled]="editStationForm.invalid">Edytuj</button>
+        <p-dialog header="Edytuj stanowisko" [modal]="true" [(visible)]="showEditStationForm" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
+          <form [formGroup]="editStationForm" (ngSubmit)="onSubmitEditStationForm()" class="dialog-form">
+            <div class="form-field">
+              <label for="edit-station-name">Nazwa</label>
+              <input id="edit-station-name" type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
+            </div>
+            <div class="form-field">
+              <label for="edit-station-type">Typ</label>
+              <p-select
+                id="edit-station-type"
+                [options]="stationTypeOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="type"
+                placeholder="Typ stanowiska">
+              </p-select>
+            </div>
+            <div class="form-field">
+              <label for="edit-station-note">Notatka</label>
+              <input id="edit-station-note" type="text" pInputText formControlName="note" placeholder="Notatka"/>
+            </div>
+            <div class="form-field">
+              <label for="edit-station-accuracy">Dokładność (m)</label>
+              <input id="edit-station-accuracy" type="number" pInputText formControlName="accuracy" placeholder="Dokładność (m)"/>
+            </div>
+            <div class="coordinates-section">
+              <button pButton type="button" icon="pi pi-bullseye" [rounded]="true" (click)="onUseMapCenterForEdit()" class="coordinate-button-center" title="Użyj centrum mapy"></button>
+              <div class="coordinates-inputs">
+                <div class="form-field">
+                  <label for="edit-station-lat">Szerokość geograficzna</label>
+                  <input id="edit-station-lat" type="number" step="any" pInputText formControlName="lat" placeholder="Szerokość geograficzna"/>
+                </div>
+                <div class="form-field">
+                  <label for="edit-station-lng">Długość geograficzna</label>
+                  <input id="edit-station-lng" type="number" step="any" pInputText formControlName="lng" placeholder="Długość geograficzna"/>
+                </div>
+              </div>
+            </div>
+            <button pButton type="submit" [disabled]="editStationForm.invalid" label="Zapisz zmiany"></button>
           </form>
         </p-dialog>
-        <p-dialog header="Edytuj trase" [modal]="true" [(visible)]="showEditRouteForm">
-          <form [formGroup]="editRouteForm" (ngSubmit)="onEditRouteSubmit()">
-            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
-            <button pButton type="submit" [disabled]="editStationForm.invalid">Edytuj</button>
+        <p-dialog header="Edytuj trasę" [modal]="true" [(visible)]="showEditRouteForm" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
+          <form [formGroup]="editRouteForm" (ngSubmit)="onEditRouteSubmit()" class="dialog-form">
+            <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa trasy"/>
+            <button pButton type="submit" [disabled]="editRouteForm.invalid" label="Zapisz zmiany"></button>
           </form>
         </p-dialog>
       </div>

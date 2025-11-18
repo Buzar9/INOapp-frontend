@@ -13,9 +13,8 @@ import { idbTileLayer } from '../../shared/tile-layer-indexeddb';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div id="map" style="height: 500px; width:900px; position: relative;"></div>
-    <!-- dodo popracowac nad stylem -->
-    <div *ngIf="showCenterCoordinates" id="coordinates" style="position: absolute; top: 20px; right: 200px; background-color: black; padding: 5px; border-radius: 3px; font-size: 0.8em; z-index: 1000;"></div>
+    <div id="map" style="height: 100%; width: 100%; position: relative;"></div>
+    <div *ngIf="showCenterCoordinates" id="coordinates" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 6px; font-size: 0.9em; z-index: 1000; pointer-events: none;"></div>
   `,
   styles: [``],
 })
@@ -65,6 +64,13 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
         if (this.showCenterCoordinates) {
           this.readCenterCoordinates();
         }
+        // Invalidate size after DOM is ready to ensure proper dimensions
+        setTimeout(() => {
+          if (this.map) {
+            this.map.invalidateSize();
+            this.updateCenterMarker();
+          }
+        }, 100);
       })
       .catch(err => {
         console.error('BackofficeMapComponent: błąd podczas inicjalizacji mapy', err);
@@ -105,7 +111,6 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     }
 
     if (this.map) {
-      // Remove our listeners
       this.map.off('move');
       this.map.off('zoomend');
       this.map.off('moveend');
@@ -118,6 +123,20 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     this.pickedCoordinates.emit({ lat: center.lat, lng: center.lng });
   }
 
+  getCurrentCenter(): Coordinates {
+    const center = this.map.getCenter();
+    return { lat: center.lat, lng: center.lng };
+  }
+
+  invalidateSizeAndKeepCenter(): void {
+    if (this.map) {
+      const currentCenter = this.map.getCenter();
+      this.map.invalidateSize();
+      this.map.setView(currentCenter, this.map.getZoom(), { animate: false });
+      this.updateCenterMarker();
+    }
+  }
+
   private async initMap(): Promise<void> {
     this.minZoom = this.minZoom ?? this.defaultMinZoom;
     this.maxZoom = this.maxZoom ?? this.defaultMaxZoom;
@@ -126,7 +145,6 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
 
     const usedMapId = this.backgroundMapId || this.defaultMapId;
 
-    // Jeśli używamy IndexedDB – spróbuj pobrać metadane (ustawi min/max zoom i bounds)
     if (this.useIndexedDb && usedMapId) {
       this.meta = await this.tileDb.getMapMetadata(usedMapId);
       if (this.meta) {
@@ -150,8 +168,12 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       maxZoom: this.maxZoom!,
       maxBoundsViscosity: 1.0,
       dragging: true,
-      zoomControl: true,
+      zoomControl: false,
     });
+
+    L.control.zoom({
+      position: 'bottomright'
+    }).addTo(this.map);
 
     await this.addBaseLayer(usedMapId!);
 
@@ -161,21 +183,29 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     this.map.createPane(this.accuracyPaneName);
     this.map.getPane(this.accuracyPaneName)!.style.zIndex = '200';
 
-    // compute and apply allowed center bounds after the base layer has been added and the map has a size
     this.updateAllowedCenterBounds();
 
-    // when user zooms or window resizes, recompute allowed center bounds so padding matches viewport
-    this.map.on('zoomend', () => this.updateAllowedCenterBounds());
-    // moveend can also occur after programmatic pans/zooms; recompute then as well
-    this.map.on('moveend', () => this.updateAllowedCenterBounds());
-    this.resizeListener = () => this.updateAllowedCenterBounds();
+    this.map.on('zoomend', () => {
+      this.updateAllowedCenterBounds();
+      this.updateCenterMarker();
+    });
+    this.map.on('moveend', () => {
+      this.updateAllowedCenterBounds();
+      this.updateCenterMarker();
+    });
+    this.resizeListener = () => {
+      this.updateAllowedCenterBounds();
+      if (this.map) {
+        this.map.invalidateSize();
+        this.updateCenterMarker();
+      }
+    };
     window.addEventListener('resize', this.resizeListener);
   }
 
   private async switchBaseMap(mapId: string | undefined | null) {
     mapId = mapId || this.defaultMapId;
 
-    // Jeśli IndexedDB – odczytaj metadane i skoryguj zoom/bounds jeśli brak w Inputach
     if (this.useIndexedDb && mapId) {
       this.meta = await this.tileDb.getMapMetadata(mapId);
       if (this.meta) {
@@ -208,7 +238,6 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     if (this.maxZoom != null) this.map.setMaxZoom(this.maxZoom);
 
     if (this.northEast && this.southWest) {
-      // update original logical bounds and recompute allowed center bounds
       this.originalBounds = bounds;
       this.updateAllowedCenterBounds();
       this.map.panTo(bounds.getCenter());
@@ -227,7 +256,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       this.currentTileLayer = idbTileLayer(this.tileDb, mapId, {
         minZoom: this.minZoom!,
         maxZoom: this.maxZoom!,
-        tileSize: 256, // opcjonalnie: this.meta?.tileSize || 256
+        tileSize: 256,
       });
     } else {
       const url = `assets/maps/${mapId}/{z}/{x}/{y}.png`;
@@ -239,8 +268,6 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
 
     this.currentTileLayer.addTo(this.map);
   }
-
-  // ---- Twoje funkcje do warstw i UI ----
 
   private addStations(stations: Station[]) {
     for (const station of stations) {
@@ -337,6 +364,14 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     });
   }
 
+  private updateCenterMarker(): void {
+    if (this.circleMarker && this.map) {
+      const center = this.map.getCenter();
+      this.circleMarker.setLatLng(center);
+      this.updateCoordinates(center.lat, center.lng);
+    }
+  }
+
   private updateCoordinates(lat: number, lng: number): void {
     if (this.coordinatesDisplay) {
       this.coordinatesDisplay.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -355,16 +390,9 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     this.controlPointMarkers = [];
   }
 
-  /**
-   * Compute and set the allowed bounds for the map center.
-   * We want the center to be able to reach the actual edges of the logical map bounds.
-   * To achieve that we extend the logical bounds by half the current viewport size
-   * (so placing center on the edge will still show the map area inside the viewport).
-   */
   private updateAllowedCenterBounds(): void {
     if (!this.map || !this.originalBounds) return;
 
-    // ensure leaflet knows current size
     try { this.map.invalidateSize(false); } catch (e) { /* ignore */ }
 
     const viewBounds = this.map.getBounds();
@@ -376,10 +404,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       [this.originalBounds.getNorth() + latSpan / 2, this.originalBounds.getEast() + lngSpan / 2]
     );
 
-    // Apply allowed center bounds and set a soft viscosity so it's not too abrupt
     this.map.setMaxBounds(allowed);
-    // adjust viscosity to be flexible but prevent getting totally lost
-    // (0 = no resistance, 1 = full elastic stop)
     (this.map as any).options.maxBoundsViscosity = 0.75;
   }
 
