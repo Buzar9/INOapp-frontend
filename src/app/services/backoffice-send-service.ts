@@ -93,6 +93,10 @@ export class BackofficeSendService {
       return this.http.post<Route>(`${this.apiUrl}/routes/delete_station`, request)
     }
 
+    toggleStationMount(request: { routeId: string, stationId: string }): Observable<Route> {
+      return this.http.post<Route>(`${this.apiUrl}/routes/toggle_station_mount`, request)
+    }
+
     getRoutes(request: GetAllRoutesRequest): Observable<Route[]> {
       return this.http.post<Route[]>(`${this.apiUrl}/routes`, request, {
         headers: new HttpHeaders({ 'Content-Type': 'application/json' }),

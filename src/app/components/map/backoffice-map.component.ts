@@ -275,8 +275,14 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       const lng = station.geometry.coordinates[0];
       const coordinates = L.latLng(lat, lng);
 
+      const isMounted = station.properties['isMounted'] === 'true';
+      const markerColor = isMounted ? '#39FF14' : '#FF073A';
+
       const circle = L.circle(coordinates, {
-        color: 'yellow',
+        color: markerColor,
+        opacity: 1,
+        fillColor: markerColor,
+        fillOpacity: 1,
         radius: 1,
         pane: this.stationPaneName
       });
@@ -290,10 +296,10 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       this.stationMarkers.push(circle);
 
       const accuracyCircle = L.circle(coordinates, {
-        color: 'yellow',
+        color: markerColor,
         weight: 1,
         opacity: 0.2,
-        fillColor: 'yellow',
+        fillColor: markerColor,
         fillOpacity: 0.1,
         radius: Number(station.properties['accuracy']),
         pane: this.accuracyPaneName

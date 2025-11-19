@@ -354,6 +354,31 @@ export class OrganizerRouteViewComponent implements OnInit {
     })
   }
 
+  onToggleStationMount(stationId: string) {
+    if (!this.selectedRoute) {
+      console.warn('Nie wybrano trasy.');
+      return;
+    }
+
+    const request = {
+      routeId: this.selectedRoute.id,
+      stationId: stationId,
+    }
+    this.backofficeSendService.toggleStationMount(request).subscribe({
+      next: (updatedRoute) => {
+        this.routes = [...this.routes.map(route =>
+          route.id === updatedRoute.id ? updatedRoute : route
+        )];
+        this.selectedRoute = updatedRoute;
+        this.expandedRoutes = { [`${updatedRoute.id}`]: true };
+
+
+        console.log('dodo toggleStationMount - updatedRoute:', updatedRoute);
+      },
+      error: (err) => console.log('dodo error', err)
+    })
+  }
+
   onSubmitEditStationForm(){
     if (!this.selectedRoute || !this.selectedStation) {
       console.warn('Nie wybrano trasy lub stanowiska.');

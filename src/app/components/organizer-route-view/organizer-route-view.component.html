@@ -79,7 +79,13 @@
                   <ng-template #body let-station>
                     <tr>
                       <td colspan="3">
-                        <div><strong>{{ station.properties.name }}</strong> - {{ station.properties.type }}</div>
+                        <div>
+                          <strong>{{ station.properties.name }}</strong> - {{ station.properties.type }}
+                          <span [style.color]="station.properties.isMounted === 'true' ? '#39FF14' : '#FF073A'" 
+                                style="margin-left: 0.5rem; font-size: 0.9em;">
+                            ({{ station.properties.isMounted === 'true' ? 'rozstawione' : 'nie rozstawione' }})
+                          </span>
+                        </div>
                         <div style="font-size: 0.9em; color: #ccc; margin-top: 0.2rem;">{{ station.properties.note }}</div>
                         <div class="route-management-actions" style="margin-top: 0.5rem;">
                           <button
@@ -99,6 +105,14 @@
                             icon="pi pi-qrcode"
                             [rounded]="true"
                             (click)="onQrCodeStationGenerateClick(station)">
+                          </button>
+                          <button
+                            pButton
+                            icon="pi pi-thumbtack"
+                            [severity]="station.properties.isMounted === 'true' ? 'success' : 'secondary'"
+                            [rounded]="true"
+                            (click)="onToggleStationMount(station.properties.id)"
+                            [title]="station.properties.isMounted === 'true' ? 'Kod QR na miejscu' : 'Brak kodu QR'">
                           </button>
                         </div>
                       </td>
