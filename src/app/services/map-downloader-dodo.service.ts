@@ -22,7 +22,6 @@ export class MapDownloaderService {
     // Najpierw sprawdź czy mapa już istnieje w bazie danych
     const existingTiles = await this.tileDb.hasTilesForMap(mapId);
     if (existingTiles) {
-      console.log(`Mapa ${mapId} jest już w bazie danych, pomijam pobieranie`);
       return;
     }
 

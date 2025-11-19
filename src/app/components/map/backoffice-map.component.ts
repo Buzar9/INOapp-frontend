@@ -16,7 +16,7 @@ import { idbTileLayer } from '../../shared/tile-layer-indexeddb';
     <div id="map" style="height: 100%; width: 100%; position: relative;"></div>
     <div *ngIf="showCenterCoordinates" id="coordinates" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 6px; font-size: 0.9em; z-index: 1000; pointer-events: none;"></div>
   `,
-  styles: [``],
+  styleUrls: ['./backoffice-map.component.css']
 })
 export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChanges {
   defaultMapId: string = '3857_mala_2';
@@ -46,6 +46,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private stationPaneName = 'stationPane';
   private accuracyPaneName = 'accuracyPane';
   private stationMarkers: L.Layer[] = [];
+  private scaleControl?: L.Control.Scale;
   
   // Original logical map bounds (from metadata or inputs). We'll base allowed center range on this.
   private originalBounds?: L.LatLngBounds;
@@ -204,6 +205,18 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   }
 
   private async switchBaseMap(mapId: string | undefined | null) {
+    if (this.scaleControl) {
+      this.map.removeControl(this.scaleControl);
+      this.scaleControl = undefined;
+    }
+
+    if (!mapId) {
+      if (this.currentTileLayer) {
+        this.map.removeLayer(this.currentTileLayer);
+      }
+      return;
+    }
+
     mapId = mapId || this.defaultMapId;
 
     if (this.useIndexedDb && mapId) {
@@ -245,6 +258,15 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     if (this.minZoom != null) {
       this.map.setZoom(this.minZoom);
     }
+
+    this.scaleControl = L.control.scale({
+      position: 'topleft',  
+      maxWidth: 100,           
+      metric: true,  
+      imperial: false,          
+      updateWhenIdle: false    
+    });
+    this.scaleControl.addTo(this.map);
   }
 
   private async addBaseLayer(mapId: string) {

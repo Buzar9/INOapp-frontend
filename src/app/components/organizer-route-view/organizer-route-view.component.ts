@@ -318,10 +318,6 @@ export class OrganizerRouteViewComponent implements OnInit {
     const matchingOption = this.stationTypeOptions?.find(opt => opt.label === stationType || opt.value === stationType);
     const typeValue = matchingOption ? matchingOption.value : stationType;
     
-    console.log('Edycja stanowiska - type:', stationType);
-    console.log('Dopasowana opcja:', matchingOption);
-    console.log('Ustawiana wartość:', typeValue);
-    
     this.editStationForm.patchValue({
       name: this.selectedStation?.properties["name"],
       type: typeValue,
@@ -371,9 +367,6 @@ export class OrganizerRouteViewComponent implements OnInit {
         )];
         this.selectedRoute = updatedRoute;
         this.expandedRoutes = { [`${updatedRoute.id}`]: true };
-
-
-        console.log('dodo toggleStationMount - updatedRoute:', updatedRoute);
       },
       error: (err) => console.log('dodo error', err)
     })
@@ -467,8 +460,6 @@ export class OrganizerRouteViewComponent implements OnInit {
       console.log('Brak map do pobrania dla istniejących tras');
       return;
     }
-
-    console.log(`Pobieranie ${uniqueMapIds.size} unikalnych map dla istniejących tras`);
     this.isLoading = true;
 
     try {
@@ -477,9 +468,7 @@ export class OrganizerRouteViewComponent implements OnInit {
           .then(() => ({ status: 'fulfilled', id: mapId }))
           .catch(err => ({ status: 'rejected', id: mapId, reason: err }))
       );
-
-      const results = await Promise.allSettled(downloads);
-      console.log('Wyniki pobierania map dla tras:', results);
+      await Promise.allSettled(downloads);
     } catch (err) {
       console.error('Błąd podczas pobierania map dla tras:', err);
     } finally {

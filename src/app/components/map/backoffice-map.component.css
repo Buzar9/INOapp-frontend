@@ -1,0 +1,30 @@
+    ::ng-deep .leaflet-control-scale {
+      font-family: 'Special Elite', monospace !important;
+      font-size: 9px !important;
+      line-height: 1.2 !important;
+      background: rgba(15, 25, 15, 0.5) !important;
+      border: 1px solid rgba(184, 115, 51, 0.6) !important;
+      border-radius: 3px !important;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08) !important;
+      margin: 8px !important;
+    }
+    
+    ::ng-deep .leaflet-control-scale-line {
+      border: 1px solid rgba(184, 115, 51, 0.7) !important;
+      border-top: none !important;
+      color: rgba(226, 226, 220, 0.9) !important;
+      background: rgba(15, 25, 15, 0.4) !important;
+      padding: 2px 4px !important;
+      font-size: 8px !important;
+      font-weight: bold !important;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5) !important;
+      line-height: 1.1 !important;
+      min-width: 50px !important;
+      max-width: 100px !important;
+    }
+    
+    ::ng-deep .leaflet-control-scale-line:not(:first-child) {
+      border-top: 1px solid rgba(184, 115, 51, 0.7) !important;
+      border-bottom: none !important;
+      margin-top: -1px !important;
+    }

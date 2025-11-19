@@ -46,7 +46,8 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   private centerMapTimeout?: number;
   private loadMapTimeout?: number;
   private addStationsTimeout?: number;
-  private destroyed = false; 
+  private destroyed = false;
+  private scaleControl?: L.Control.Scale; 
 
   constructor(
     private participantSendService: ParticipantSendService,
@@ -96,7 +97,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
       minZoom: this.minZoom,
       maxZoom: this.maxZoom,
       dragging: true,
-      zoomControl: true,
+      zoomControl: false,
       touchZoom: true,
       doubleClickZoom: true,
       scrollWheelZoom: true,
@@ -128,6 +129,18 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private async switchBaseMap(mapId: string | undefined | null) {
+      if (this.scaleControl) {
+        this.map.removeControl(this.scaleControl);
+        this.scaleControl = undefined;
+      }
+
+      if (!mapId) {
+        if (this.currentTileLayer && this.map.hasLayer(this.currentTileLayer)) {
+          this.map.removeLayer(this.currentTileLayer);
+        }
+        return;
+      }
+
       mapId = mapId || this.defaultMapId;
       this.minZoom = this.minZoom || this.defaultMinZoom;
       this.maxZoom = this.maxZoom || this.defaultMaxZoom;
@@ -160,6 +173,15 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
         if (this.destroyed) return;
         this.centerMapProperly();
       }, 500);
+
+      this.scaleControl = L.control.scale({
+        position: 'topleft',
+        maxWidth: 100,
+        metric: true,
+        imperial: false,
+        updateWhenIdle: false
+      });
+      this.scaleControl.addTo(this.map);
     }
 
   private addStations(stations: Station[]) {
