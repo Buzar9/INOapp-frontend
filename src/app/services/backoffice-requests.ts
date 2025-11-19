@@ -66,3 +66,7 @@ export type GetBackgroundMapRequest = {
     competitionId: string,
     categoryId: string
 }
+
+export type DeleteBackgroundMapRequest = {
+    backgroundMapId: string
+}

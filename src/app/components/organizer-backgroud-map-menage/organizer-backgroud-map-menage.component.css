@@ -138,7 +138,8 @@
 
 .detail-value.bounds,
 .detail-value.id,
-.detail-value.url {
+.detail-value.url,
+.detail-value.zoom {
   font-size: 0.8rem;
   font-family: monospace;
   color: #666;

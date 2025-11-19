@@ -1,7 +1,7 @@
 export type BackgroundMap = {
     name: string,
     id: string,
-    fileUrl: string,
+    fileSize: number,
     minZoom: number,
     maxZoom: number,
     northEast: [number, number],

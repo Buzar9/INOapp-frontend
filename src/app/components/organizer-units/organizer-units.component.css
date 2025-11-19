@@ -1,0 +1,66 @@
+/* =========================
+   DIALOG FORMS
+   ========================= */
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.dialog-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dialog-form .form-field label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-color, #333);
+}
+
+.dialog-form input,
+.dialog-form p-select,
+.dialog-form p-dropdown,
+.dialog-form p-multiselect {
+  width: 100%;
+}
+
+/* =========================
+   Z-INDEX FIX - MULTISELECT W DIALOGU
+   ========================= */
+::ng-deep .p-multiselect-overlay,
+::ng-deep .p-multiselect-panel {
+  z-index: 10100 !important;
+}
+
+::ng-deep .p-dialog {
+  z-index: 10000 !important;
+}
+
+::ng-deep .p-dialog-mask {
+  z-index: 9999 !important;
+}
+
+/* Pozwól overlay wyświetlać się poza dialogiem */
+::ng-deep .p-dialog .p-dialog-content {
+  overflow: visible !important;
+}
+
+::ng-deep .p-dialog {
+  overflow: visible !important;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 768px) {
+  .dialog-form {
+    gap: 0.8rem;
+  }
+  
+  .dialog-form .form-field label {
+    font-size: 0.85rem;
+  }
+}

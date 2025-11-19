@@ -21,7 +21,7 @@ import { AutoFocusModule } from 'primeng/autofocus';
 @Component({
     selector:'organizer-backgroud-map-menage',
     standalone:true,
-    imports:[    
+    imports:[
         CommonModule,
         ReactiveFormsModule,
         InputTextModule,
@@ -129,7 +129,7 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
 
     toggleMapFullscreen(): void {
         this.isMapFullscreen = !this.isMapFullscreen;
-        
+
         setTimeout(() => {
             if (this.mapComponent) {
                 this.mapComponent.invalidateSizeAndKeepCenter();
@@ -174,6 +174,23 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
             error: (err) => {
                 this.uploadMessage = 'Wystąpił błąd podczas przesyłania pliku.';
                 this.uploadProgress = 0;
+            }
+        });
+    }
+
+    onDeleteMap(mapId: string): void {
+        this.isLoading = true;
+        const request = {
+            backgroundMapId: mapId
+        }
+        this.backofficeService.deleteBackgroundMap(request).subscribe({
+            next: () => {
+                this.loadBackgroundMaps();
+                this.isLoading = false;
+            },
+            error: (err) => {
+                console.error('Błąd podczas usuwania mapy:', err);
+                this.isLoading = false;
             }
         });
     }

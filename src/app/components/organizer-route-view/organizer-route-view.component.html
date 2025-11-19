@@ -32,7 +32,12 @@
                         [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"/>
             </td>
             <td colspan="2">
-              <div>{{ route.name }}</div>
+              <div>
+                {{ route.name }}
+                <span *ngIf="route.backgroundMap?.name" style="color: #b87333; font-size: 0.95em; margin-left: 0.7em;">
+                  [{{ route.backgroundMap.name }}]
+                </span>
+              </div>
               <div *ngIf="isRouteSelected(route.id)" class="route-management-actions">
                 <button
                   pButton pRipple

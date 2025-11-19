@@ -204,7 +204,6 @@ export class OrganizerRouteViewComponent implements OnInit {
     }
     this.backofficeSendService.deleteRoute(request).subscribe({
       next: (updatedRoutes) => {
-        // Po usunięciu pobierz aktualną listę tras z serwera, aby UI był zsynchronizowany
         const listRequest = { competitionId: 'Competition123' };
         this.backofficeSendService.getRoutes(listRequest).subscribe({
           next: (freshRoutes) => {

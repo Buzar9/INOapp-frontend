@@ -33,8 +33,9 @@
             <button
               pButton pRipple
               type="button"
-              (click)="onQrCodeGenerateClick(unit)">
-              Inicjuj
+              icon="pi pi-qrcode"
+              (click)="onInitializeCategoryClick(unit)"
+              title="Inicjuj kategorie">
             </button>
           </div>
         </td>
@@ -53,20 +54,33 @@
       <button pButton type="submit" [disabled]="editUnitForm.invalid">Dodaj</button>
     </form>
   </p-dialog>
-  <p-dialog [modal]="true" [(visible)]="showGenerateQrCodeDialog">
+  <p-dialog header="Inicjuj kategorie" [modal]="true" [(visible)]="showInitializeCategoryDialog" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
     <ng-template pTemplate="header">
       <div>
-        Stwórz kody inicjujące kategorie<br>
+        Inicjuj kategorie dla jednostki<br>
         <strong>{{ selectedUnit?.name }}</strong>
       </div>
     </ng-template>
-    <p-multiselect [options]="categories" [(ngModel)]="selectedCategories" placeholder="kategorie" optionLabel="name" display="chip"
-                   [appendTo]="'body'"/>
-    <button
-      pButton
-      icon="pi pi-qrcode"
-      (click)="onQrCodeDownloadClick()"
-    ></button>
+    <form [formGroup]="initializeCategoryForm" (ngSubmit)="onInitializeCategorySubmit()" class="dialog-form">
+      <div class="form-field">
+        <label for="init-categories">Wybierz kategorie</label>
+        <p-multiselect 
+          id="init-categories"
+          [options]="categories" 
+          formControlName="categories" 
+          placeholder="Kategorie" 
+          optionLabel="name" 
+          display="chip">
+        </p-multiselect>
+      </div>
+      <button 
+        pButton 
+        type="submit" 
+        icon="pi pi-qrcode"
+        label="Generuj kody QR"
+        [disabled]="initializeCategoryForm.invalid || !initializeCategoryForm.value.categories?.length">
+      </button>
+    </form>
   </p-dialog>
 </div>
 

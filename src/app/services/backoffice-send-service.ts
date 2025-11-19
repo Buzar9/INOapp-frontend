@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { RaceResult } from "./response/RaceResults";
-import { AddStationToRouteRequest, CreateCategoryRequest, CreateCompetitionRequest, CreateUnitRequest, DeleteCategoryRequest, DeleteRouteRequest, DeleteStationRequest, DeleteUnitRequest, EditRouteRequest, EditStationRequest, EditUnitRequest } from "./backoffice-requests";
+import { AddStationToRouteRequest, CreateCategoryRequest, CreateCompetitionRequest, CreateUnitRequest, DeleteBackgroundMapRequest, DeleteCategoryRequest, DeleteRouteRequest, DeleteStationRequest, DeleteUnitRequest, EditRouteRequest, EditStationRequest, EditUnitRequest } from "./backoffice-requests";
 import { CreateRouteRequest } from "./request/CreateRouteRequest"
 import { Station } from "../services/response/Station"
 import { Route } from "./response/Route";
@@ -119,6 +119,10 @@ export class BackofficeSendService {
       return this.http.post<BackgroundMap[]>(`${this.apiUrl}/background_maps`, request, {
         headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
       });
+    }
+
+    deleteBackgroundMap(request: DeleteBackgroundMapRequest): Observable<Route> {
+      return this.http.post<Route>(`${this.apiUrl}/background_maps/delete`, request)
     }
 
     editRoute(request: EditRouteRequest): Observable<Route> {

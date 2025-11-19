@@ -1,6 +1,5 @@
 <div class="map-management-container">
   <p-splitter [panelSizes]="[40, 60]" [style]="{'height': 'calc(100vh - 60px)'}">
-    <!-- Panel listy map -->
     <ng-template #panel>
       <div class="table-panel">
         <p-table 
@@ -35,8 +34,7 @@
           <ng-template #body let-map let-expanded="expanded">
             <tr>
               <td>
-                <button
-                  pButton
+                <p-button
                   type="button"
                   pRipple
                   [pRowToggler]="map"
@@ -44,7 +42,7 @@
                   [rounded]="true"
                   [plain]="true"
                   [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'">
-                </button>
+                </p-button>
               </td>
               <td colspan="2">
                 <div>{{ map.name }}</div>
@@ -55,14 +53,16 @@
                     type="button"
                     icon="pi pi-trash"
                     [rounded]="true"
-                    severity="danger">
+                    severity="danger"
+                    (click)="onDeleteMap(map.id)"
+                    title="Usuń mapę">
                   </button>
                 </div>
               </td>
             </tr>
           </ng-template>
           
-          <ng-template #rowexpansion let-map>
+          <ng-template #expandedrow let-map>
             <tr>
               <td colspan="3">
                 <div class="map-details-expanded">
@@ -73,20 +73,12 @@
                   
                   <div class="detail-row">
                     <span class="detail-label">Zoom:</span>
-                    <span class="detail-value">
-                      <p-tag [value]="'Min: ' + map.minZoom" severity="info" [style]="{'margin-right': '0.5rem'}"></p-tag>
-                      <p-tag [value]="'Max: ' + map.maxZoom" severity="success"></p-tag>
-                    </span>
+                    <span class="detail-value zoom">{{ map.minZoom }} - {{ map.maxZoom }}</span>
                   </div>
                   
                   <div class="detail-row">
-                    <span class="detail-label">Granice:</span>
-                    <span class="detail-value bounds">{{ getMapBounds(map) }}</span>
-                  </div>
-                  
-                  <div class="detail-row">
-                    <span class="detail-label">URL:</span>
-                    <span class="detail-value url">{{ map.fileUrl }}</span>
+                    <span class="detail-label">Rozmiar:</span>
+                    <span class="detail-value url">{{ map.fileSize }} MB</span>
                   </div>
                 </div>
               </td>
