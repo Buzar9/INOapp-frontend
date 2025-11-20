@@ -41,8 +41,8 @@ export type DeleteRouteRequest = {
 
 export type CreateCategoryRequest = {
     name: string,
-    routeId: string,
-    backgroundMapId: string
+    competitionId: string,
+    routeId: string
 }
 
 export type DeleteCategoryRequest = {

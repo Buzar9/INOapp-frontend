@@ -440,13 +440,10 @@ button .pi-spinner {
   z-index: 9999 !important;
 }
 
-/* Select overlay wewnątrz dialogu - relatywny z-index */
-.p-dialog .p-select-overlay,
-.p-dialog .p-dropdown-overlay,
-.p-dialog .p-dropdown-panel,
+/* Dropdown panel i select overlay zawsze na wierzchu, wyżej niż dialog */
+.p-dropdown-panel,
 .p-select-overlay {
-  z-index: 1100 !important;
-  position: fixed !important;
+  z-index: 10001 !important;
 }
 
 /* =========================

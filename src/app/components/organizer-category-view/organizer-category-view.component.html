@@ -1,5 +1,4 @@
 <div>
-  <p-toast />
   <p-splitter [panelSizes]="[40, 60]">
     <ng-template #panel>
       <p-table [value]="categories" dataKey="id" selectionMode="single" [(selection)]="selectedCategory" [scrollable]="true"
@@ -51,24 +50,17 @@
         >
         </backoffice-map>
         <p-dialog header="Dodaj kategorię" [modal]="true" [(visible)]="showAddCategoryForm">
-          <form [formGroup]="addCategoryForm" (ngSubmit)="onSubmitAddCategoryForm()">
+          <form [formGroup]="addCategoryForm" (ngSubmit)="onSubmitAddCategoryForm()" class="category-form">
             <input type="text" [pAutoFocus]="true" pInputText formControlName="name" placeholder="Nazwa"/>
             <p-dropdown
-              [appendTo]="'body'"
               [options]="routeOptions"
               formControlName="routeId"
               optionLabel="name"
               optionValue="id"
-              placeholder="Trasa">
-            </p-dropdown>
-            <p-select
+              placeholder="Trasa"
               [appendTo]="'body'"
-              [options]="backgroundMapsOptions"
-              formControlName="backgroundMapId"
-              optionLabel="name"
-              optionValue="id"
-              placeholder="Mapa">
-            </p-select>
+              [baseZIndex]="10001">
+            </p-dropdown>
             <button pButton type="submit" [disabled]="addCategoryForm.invalid">Dodaj</button>
           </form>
         </p-dialog>

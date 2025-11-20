@@ -177,7 +177,9 @@
               formControlName="backgroundMapId"
               optionLabel="name"
               optionValue="id"
-              placeholder="Wybierz mapę">
+              placeholder="Wybierz mapę"
+              [appendTo]="'body'"
+              [baseZIndex]="10001">
             </p-select>
             <button pButton type="submit" [disabled]="addRouteForm.invalid" label="Dodaj trasę"></button>
           </form>
@@ -196,7 +198,9 @@
                 optionLabel="label"
                 optionValue="value"
                 formControlName="type"
-                placeholder="Typ stanowiska">
+                placeholder="Typ stanowiska"
+                [appendTo]="'body'"
+                [baseZIndex]="10001">
               </p-select>
             </div>
             <div class="form-field">
@@ -237,7 +241,9 @@
                 optionLabel="label"
                 optionValue="value"
                 formControlName="type"
-                placeholder="Typ stanowiska">
+                placeholder="Typ stanowiska"
+                [appendTo]="'body'"
+                [baseZIndex]="10001">
               </p-select>
             </div>
             <div class="form-field">

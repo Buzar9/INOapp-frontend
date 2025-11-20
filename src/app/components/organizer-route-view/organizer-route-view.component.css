@@ -169,6 +169,7 @@
   flex-direction: column;
   gap: 1rem;
   padding: 0.5rem 0;
+  position: relative;
 }
 
 .dialog-form .form-field {
@@ -240,6 +241,11 @@
 .dialog-form p-select,
 .dialog-form p-dropdown {
   width: 100%;
+}
+
+.dialog-form p-select,
+.dialog-form p-dropdown {
+  position: relative;
 }
 
 /* No route selected */
