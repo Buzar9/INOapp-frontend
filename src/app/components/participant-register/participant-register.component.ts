@@ -6,6 +6,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { QrScannerComponent } from "../qr-scanner/qr-scanner.component";
 import { CommonModule } from "@angular/common";
 import { MapDownloaderService } from "../../services/map-downloader-dodo.service";
+import { TileDbService } from "../../services/tile-db.service";
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -35,6 +36,7 @@ export class ParticipantRegisterComponent {
         private participantSendService: ParticipantSendService,
         private participantStateService: ParticipantStateService,
         private mapDownloader: MapDownloaderService,
+        private tileDbService: TileDbService,
         private router: Router,
         private formBuilder: FormBuilder,) {
             this.participantForm = this.formBuilder.group({
@@ -61,12 +63,12 @@ export class ParticipantRegisterComponent {
 
     onSubmit() {
         this.isLoading = true;
-        
+
         this.clearOldRunData();
-        
+
         this.participantStateService.setParticipantName(this.participantForm.value)
         let formData = this.participantStateService.getData()
-        
+
         let request =  {
             competitionId: formData.competitionId,
             categoryId: formData.categoryId,
@@ -76,21 +78,48 @@ export class ParticipantRegisterComponent {
 
         this.participantSendService.initiateRun(request).subscribe ({
             next: async (response) => {
-                this.setLocalStorageItem('categoryId', formData.categoryId)
-                this.setLocalStorageItem('runId', response.runId)
-                
+                console.log('[ParticipantRegister] Run initiated successfully:', response);
+
+                // Zapisz wszystkie dane sesji do localStorage
+                this.setLocalStorageItem('runId', response.runId);
+                this.setLocalStorageItem('categoryId', formData.categoryId);
+                this.setLocalStorageItem('competitionId', formData.competitionId);
+                this.setLocalStorageItem('participantUnit', formData.participantUnit);
+                this.setLocalStorageItem('participantName', formData.participantName);
+
+                // Ustaw runId w serwisie stanu
+                this.participantStateService.setRunId(response.runId);
+
+                // Zapisz backup stanu do IndexedDB (początkowy stan przed rozpoczęciem biegu)
+                try {
+                    await this.tileDbService.saveParticipantSession({
+                        runId: response.runId,
+                        categoryId: formData.categoryId,
+                        competitionId: formData.competitionId,
+                        participantUnit: formData.participantUnit,
+                        participantName: formData.participantName,
+                        wasRunActivate: false,
+                        isRunFinished: false,
+                        runStartTime: 0,
+                        raceTimeDisplay: '00:00',
+                        checkpointsNumber: 0,
+                        pendingRequests: []
+                    });
+                } catch (err) {
+                    console.error('[ParticipantRegister] Error saving session backup:', err);
+                }
+
                 try {
                     await this.mapDownloader.downloadMap(response.backgroundMapId)
                     this.router.navigate(['/participant/scan']);
-                    console.log('dodo response', response)
                 } catch (error) {
-                    console.error('Błąd podczas pobierania mapy:', error);
+                    console.error('[ParticipantRegister] Error downloading map:', error);
                 } finally {
                     this.isLoading = false;
                 }
             },
             error: (err) => {
-                console.log('dodo error', err)
+                console.error('[ParticipantRegister] Error initiating run:', err)
                 this.isLoading = false;
             }
         })

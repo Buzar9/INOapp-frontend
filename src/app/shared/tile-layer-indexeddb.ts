@@ -31,6 +31,7 @@ export function idbTileLayer(
       db.getTile(mapId, coords.z, coords.x, coords.y)
         .then(blob => {
           if (!blob) {
+            console.warn(`[idbTileLayer] Tile not found: ${mapId}/${coords.z}/${coords.x}/${coords.y}`);
             // Możesz tu podstawić przezroczysty placeholder zamiast zgłaszać błąd
             // img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
             done(new Error(`Tile not found: ${mapId}/${coords.z}/${coords.x}/${coords.y}`), img);
@@ -42,7 +43,10 @@ export function idbTileLayer(
           img.onerror = () => { cleanup(); done(new Error('Tile image error'), img); };
           img.src = url;
         })
-        .catch(err => done(err, img));
+        .catch(err => {
+          console.error(`[idbTileLayer] Error loading tile ${mapId}/${coords.z}/${coords.x}/${coords.y}:`, err);
+          done(err, img);
+        });
 
       return img;
     }

@@ -62,7 +62,9 @@
     private networkService: NetworkService,
     private tileDbService: TileDbService,
     private location: Location
-  ){}    ngOnInit(): void {
+  ){}
+
+    async ngOnInit(): Promise<void> {
       const runId = this.getLocalStorageItem('runId');
 
       if (runId) {
@@ -78,6 +80,44 @@
         }
         if (savedRaceTimeDisplay) {
           this.raceTimeDisplay = savedRaceTimeDisplay;
+        }
+
+        this.participantStateService.restoreFromLocalStorage();
+      } else {
+        try {
+          const sessionBackup = await this.tileDbService.getParticipantSession();
+          if (sessionBackup) {
+            this.setLocalStorageItem('runId', sessionBackup.runId);
+            this.setLocalStorageItem('categoryId', sessionBackup.categoryId);
+            this.setLocalStorageItem('competitionId', sessionBackup.competitionId);
+            this.setLocalStorageItem('participantUnit', sessionBackup.participantUnit);
+            this.setLocalStorageItem('participantName', sessionBackup.participantName);
+            this.setLocalStorageItem('wasRunActivate', String(sessionBackup.wasRunActivate));
+            this.setLocalStorageItem('isRunFinished', String(sessionBackup.isRunFinished));
+            this.setLocalStorageItem('runStartTime', String(sessionBackup.runStartTime));
+            this.setLocalStorageItem('raceTimeDisplay', sessionBackup.raceTimeDisplay);
+            this.setLocalStorageItem('checkpointsNumber', String(sessionBackup.checkpointsNumber));
+            this.setLocalStorageItem('pendingRequests', JSON.stringify(sessionBackup.pendingRequests));
+
+            this.wasRunActivate = sessionBackup.wasRunActivate;
+            this.isRunFinished = sessionBackup.isRunFinished;
+            this.runStartTime = sessionBackup.runStartTime;
+            this.raceTimeDisplay = sessionBackup.raceTimeDisplay;
+            this.checkpointsNumber = sessionBackup.checkpointsNumber;
+
+            // Przywróć do serwisu
+            this.participantStateService.setRunId(sessionBackup.runId);
+            this.participantStateService.setOrganizationData({
+              competitionId: sessionBackup.competitionId,
+              participantUnit: sessionBackup.participantUnit,
+              categoryId: sessionBackup.categoryId
+            });
+            this.participantStateService.setParticipantName({ participantName: sessionBackup.participantName });
+          } else {
+            console.log('[ParticipantRun] No session backup found - starting fresh');
+          }
+        } catch (err) {
+          console.error('[ParticipantRun] Error restoring session from IndexedDB:', err);
         }
       }
 
@@ -123,7 +163,6 @@
     }
 
     ngOnDestroy(): void {
-      localStorage.clear()
       this.timerSubscription.unsubscribe();
       this.subscriptions.unsubscribe();
     }
@@ -232,6 +271,9 @@
 
     this.isRunFinished = response.isFinished
     this.setLocalStorageItem('isRunFinished', `${response.isFinished}`)
+
+    // Zapisz backup stanu do IndexedDB po każdej zmianie
+    this.saveSessionBackup();
   }
 
 // dodo kiedy tego uzyc
@@ -285,7 +327,7 @@
   }
 
   async onNewRoute(): Promise<void> {
-    this.router.navigateByUrl('').then(() => {
+    this.router.navigateByUrl('').then(async () => {
       this.runStartTime = 0;
       this.runFinishTime = 0;
       this.raceTimeDisplay = '00:00';
@@ -301,8 +343,16 @@
       localStorage.clear();
       this.participantStateService.clear();
 
+      // Usuń backup sesji z IndexedDB
+      try {
+        await this.tileDbService.clearParticipantSession();
+      } catch (error) {
+        console.error('[ParticipantRun] Error clearing session backup:', error);
+      }
+
+      // Usuń mapy z IndexedDB
       this.tileDbService.clearAllMaps().catch(error => {
-        console.error('Błąd podczas usuwania map z IndexedDB:', error);
+        console.error('[ParticipantRun] Error clearing maps from IndexedDB:', error);
       });
     });
   }
@@ -327,5 +377,31 @@
 
   dismissOrientationWarning(): void {
     this.showOrientationWarning = false;
+  }
+
+  /**
+   * Zapisuje backup stanu sesji do IndexedDB.
+   * Wywoływane po każdej istotnej zmianie stanu (skanowanie checkpointu, rozpoczęcie biegu itp.)
+   */
+  private saveSessionBackup(): void {
+    const pendingRequests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+
+    const sessionState = {
+      runId: this.getLocalStorageItem('runId'),
+      categoryId: this.getLocalStorageItem('categoryId'),
+      competitionId: this.participantStateService.competitionId,
+      participantUnit: this.participantStateService.participantUnit,
+      participantName: this.participantStateService.participantName,
+      wasRunActivate: this.wasRunActivate,
+      isRunFinished: this.isRunFinished,
+      runStartTime: this.runStartTime,
+      raceTimeDisplay: this.raceTimeDisplay,
+      checkpointsNumber: this.checkpointsNumber,
+      pendingRequests: pendingRequests
+    };
+
+    this.tileDbService.saveParticipantSession(sessionState).catch(err => {
+      console.error('[ParticipantRun] Error saving session backup to IndexedDB:', err);
+    });
   }
 }

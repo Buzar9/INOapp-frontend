@@ -1,0 +1,128 @@
+<div class="storage-manager-container">
+  <p-toast />
+  <p-confirmDialog />
+
+  <div class="header-section">
+    <h2>Zarządzanie pobranymi mapami</h2>
+    <p class="description">
+      Tutaj możesz zarządzać mapami pobranymi do pamięci offline. Usuń niepotrzebne mapy aby zwolnić miejsce.
+    </p>
+  </div>
+
+  <div class="storage-info-card">
+    <div class="storage-header">
+      <h3>Wykorzystanie pamięci</h3>
+      <p-tag
+        [value]="storagePercentage.toFixed(1) + '%'"
+        [severity]="getStorageSeverity()">
+      </p-tag>
+    </div>
+
+    <div class="storage-stats">
+      <div class="stat-item">
+        <span class="label">Użyte:</span>
+        <span class="value">{{ formattedUsage }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Dostępne:</span>
+        <span class="value">{{ formattedAvailable }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Limit:</span>
+        <span class="value">{{ formattedQuota }}</span>
+      </div>
+    </div>
+
+    <p-progressBar
+      [value]="storagePercentage"
+      [showValue]="false"
+      [style]="{'height': '12px', 'margin-top': '1rem'}">
+    </p-progressBar>
+  </div>
+
+  <div class="maps-section">
+    <div class="section-header">
+      <h3>Pobrane mapy ({{ maps.length }})</h3>
+      <p-button
+        label="Usuń nieprzypięte"
+        icon="pi pi-trash"
+        severity="danger"
+        [outlined]="true"
+        (onClick)="clearUnpinnedMaps()"
+        [disabled]="maps.length === 0">
+      </p-button>
+    </div>
+
+    <p-table
+      [value]="maps"
+      [loading]="isLoading"
+      styleClass="p-datatable-sm"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Pokazywanie {first} do {last} z {totalRecords} map">
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 3rem"></th>
+          <th pSortableColumn="name">Nazwa <p-sortIcon field="name" /></th>
+          <th pSortableColumn="sizeBytes">Rozmiar <p-sortIcon field="sizeBytes" /></th>
+          <th pSortableColumn="downloadedAt">Data pobrania <p-sortIcon field="downloadedAt" /></th>
+          <th style="width: 10rem">Akcje</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-map>
+        <tr>
+          <td>
+            <button
+              pButton
+              type="button"
+              [icon]="map.isPinned ? 'pi pi-star-fill' : 'pi pi-star'"
+              class="p-button-rounded p-button-text"
+              [class.pinned]="map.isPinned"
+              (click)="togglePin(map)"
+              [pTooltip]="map.isPinned ? 'Odepnij mapę' : 'Przypnij mapę (chroni przed usunięciem)'">
+            </button>
+          </td>
+          <td>
+            <div class="map-name">
+              {{ map.name || map.id }}
+              @if (map.usedInRoutes && map.usedInRoutes.length > 0) {
+                <p-tag
+                  value="W użyciu"
+                  severity="info"
+                  [style]="{'margin-left': '0.5rem'}">
+                </p-tag>
+              }
+            </div>
+          </td>
+          <td>{{ map.formattedSize }}</td>
+          <td>{{ map.formattedDate }}</td>
+          <td>
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [outlined]="true"
+              size="small"
+              (onClick)="deleteMap(map.id, map.name)"
+              pTooltip="Usuń mapę">
+            </p-button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="empty-message">
+            <div class="empty-state">
+              <i class="pi pi-inbox" style="font-size: 3rem; color: var(--text-color-secondary)"></i>
+              <p>Brak pobranych map</p>
+              <p class="hint">Mapy zostaną pobrane automatycznie gdy wybierzesz kategorię lub trasę</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

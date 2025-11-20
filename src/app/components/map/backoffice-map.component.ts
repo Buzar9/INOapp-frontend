@@ -47,7 +47,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private accuracyPaneName = 'accuracyPane';
   private stationMarkers: L.Layer[] = [];
   private scaleControl?: L.Control.Scale;
-  
+
   // Original logical map bounds (from metadata or inputs). We'll base allowed center range on this.
   private originalBounds?: L.LatLngBounds;
   // Window resize listener ref so we can remove it on destroy
@@ -139,24 +139,25 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   }
 
   private async initMap(): Promise<void> {
-    this.minZoom = this.minZoom ?? this.defaultMinZoom;
-    this.maxZoom = this.maxZoom ?? this.defaultMaxZoom;
-    this.northEast = this.northEast ?? this.defaultNorthEast;
-    this.southWest = this.southWest ?? this.defaultSouthWest;
-
     const usedMapId = this.backgroundMapId || this.defaultMapId;
 
+    // Najpierw spróbuj pobrać metadane z IndexedDB (jeśli używamy IDB)
     if (this.useIndexedDb && usedMapId) {
       this.meta = await this.tileDb.getMapMetadata(usedMapId);
-      if (this.meta) {
-        this.minZoom = this.meta.minZoom ?? this.minZoom;
-        this.maxZoom = this.meta.maxZoom ?? this.maxZoom;
-        if (!this.northEast || !this.southWest) {
-          if (this.meta.bounds) {
-            this.southWest = [this.meta.bounds.south, this.meta.bounds.west];
-            this.northEast = [this.meta.bounds.north, this.meta.bounds.east];
-          }
-        }
+    }
+
+    // Ustaw zoom levels - PRIORYTET: Input > Metadata z IDB > Defaulty
+    this.minZoom = this.minZoom ?? this.meta?.minZoom ?? this.defaultMinZoom;
+    this.maxZoom = this.maxZoom ?? this.meta?.maxZoom ?? this.defaultMaxZoom;
+
+    // Ustaw bounds - PRIORYTET: Input > Metadata z IDB > Defaulty
+    if (!this.northEast || !this.southWest) {
+      if (this.meta?.bounds) {
+        this.southWest = [this.meta.bounds.south, this.meta.bounds.west];
+        this.northEast = [this.meta.bounds.north, this.meta.bounds.east];
+      } else {
+        this.northEast = this.northEast ?? this.defaultNorthEast;
+        this.southWest = this.southWest ?? this.defaultSouthWest;
       }
     }
 
@@ -219,21 +220,32 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
 
     mapId = mapId || this.defaultMapId;
 
+    // Spróbuj pobrać metadane z IndexedDB (jeśli używamy IDB)
     if (this.useIndexedDb && mapId) {
       this.meta = await this.tileDb.getMapMetadata(mapId);
-      if (this.meta) {
-        this.minZoom = this.meta.minZoom ?? this.minZoom ?? this.defaultMinZoom;
-        this.maxZoom = this.meta.maxZoom ?? this.maxZoom ?? this.defaultMaxZoom;
-        if (!this.northEast || !this.southWest) {
-          if (this.meta.bounds) {
-            this.southWest = [this.meta.bounds.south, this.meta.bounds.west];
-            this.northEast = [this.meta.bounds.north, this.meta.bounds.east];
-          } else {
-            this.northEast = this.northEast ?? this.defaultNorthEast;
-            this.southWest = this.southWest ?? this.defaultSouthWest;
-          }
+    }
+
+    // Ustaw zoom levels - PRIORYTET: Input > Metadata z IDB > Defaulty
+    // (NIE nadpisuj jeśli już są ustawione z inputów!)
+    if (this.meta) {
+      this.minZoom = this.minZoom ?? this.meta.minZoom ?? this.defaultMinZoom;
+      this.maxZoom = this.maxZoom ?? this.meta.maxZoom ?? this.defaultMaxZoom;
+
+      if (!this.northEast || !this.southWest) {
+        if (this.meta.bounds) {
+          this.southWest = [this.meta.bounds.south, this.meta.bounds.west];
+          this.northEast = [this.meta.bounds.north, this.meta.bounds.east];
+        } else {
+          this.northEast = this.northEast ?? this.defaultNorthEast;
+          this.southWest = this.southWest ?? this.defaultSouthWest;
         }
       }
+    } else {
+      // Brak metadanych - użyj defaultów jeśli nie ma inputów
+      this.minZoom = this.minZoom ?? this.defaultMinZoom;
+      this.maxZoom = this.maxZoom ?? this.defaultMaxZoom;
+      this.northEast = this.northEast ?? this.defaultNorthEast;
+      this.southWest = this.southWest ?? this.defaultSouthWest;
     }
 
     if (this.currentTileLayer) {
@@ -260,11 +272,11 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     }
 
     this.scaleControl = L.control.scale({
-      position: 'topleft',  
-      maxWidth: 100,           
-      metric: true,  
-      imperial: false,          
-      updateWhenIdle: false    
+      position: 'topleft',
+      maxWidth: 100,
+      metric: true,
+      imperial: false,
+      updateWhenIdle: false
     });
     this.scaleControl.addTo(this.map);
   }
@@ -292,6 +304,11 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   }
 
   private addStations(stations: Station[]) {
+
+    if (!this.map) {
+      return;
+    }
+
     for (const station of stations) {
       const lat = station.geometry.coordinates[1];
       const lng = station.geometry.coordinates[0];

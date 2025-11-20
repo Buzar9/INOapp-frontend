@@ -46,6 +46,11 @@ export class OrganizerScreenComponent {
                 routerLink: 'maps'
             },
             {
+                label: 'Pamięć',
+                icon: 'pi pi-database',
+                routerLink: 'storage'
+            },
+            {
                 label: 'Wyloguj',
                 icon: 'pi pi-sign-out',
                 command: async () => await this.logoutAndClear()

@@ -20,6 +20,7 @@ import { MapDownloaderService } from '../../services/map-downloader-dodo.service
 import { QrCodeGeneratorService } from '../../services/qr-code-generator.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
+import { TileDbService } from '../../services/tile-db.service';
 
 
 @Component({
@@ -62,7 +63,8 @@ export class OrganizerRouteViewComponent implements OnInit {
     private backofficeSendService: BackofficeSendService,
     private mapDownloader: MapDownloaderService,
     private qrCodeGenerator: QrCodeGeneratorService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private tileDb: TileDbService
   ) {
       this.addRouteForm = this.formBuilder.group({
         name: [''],
@@ -95,9 +97,8 @@ export class OrganizerRouteViewComponent implements OnInit {
   ngOnInit(): void {
     let request = {competitionId: 'Competition123'}
     this.backofficeSendService.getRoutes(request).subscribe ({
-        next: async (response) => {
+        next: (response) => {
           this.routes = response
-          await this.downloadMapsForExistingRoutes()
         },
         error: (err) => console.log(err)
     })
@@ -126,12 +127,21 @@ export class OrganizerRouteViewComponent implements OnInit {
 
     this.isLoading = true;
     try {
-      await this.mapDownloader.downloadMap(this.addRouteForm.value.backgroundMapId)
+      const selectedBgMap = this.backgroundMapsOptions.find(opt => opt.id === this.addRouteForm.value.backgroundMapId);
+
+      if (selectedBgMap) {
+        await this.mapDownloader.downloadMap(selectedBgMap.id, {
+          name: selectedBgMap.name
+        });
+      }
 
       this.backofficeSendService.createRoute(request).subscribe({
-        next: (newRoute) => {
+        next: async (newRoute) => {
           this.routes.push(newRoute)
           this.selectRoute(newRoute)
+
+          await this.trackMapUsageForRoute(newRoute.id, newRoute.backgroundMap?.id);
+
           this.isLoading = false;
         },
         error: (err) => {
@@ -200,16 +210,21 @@ export class OrganizerRouteViewComponent implements OnInit {
       return;
     }
 
+    const routeToDelete = this.selectedRoute;
+
     this.confirmationService.confirm({
       message: `Czy na pewno chcesz usunąć trasę "${this.selectedRoute.name}"?`,
       header: 'Potwierdzenie usunięcia',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Tak',
       rejectLabel: 'Nie',
-      accept: () => {
+      accept: async () => {
         const request = {
-          routeId: this.selectedRoute!.id,
+          routeId: routeToDelete.id,
         }
+
+        await this.untrackMapUsageForRoute(routeToDelete.id, routeToDelete.backgroundMap?.id);
+
         this.backofficeSendService.deleteRoute(request).subscribe({
           next: (updatedRoutes) => {
             const listRequest = { competitionId: 'Competition123' };
@@ -293,6 +308,12 @@ export class OrganizerRouteViewComponent implements OnInit {
         route.id === updatedRoute.id ? updatedRoute : route
         );
         this.selectRoute(updatedRoute);
+
+        setTimeout(() => {
+          if (this.mapComponent && updatedRoute.stations) {
+            this.mapComponent.setStations(updatedRoute.stations);
+          }
+        }, 100);
       },
       error: (err) => console.log(err)
     })
@@ -301,7 +322,41 @@ export class OrganizerRouteViewComponent implements OnInit {
   }
 
   async onRouteExpand(event: TableRowExpandEvent) {
-    this.selectRoute(event.data)
+    const route = event.data;
+    // Pobierz mapę dla tej trasy jeśli jest przypisana
+    if (route.backgroundMap?.id) {
+      this.isLoading = true;
+      try {
+        await this.mapDownloader.downloadMap(route.backgroundMap.id, {
+          name: route.backgroundMap.name,
+          minZoom: route.backgroundMap.minZoom,
+          maxZoom: route.backgroundMap.maxZoom,
+          bounds: {
+            north: route.backgroundMap.northEast?.[0],
+            east: route.backgroundMap.northEast?.[1],
+            south: route.backgroundMap.southWest?.[0],
+            west: route.backgroundMap.southWest?.[1]
+          }
+        });
+
+        // Oznacz mapę jako używaną przez tę trasę
+        await this.trackMapUsageForRoute(route.id, route.backgroundMap.id);
+
+      } catch (err) {
+        console.error('[onRouteExpand] Error downloading map:', err);
+      } finally {
+        this.isLoading = false;
+      }
+    }
+
+    this.selectRoute(route);
+
+    // Daj czas na zainicjalizowanie mapy w DOM, a następnie wymuś odświeżenie stanowisk
+    setTimeout(() => {
+      if (this.mapComponent && route.stations) {
+        this.mapComponent.setStations(route.stations);
+      }
+    }, 200);
   }
 
   onRouteCollapse(event: TableRowCollapseEvent) {
@@ -350,6 +405,13 @@ export class OrganizerRouteViewComponent implements OnInit {
             route.id === updatedRoute.id ? updatedRoute : route
             );
             this.selectRoute(updatedRoute);
+
+            // Wymuś odświeżenie stanowisk na mapie
+            setTimeout(() => {
+              if (this.mapComponent && updatedRoute.stations) {
+                this.mapComponent.setStations(updatedRoute.stations);
+              }
+            }, 100);
           },
           error: (err) => console.log(err)
         })
@@ -373,6 +435,13 @@ export class OrganizerRouteViewComponent implements OnInit {
         )];
         this.selectedRoute = updatedRoute;
         this.expandedRoutes = { [`${updatedRoute.id}`]: true };
+
+        // Wymuś odświeżenie stanowisk na mapie
+        setTimeout(() => {
+          if (this.mapComponent && updatedRoute.stations) {
+            this.mapComponent.setStations(updatedRoute.stations);
+          }
+        }, 100);
       },
       error: (err) => console.log(err)
     })
@@ -398,6 +467,13 @@ export class OrganizerRouteViewComponent implements OnInit {
         route.id === updatedRoute.id ? updatedRoute : route
         );
         this.selectRoute(updatedRoute);
+
+        // Wymuś odświeżenie stanowisk na mapie
+        setTimeout(() => {
+          if (this.mapComponent && updatedRoute.stations) {
+            this.mapComponent.setStations(updatedRoute.stations);
+          }
+        }, 100);
       },
       error: (err) => console.log(err)
     })
@@ -421,7 +497,7 @@ export class OrganizerRouteViewComponent implements OnInit {
       stationName
     );
   }
-
+// dodo pwa ktora trzyma sesje
   private selectRoute(route: Route) {
     this.expandedRoutes = {}
     this.expandedRoutes = { [`${route.id}`]: true}
@@ -449,34 +525,50 @@ export class OrganizerRouteViewComponent implements OnInit {
     return this.selectedRoute?.backgroundMap?.southWest || [0,0]
   }
 
-  private async downloadMapsForExistingRoutes(): Promise<void> {
-    if (!this.routes || this.routes.length === 0) {
+
+  /**
+   * Oznacza mapę jako używaną przez określoną trasę.
+   */
+  private async trackMapUsageForRoute(routeId: string, mapId: string | undefined): Promise<void> {
+    if (!mapId) {
       return;
     }
-
-    const uniqueMapIds = new Set<string>();
-    this.routes.forEach(route => {
-      if (route.backgroundMap?.id) {
-        uniqueMapIds.add(route.backgroundMap.id);
-      }
-    });
-
-    if (uniqueMapIds.size === 0) {
-      return;
-    }
-    this.isLoading = true;
 
     try {
-      const downloads = Array.from(uniqueMapIds).map(mapId =>
-        this.mapDownloader.downloadMap(mapId)
-          .then(() => ({ status: 'fulfilled', id: mapId }))
-          .catch(err => ({ status: 'rejected', id: mapId, reason: err }))
-      );
-      await Promise.allSettled(downloads);
+      const metadata = await this.tileDb.getMapMetadata(mapId);
+      if (metadata) {
+        const currentUsedInRoutes = metadata.usedInRoutes || [];
+
+        // Dodaj trasę jeśli jeszcze nie jest na liście
+        if (!currentUsedInRoutes.includes(routeId)) {
+          await this.tileDb.updateMapMetadata(mapId, {
+            usedInRoutes: [...currentUsedInRoutes, routeId]
+          });
+        }
+      }
     } catch (err) {
-      console.error(err);
-    } finally {
-      this.isLoading = false;
+      console.error('Error tracking map usage:', err);
+    }
+  }
+
+  /**
+   * Usuwa trasę z listy użycia w metadanych mapy.
+   */
+  private async untrackMapUsageForRoute(routeId: string, mapId: string | undefined): Promise<void> {
+    if (!mapId) {
+      return;
+    }
+
+    try {
+      const metadata = await this.tileDb.getMapMetadata(mapId);
+      if (metadata && metadata.usedInRoutes) {
+        const updatedRoutes = metadata.usedInRoutes.filter(id => id !== routeId);
+        await this.tileDb.updateMapMetadata(mapId, {
+          usedInRoutes: updatedRoutes
+        });
+      }
+    } catch (err) {
+      console.error('Error untracking map usage:', err);
     }
   }
 }

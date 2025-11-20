@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { TileDbService } from './tile-db.service';
+import { TileDbService, MapMetadata } from './tile-db.service';
 
 type JSZipFile = import('jszip').JSZipObject;
 
@@ -18,14 +18,17 @@ export class MapDownloaderService {
    */
 
   // dodo dodac pobieranie u participant
-  async downloadMap(mapId: string): Promise<void> {
+  async downloadMap(mapId: string, mapMetadata?: Partial<MapMetadata>): Promise<void> {
     // Najpierw sprawdź czy mapa już istnieje w bazie danych
     const existingTiles = await this.tileDb.hasTilesForMap(mapId);
     if (existingTiles) {
+      // Aktualizuj timestamp ostatniego dostępu
+      await this.tileDb.touchMap(mapId);
       return;
     }
 
     console.log(`Rozpoczynam pobieranie mapy ${mapId}`);
+    const downloadStartTime = Date.now();
     const r2BaseUrl = 'https://pub-1c213c7ae92044b99128147a6817a38f.r2.dev'
     const zipUrl = this.buildZipUrl(r2BaseUrl, mapId);
 
@@ -73,12 +76,14 @@ export class MapDownloaderService {
     // 4) Zapis do IndexedDB w paczkach
     const BATCH_SIZE = 200;
     const batch: Array<{ z: number; x: number; y: number; blob: Blob; contentType?: string }> = [];
+    let totalSizeBytes = 0;
 
     for (const it of items) {
       const blob: Blob = await it.file.async('blob');
       const contentType = this.extToContentType(it.ext);
 
       batch.push({ z: it.z, x: it.x, y: it.y, blob, contentType });
+      totalSizeBytes += blob.size;
 
       if (batch.length >= BATCH_SIZE) {
         await this.tileDb.putTiles(mapId, batch);
@@ -92,7 +97,34 @@ export class MapDownloaderService {
       console.log(`MapDownloaderService: zapisano finalny batch ${batch.length} dla mapy ${mapId}`);
     }
 
-    console.log(`dodo Pobrano i zapisano mapę ${mapId} z ${items.length} kafelkami.`);
+    // 5) Zapisz metadane mapy z informacjami o rozmiarze i czasie pobrania
+    const metadata: MapMetadata = {
+      id: mapId,
+      minZoom: mapMetadata?.minZoom || 0,
+      maxZoom: mapMetadata?.maxZoom || 18,
+      name: mapMetadata?.name || mapId,
+      bounds: mapMetadata?.bounds,
+      tms: mapMetadata?.tms,
+      tileSize: mapMetadata?.tileSize,
+      sizeBytes: totalSizeBytes,
+      downloadedAt: downloadStartTime,
+      lastAccessedAt: downloadStartTime,
+      isPinned: false,
+      usedInRoutes: []
+    };
+
+    await this.tileDb.saveMapMetadata(metadata);
+  }
+
+  /**
+   * Formatuje rozmiar w bajtach do czytelnej formy.
+   */
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   private buildZipUrl(baseUrl: string, mapId: string): string {

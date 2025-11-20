@@ -1,4 +1,6 @@
 <div class="map-management-container">
+  <p-toast />
+
   <div *ngIf="isUploading" class="upload-info-banner">
     <p>Trwa wgrywanie mapy. Za kilka minut odśwież stronę i sprawdź czy jest na liście.</p>
     <button
@@ -109,10 +111,18 @@
     <!-- Panel podglądu mapy -->
     <ng-template #panel>
       <div class="map-panel-content" [class.fullscreen]="isMapFullscreen">
-        <button 
-          pButton 
-          type="button" 
-          [icon]="isMapFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'" 
+        <!-- Loading overlay for map downloads -->
+        <div *ngIf="isLoading" class="map-loading-overlay">
+          <div class="loading-indicator">
+            <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+            <p>Trwa pobieranie map, proszę czekać...</p>
+          </div>
+        </div>
+
+        <button
+          pButton
+          type="button"
+          [icon]="isMapFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
           [rounded]="true"
           (click)="toggleMapFullscreen()"
           class="fullscreen-toggle-btn"

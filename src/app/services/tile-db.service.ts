@@ -10,6 +10,28 @@ export interface MapMetadata {
   };
   tms?: boolean;
   tileSize?: number;
+  // Storage management fields
+  sizeBytes?: number;          // rozmiar mapy w bajtach
+  downloadedAt?: number;       // timestamp pobrania (Date.now())
+  lastAccessedAt?: number;     // ostatni dostęp do mapy
+  isPinned?: boolean;          // chroniona przed auto-cleanup
+  usedInRoutes?: string[];     // ID tras używających tej mapy
+}
+
+export interface ParticipantSessionState {
+  id: string;                  // Stała wartość 'current-session' dla łatwego dostępu
+  runId: string;
+  categoryId: string;
+  competitionId: string;
+  participantUnit: string;
+  participantName: string;
+  wasRunActivate: boolean;
+  isRunFinished: boolean;
+  runStartTime: number;
+  raceTimeDisplay: string;
+  checkpointsNumber: number;
+  pendingRequests: any[];      // Kolejka zaległych requestów do wysłania
+  savedAt: number;             // Timestamp zapisania stanu
 }
 
 interface TileRecord {
@@ -28,6 +50,7 @@ export class TileDbService {
   private dbName = 'offline-maps';
   private tilesStore = 'tiles';
   private mapsStore = 'maps';
+  private sessionStore = 'session';  // Nowy store dla stanu sesji uczestnika
 
   constructor() {
     // Przydatne do szybkiego debugowania z konsoli: window.tileDbDebug.countTilesForMap('mapId')
@@ -62,6 +85,9 @@ export class TileDbService {
             if (!db.objectStoreNames.contains(this.mapsStore)) {
               db.createObjectStore(this.mapsStore, { keyPath: 'id' });
             }
+            if (!db.objectStoreNames.contains(this.sessionStore)) {
+              db.createObjectStore(this.sessionStore, { keyPath: 'id' });
+            }
           };
 
           req.onsuccess = () => {
@@ -69,13 +95,14 @@ export class TileDbService {
             // If stores are missing for some reason (old DB), perform an upgrade by reopening with higher version
             const hasTiles = db.objectStoreNames.contains(this.tilesStore);
             const hasMaps = db.objectStoreNames.contains(this.mapsStore);
-            if (hasTiles && hasMaps) {
+            const hasSession = db.objectStoreNames.contains(this.sessionStore);
+            if (hasTiles && hasMaps && hasSession) {
               resolve(db);
               return;
             }
 
             const newVersion = (db.version || 0) + 1;
-            console.warn(`TileDbService: object stores missing (tiles:${hasTiles} maps:${hasMaps}), upgrading DB to v${newVersion}`);
+            console.warn(`TileDbService: object stores missing (tiles:${hasTiles} maps:${hasMaps} session:${hasSession}), upgrading DB to v${newVersion}`);
             db.close();
 
             const req2 = indexedDB.open(this.dbName, newVersion);
@@ -89,6 +116,9 @@ export class TileDbService {
               }
               if (!db2.objectStoreNames.contains(this.mapsStore)) {
                 db2.createObjectStore(this.mapsStore, { keyPath: 'id' });
+              }
+              if (!db2.objectStoreNames.contains(this.sessionStore)) {
+                db2.createObjectStore(this.sessionStore, { keyPath: 'id' });
               }
             };
             req2.onsuccess = () => resolve(req2.result);
@@ -258,4 +288,164 @@ export class TileDbService {
   //   const store = db.transaction([this.mapsStore], 'readonly').objectStore(this.mapsStore);
   //   return await this.promisify<MapMetadata[]>(store.getAll());
   // }
+
+  /**
+   * Pobiera listę wszystkich metadanych map z IndexedDB.
+   */
+  async getMapMetadataList(): Promise<MapMetadata[]> {
+    const db = await this.ensureDb();
+    const store = db.transaction([this.mapsStore], 'readonly').objectStore(this.mapsStore);
+    return await this.promisify<MapMetadata[]>(store.getAll());
+  }
+
+  /**
+   * Aktualizuje wybrane pola w metadanych mapy.
+   */
+  async updateMapMetadata(id: string, updates: Partial<MapMetadata>): Promise<void> {
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.mapsStore], 'readwrite');
+    const store = tx.objectStore(this.mapsStore);
+
+    const existing = await this.promisify<MapMetadata | undefined>(store.get(id));
+    if (existing) {
+      const updated = { ...existing, ...updates };
+      store.put(updated);
+      await this.txDone(tx);
+    }
+  }
+
+  /**
+   * Usuwa mapę wraz z jej metadanymi.
+   */
+  async deleteMapWithMetadata(mapId: string): Promise<void> {
+    await this.clearMap(mapId);
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.mapsStore], 'readwrite');
+    tx.objectStore(this.mapsStore).delete(mapId);
+    await this.txDone(tx);
+  }
+
+  /**
+   * Oblicza rozmiar mapy w bajtach (sumując rozmiary wszystkich bloków).
+   */
+  async getMapSize(mapId: string): Promise<number> {
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.tilesStore], 'readonly');
+    const store = tx.objectStore(this.tilesStore);
+    const idx = store.index('byMap');
+    const range = IDBKeyRange.only(mapId);
+
+    let totalSize = 0;
+
+    await new Promise<void>((resolve, reject) => {
+      const req = idx.openCursor(range);
+      req.onsuccess = () => {
+        const cursor = req.result as IDBCursorWithValue | null;
+        if (cursor) {
+          const record = cursor.value as TileRecord;
+          totalSize += record.blob.size;
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    return totalSize;
+  }
+
+  /**
+   * Aktualizuje timestamp ostatniego dostępu do mapy.
+   */
+  async touchMap(mapId: string): Promise<void> {
+    await this.updateMapMetadata(mapId, { lastAccessedAt: Date.now() });
+  }
+
+  /**
+   * Pobiera informacje o wykorzystaniu storage API.
+   */
+  async getStorageEstimate(): Promise<{ usage: number; quota: number; percentage: number; available: number }> {
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+      const estimate = await navigator.storage.estimate();
+      const usage = estimate.usage || 0;
+      const quota = estimate.quota || 0;
+      const percentage = quota > 0 ? (usage / quota) * 100 : 0;
+      const available = quota - usage;
+
+      return { usage, quota, percentage, available };
+    }
+
+    // Fallback jeśli API nie jest dostępne
+    return { usage: 0, quota: 0, percentage: 0, available: 0 };
+  }
+
+  /**
+   * METODY ZARZĄDZANIA STANEM SESJI UCZESTNIKA
+   * Zapewniają backup stanu w IndexedDB (bardziej niezawodne niż localStorage)
+   */
+
+  /**
+   * Zapisuje stan sesji uczestnika w IndexedDB.
+   * Używane jako backup dla localStorage - IndexedDB jest bardziej niezawodne.
+   */
+  async saveParticipantSession(state: Omit<ParticipantSessionState, 'id' | 'savedAt'>): Promise<void> {
+    const sessionState: ParticipantSessionState = {
+      id: 'current-session',
+      ...state,
+      savedAt: Date.now()
+    };
+
+    console.log('[TileDbService] Saving participant session to IndexedDB:', sessionState);
+
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.sessionStore], 'readwrite');
+    tx.objectStore(this.sessionStore).put(sessionState);
+    await this.txDone(tx);
+
+    console.log('[TileDbService] Participant session saved successfully');
+  }
+
+  /**
+   * Odczytuje stan sesji uczestnika z IndexedDB.
+   * Zwraca null jeśli nie ma zapisanej sesji.
+   */
+  async getParticipantSession(): Promise<ParticipantSessionState | null> {
+    console.log('[TileDbService] Reading participant session from IndexedDB');
+
+    const db = await this.ensureDb();
+    const store = db.transaction([this.sessionStore], 'readonly').objectStore(this.sessionStore);
+    const session = await this.promisify<ParticipantSessionState | undefined>(store.get('current-session'));
+
+    if (session) {
+      console.log('[TileDbService] Participant session found:', session);
+      return session;
+    } else {
+      console.log('[TileDbService] No participant session found in IndexedDB');
+      return null;
+    }
+  }
+
+  /**
+   * Usuwa zapisany stan sesji uczestnika z IndexedDB.
+   * Wywoływane przy zakończeniu biegu lub wylogowaniu.
+   */
+  async clearParticipantSession(): Promise<void> {
+    console.log('[TileDbService] Clearing participant session from IndexedDB');
+
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.sessionStore], 'readwrite');
+    tx.objectStore(this.sessionStore).delete('current-session');
+    await this.txDone(tx);
+
+    console.log('[TileDbService] Participant session cleared');
+  }
+
+  /**
+   * Sprawdza czy istnieje zapisana sesja uczestnika.
+   */
+  async hasParticipantSession(): Promise<boolean> {
+    const session = await this.getParticipantSession();
+    return session !== null;
+  }
 }
