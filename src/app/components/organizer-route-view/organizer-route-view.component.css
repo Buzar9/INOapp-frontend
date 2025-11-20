@@ -54,8 +54,8 @@
 
 .fullscreen-toggle-btn {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  bottom: 7.5rem;
+  right: 0.625rem;
   z-index: 1001;
 }
 
@@ -240,6 +240,17 @@
 .dialog-form p-select,
 .dialog-form p-dropdown {
   width: 100%;
+}
+
+/* No route selected */
+.no-route-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: #999;
 }
 
 /* Loading overlay */

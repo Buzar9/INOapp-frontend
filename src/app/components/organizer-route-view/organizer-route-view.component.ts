@@ -216,24 +216,14 @@ export class OrganizerRouteViewComponent implements OnInit {
             this.backofficeSendService.getRoutes(listRequest).subscribe({
               next: (freshRoutes) => {
                 this.routes = freshRoutes || [];
-                if (this.routes.length > 0) {
-                  this.expandedRoutes = { [`${this.routes[0].id}`]: true };
-                  this.selectRoute(this.routes[0]);
-                } else {
-                  this.expandedRoutes = {};
-                  this.selectedRoute = undefined;
-                }
+                this.expandedRoutes = {};
+                this.selectedRoute = undefined;
               },
               error: (err) => {
                 console.error(err);
                 this.routes = [...updatedRoutes];
-                if (updatedRoutes.length > 0) {
-                  this.expandedRoutes = { [`${updatedRoutes[0].id}`]: true };
-                  this.selectRoute(updatedRoutes[0]);
-                } else {
-                  this.expandedRoutes = {};
-                  this.selectedRoute = undefined;
-                }
+                this.expandedRoutes = {};
+                this.selectedRoute = undefined;
               }
             });
           },

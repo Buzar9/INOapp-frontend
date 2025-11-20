@@ -145,6 +145,7 @@
         <div class="map-wrapper">
           <div class="map-container">
             <backoffice-map
+              *ngIf="selectedRoute"
               [stationsToShow]="selectedRoute?.stations || []"
               [backgroundMapId]="getSelectedBackgroundMapId()"
               [minZoom]="getSelectedMinZoom()"
@@ -154,6 +155,12 @@
               [showCenterCoordinates]="true"
               (pickedCoordinates)="onReceivedPointedCoordinates($event)">
             </backoffice-map>
+
+            <div *ngIf="!selectedRoute" class="no-route-selected">
+              <i class="pi pi-compass" style="font-size: 3rem; color: #ccc;"></i>
+              <p>Wybierz trasę z listy aby zobaczyć podgląd</p>
+            </div>
+
             <div *ngIf="isLoading" class="map-loading-overlay">
               <div class="loading-indicator">
                 <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
