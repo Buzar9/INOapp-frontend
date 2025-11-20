@@ -2,7 +2,6 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { FileUploadModule } from 'primeng/fileupload';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { BackofficeSendService } from '../../services/backoffice-send-service';
 import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
@@ -29,7 +28,6 @@ import { ConfirmationService } from 'primeng/api';
         InputTextModule,
         ButtonModule,
         FileUploadModule,
-        ProgressBarModule,
         TagModule,
         ProgressSpinnerModule,
         BackofficeMapComponent,
@@ -49,10 +47,9 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
     mapComponent!: BackofficeMapComponent;
 
     uploadForm: FormGroup;
-    uploadProgress: number = 0;
-    uploadMessage: string = '';
     backgroundMaps: BackgroundMap[] = [];
     isLoading: boolean = false;
+    isUploading: boolean = false;
     selectedMapForPreview?: BackgroundMap;
     expandedMaps: { [key: string]: boolean } = {};
     isMapFullscreen: boolean = false;
@@ -86,9 +83,6 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
                     !maps.find(m => m.id === this.selectedMapForPreview?.id)) {
                     this.selectedMapForPreview = undefined;
                     this.expandedMaps = {};
-                    if (maps.length > 0) {
-                        this.selectMap(maps[0]);
-                    }
                 }
 
                 this.isLoading = false;
@@ -107,8 +101,6 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
     onAddMapClick(): void {
         this.showAddMapForm = true;
         this.uploadForm.reset({ minZoom: 12, maxZoom: 16 });
-        this.uploadMessage = '';
-        this.uploadProgress = 0;
     }
 
     toggleMapExpand(map: BackgroundMap): void {
@@ -154,12 +146,10 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
         const file: File = event.files[0];
 
         if (!file) {
-            this.uploadMessage = 'Wybierz plik!';
             return;
         }
 
         if (file.type !== 'image/tiff') {
-            this.uploadMessage = 'Dozwolony jest tylko format GeoTIFF (image/tiff).';
             return;
         }
 
@@ -172,21 +162,34 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
             maxZoom: this.uploadForm.value.maxZoom,
         };
 
+        this.showAddMapForm = false;
+        this.isUploading = true;
+        this.uploadForm.reset({ minZoom: 12, maxZoom: 16 });
+
         this.backofficeService.uploadBackgroundMap(file, metadata).subscribe({
             next: (event: HttpEvent<any>) => {
-                if (event.type === HttpEventType.UploadProgress && event.total) {
-                    this.uploadProgress = Math.round((100 * event.loaded) / event.total);
-                } else if (event.type === HttpEventType.Response) {
-                    this.uploadMessage = 'Plik został pomyślnie przesłany!';
-                    this.uploadProgress = 0;
-                    this.uploadForm.reset({ minZoom: 12, maxZoom: 16 });
-                    this.showAddMapForm = false;
-                    this.loadBackgroundMaps();
+                if (event.type === HttpEventType.Response) {
+                    this.isUploading = false;
+
+                    const request = { competitionId: 'Competition123' };
+                    this.backofficeService.getBackgroundMaps(request).subscribe({
+                        next: (maps) => {
+                            this.backgroundMaps = maps;
+
+                            if (maps.length > 0) {
+                                const lastMap = maps[maps.length - 1];
+                                this.selectMap(lastMap);
+                            }
+                        },
+                        error: (err) => {
+                            console.error(err);
+                        }
+                    });
                 }
             },
             error: (err) => {
-                this.uploadMessage = 'Wystąpił błąd podczas przesyłania pliku.';
-                this.uploadProgress = 0;
+                this.isUploading = false;
+                console.error('Error uploading file:', err);
             }
         });
     }

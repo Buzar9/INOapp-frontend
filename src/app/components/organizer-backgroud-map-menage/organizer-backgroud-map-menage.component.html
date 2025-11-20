@@ -1,4 +1,18 @@
 <div class="map-management-container">
+  <div *ngIf="isUploading" class="upload-info-banner">
+    <p>Trwa wgrywanie mapy. Za kilka minut odśwież stronę i sprawdź czy jest na liście.</p>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      (click)="isUploading = false"
+      class="banner-close-btn"
+      title="Zamknij komunikat">
+    </button>
+  </div>
+
   <p-splitter [panelSizes]="[40, 60]" [style]="{'height': 'calc(100vh - 60px)'}">
     <ng-template #panel>
       <div class="table-panel">
@@ -138,7 +152,7 @@
   <form [formGroup]="uploadForm" class="upload-form">
     <div class="form-field">
       <label for="name">Nazwa mapy</label>
-      <input id="name" pInputText formControlName="name" placeholder="np. Mapa Katowice 2024" [pAutoFocus]="true" />
+      <input id="name" pInputText formControlName="name" placeholder="np. Nietkowice-25" [pAutoFocus]="true" />
     </div>
 
     <div class="zoom-fields">
@@ -160,18 +174,11 @@
         (uploadHandler)="onUpload($event)"
         [auto]="false"
         [showUploadButton]="true"
-        [showCancelButton]="true"
+        [showCancelButton]="false"
         [accept]="'.tiff,image/tiff'"
-        chooseLabel="Wybierz plik GeoTIFF">
+        chooseLabel="Wybierz plik TIFF"
+        uploadLabel="Wgraj">
       </p-fileUpload>
-    </div>
-
-    <div *ngIf="uploadProgress > 0">
-      <p-progressBar [value]="uploadProgress"></p-progressBar>
-    </div>
-
-    <div *ngIf="uploadMessage" class="upload-message">
-      <p>{{ uploadMessage }}</p>
     </div>
   </form>
 </p-dialog>

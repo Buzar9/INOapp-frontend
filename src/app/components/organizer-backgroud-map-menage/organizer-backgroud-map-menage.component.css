@@ -57,8 +57,8 @@
 
 .fullscreen-toggle-btn {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  bottom: 6.5rem;
+  right: 0.625rem;
   z-index: 1001;
 }
 
@@ -183,11 +183,46 @@
   gap: 1rem;
 }
 
-.upload-message {
-  padding: 1rem;
-  background: var(--color-panel);
-  border-radius: var(--radius);
-  color: var(--color-text);
+.zoom-fields .form-field input {
+  max-width: 100px;
+}
+
+.upload-info-banner {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 1rem 3rem 1rem 1rem;
+  background: #fff3cd;
+  color: #856404;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.upload-info-banner p {
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.banner-close-btn {
+  position: absolute !important;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+::ng-deep .banner-close-btn.p-button {
+  color: #856404 !important;
+}
+
+::ng-deep .banner-close-btn.p-button:hover {
+  background: rgba(133, 100, 4, 0.1) !important;
 }
 
 .loading-container {
