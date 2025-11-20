@@ -7,7 +7,6 @@ import { BackofficeSendService } from '../../services/backoffice-send-service';
 import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { BackgroundMap } from '../../services/response/BackgroundMap';
@@ -17,6 +16,9 @@ import { TableModule, TableRowExpandEvent, TableRowCollapseEvent } from 'primeng
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { AutoFocusModule } from 'primeng/autofocus';
+import { TileDbService } from '../../services/tile-db.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
     selector:'organizer-backgroud-map-menage',
@@ -35,8 +37,10 @@ import { AutoFocusModule } from 'primeng/autofocus';
         TableModule,
         TooltipModule,
         DialogModule,
-        AutoFocusModule
+        AutoFocusModule,
+        ConfirmDialogModule
     ],
+    providers: [ConfirmationService],
     templateUrl: './organizer-backgroud-map-menage.component.html',
     styleUrl: './organizer-backgroud-map-menage.component.css'
 })
@@ -56,7 +60,9 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
 
     constructor(
         private formBuilder: FormBuilder,
-        private backofficeService: BackofficeSendService
+        private backofficeService: BackofficeSendService,
+        private tileDbService: TileDbService,
+        private confirmationService: ConfirmationService
     ) {
         this.uploadForm = this.formBuilder.group({
         name: [''],
@@ -69,19 +75,26 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
         this.loadBackgroundMaps();
     }
 
-    loadBackgroundMaps(): void {
+    loadBackgroundMaps(clearSelection: boolean = false): void {
         this.isLoading = true;
         const request = { competitionId: 'Competition123' };
         this.backofficeService.getBackgroundMaps(request).subscribe({
             next: (maps) => {
                 this.backgroundMaps = maps;
-                if (maps.length > 0 && !this.selectedMapForPreview) {
-                    this.selectMap(maps[0]);
+
+                if (clearSelection || !this.selectedMapForPreview ||
+                    !maps.find(m => m.id === this.selectedMapForPreview?.id)) {
+                    this.selectedMapForPreview = undefined;
+                    this.expandedMaps = {};
+                    if (maps.length > 0) {
+                        this.selectMap(maps[0]);
+                    }
                 }
+
                 this.isLoading = false;
             },
             error: (err) => {
-                console.error('Błąd podczas pobierania map:', err);
+                console.error(err);
                 this.isLoading = false;
             }
         });
@@ -178,19 +191,43 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
         });
     }
 
-    onDeleteMap(mapId: string): void {
-        this.isLoading = true;
-        const request = {
-            backgroundMapId: mapId
-        }
-        this.backofficeService.deleteBackgroundMap(request).subscribe({
-            next: () => {
-                this.loadBackgroundMaps();
-                this.isLoading = false;
-            },
-            error: (err) => {
-                console.error('Błąd podczas usuwania mapy:', err);
-                this.isLoading = false;
+    async onDeleteMap(mapId: string): Promise<void> {
+        const map = this.backgroundMaps.find(m => m.id === mapId);
+        const mapName = map?.name || 'tę mapę';
+
+        this.confirmationService.confirm({
+            message: `Czy na pewno chcesz usunąć mapę "${mapName}"?`,
+            header: 'Potwierdzenie usunięcia',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Tak',
+            rejectLabel: 'Nie',
+            accept: async () => {
+                this.isLoading = true;
+
+                if (this.selectedMapForPreview?.id === mapId) {
+                    this.selectedMapForPreview = undefined;
+                    this.expandedMaps = {};
+                }
+
+                const request = {
+                    backgroundMapId: mapId
+                }
+
+                try {
+                    await this.tileDbService.clearMap(mapId);
+                } catch (err) {
+                    console.error(err);
+                }
+
+                this.backofficeService.deleteBackgroundMap(request).subscribe({
+                    next: () => {
+                        this.loadBackgroundMaps(true);
+                    },
+                    error: (err) => {
+                        console.error(err);
+                        this.isLoading = false;
+                    }
+                });
             }
         });
     }

@@ -18,12 +18,15 @@ import { SelectModule } from 'primeng/select';
 import { BackgroundMapOption } from '../../services/response/BackgroundMapOption';
 import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
 import { QrCodeGeneratorService } from '../../services/qr-code-generator.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 
 
 @Component({
   selector: 'organizer-route-view',
   standalone: true,
-  imports: [CommonModule, TableModule, SelectModule, BackofficeMapComponent, ReactiveFormsModule, DialogModule, AutoFocusModule, ButtonModule, SplitterModule, TabsModule, ProgressSpinnerModule],
+  imports: [CommonModule, TableModule, SelectModule, BackofficeMapComponent, ReactiveFormsModule, DialogModule, AutoFocusModule, ButtonModule, SplitterModule, TabsModule, ProgressSpinnerModule, ConfirmDialogModule],
+  providers: [ConfirmationService],
   templateUrl: './organizer-route-view.component.html',
   styleUrl: './organizer-route-view.component.css'
 })
@@ -58,7 +61,8 @@ export class OrganizerRouteViewComponent implements OnInit {
     private formBuilder: FormBuilder,
     private backofficeSendService: BackofficeSendService,
     private mapDownloader: MapDownloaderService,
-    private qrCodeGenerator: QrCodeGeneratorService
+    private qrCodeGenerator: QrCodeGeneratorService,
+    private confirmationService: ConfirmationService
   ) {
       this.addRouteForm = this.formBuilder.group({
         name: [''],
@@ -95,21 +99,21 @@ export class OrganizerRouteViewComponent implements OnInit {
           this.routes = response
           await this.downloadMapsForExistingRoutes()
         },
-        error: (err) => console.log('dodo problem', err)
+        error: (err) => console.log(err)
     })
 
     this.backofficeSendService.getStationDictionary().subscribe ({
         next: (response) => {
-          this.stationTypeOptions = response 
+          this.stationTypeOptions = response
         },
-        error: (err) => console.log('dodo problem dictionary', err)
+        error: (err) => console.log(err)
     })
 
     this.backofficeSendService.getBackgroundMapOptions(request).subscribe ({
         next: (response) => {
           this.backgroundMapsOptions = response;
         },
-        error: (err) => console.log('dodo problem dodo', err)
+        error: (err) => console.log(err)
     })
   }
 
@@ -126,20 +130,19 @@ export class OrganizerRouteViewComponent implements OnInit {
 
       this.backofficeSendService.createRoute(request).subscribe({
         next: (newRoute) => {
-          // dodo po dodaniu route niech backend zwraca liste nowych routes i niech aktualizuje sie jak przy delete
           this.routes.push(newRoute)
           this.selectRoute(newRoute)
           this.isLoading = false;
         },
         error: (err) => {
-          console.log('dodo error createRoute', err)
+          console.log(err)
           this.isLoading = false;
         }
       })
 
       this.showRouteNameForm = !this.showRouteNameForm
     } catch (err) {
-      console.error('Błąd podczas pobierania mapy:', err);
+      console.error(err);
       this.isLoading = false;
     }
   }
@@ -169,7 +172,6 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   onEditRouteSubmit() {
     if (!this.selectedRoute) {
-      console.warn('Nie wybrano trasy lub stanowiska.');
       return;
     }
 
@@ -187,7 +189,7 @@ export class OrganizerRouteViewComponent implements OnInit {
         const updatedRoute = this.routes.find( route => route.id === response.id)
         this.selectRoute(updatedRoute!)
       },
-      error: (err) => console.log('dodo', err)
+      error: (err) => console.log(err)
     })
 
     this.showEditRouteForm = false;
@@ -195,42 +197,50 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   onDeleteRouteClick() {
     if (!this.selectedRoute) {
-      console.warn('Nie wybrano trasy.');
       return;
     }
 
-    const request = {
-      routeId: this.selectedRoute.id,
-    }
-    this.backofficeSendService.deleteRoute(request).subscribe({
-      next: (updatedRoutes) => {
-        const listRequest = { competitionId: 'Competition123' };
-        this.backofficeSendService.getRoutes(listRequest).subscribe({
-          next: (freshRoutes) => {
-            this.routes = freshRoutes || [];
-            if (this.routes.length > 0) {
-              this.expandedRoutes = { [`${this.routes[0].id}`]: true };
-              this.selectRoute(this.routes[0]);
-            } else {
-              this.expandedRoutes = {};
-              this.selectedRoute = undefined;
-            }
+    this.confirmationService.confirm({
+      message: `Czy na pewno chcesz usunąć trasę "${this.selectedRoute.name}"?`,
+      header: 'Potwierdzenie usunięcia',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Tak',
+      rejectLabel: 'Nie',
+      accept: () => {
+        const request = {
+          routeId: this.selectedRoute!.id,
+        }
+        this.backofficeSendService.deleteRoute(request).subscribe({
+          next: (updatedRoutes) => {
+            const listRequest = { competitionId: 'Competition123' };
+            this.backofficeSendService.getRoutes(listRequest).subscribe({
+              next: (freshRoutes) => {
+                this.routes = freshRoutes || [];
+                if (this.routes.length > 0) {
+                  this.expandedRoutes = { [`${this.routes[0].id}`]: true };
+                  this.selectRoute(this.routes[0]);
+                } else {
+                  this.expandedRoutes = {};
+                  this.selectedRoute = undefined;
+                }
+              },
+              error: (err) => {
+                console.error(err);
+                this.routes = [...updatedRoutes];
+                if (updatedRoutes.length > 0) {
+                  this.expandedRoutes = { [`${updatedRoutes[0].id}`]: true };
+                  this.selectRoute(updatedRoutes[0]);
+                } else {
+                  this.expandedRoutes = {};
+                  this.selectedRoute = undefined;
+                }
+              }
+            });
           },
-          error: (err) => {
-            console.error('Błąd podczas odświeżania listy tras po usunięciu:', err);
-            this.routes = [...updatedRoutes];
-            if (updatedRoutes.length > 0) {
-              this.expandedRoutes = { [`${updatedRoutes[0].id}`]: true };
-              this.selectRoute(updatedRoutes[0]);
-            } else {
-              this.expandedRoutes = {};
-              this.selectedRoute = undefined;
-            }
-          }
-        });
-    },
-      error: (err) => console.log('dodo error', err)
-    })
+          error: (err) => console.log(err)
+        })
+      }
+    });
   }
 
   isRouteSelected(routeId: string): boolean {
@@ -262,8 +272,7 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   toggleMapFullscreen() {
     this.isMapFullscreen = !this.isMapFullscreen;
-    
-    // Poczekaj na aktualizację DOM i invalidate size mapy
+
     setTimeout(() => {
       if (this.mapComponent) {
         this.mapComponent.invalidateSizeAndKeepCenter();
@@ -273,7 +282,6 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   onSubmitAddStationForm() {
     if (!this.selectedRoute) {
-      console.warn('Nie wybrano trasy – nie można dodać stacji.');
       return;
     }
 
@@ -282,10 +290,10 @@ export class OrganizerRouteViewComponent implements OnInit {
       routeId: this.selectedRoute.id,
       name: formValue.name,
       type: formValue.type,
-      location: { 
-        lat: formValue.lat || 0.0, 
-        lng: formValue.lng || 0.0, 
-        accuracy: formValue.accuracy 
+      location: {
+        lat: formValue.lat || 0.0,
+        lng: formValue.lng || 0.0,
+        accuracy: formValue.accuracy
       },
       note: formValue.note
     }
@@ -296,7 +304,7 @@ export class OrganizerRouteViewComponent implements OnInit {
         );
         this.selectRoute(updatedRoute);
       },
-      error: (err) => console.log('dodo error', err)
+      error: (err) => console.log(err)
     })
     this.showAddStationForm = false
     this.addStationForm.reset()
@@ -312,11 +320,11 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   onEditStation(stationId: string) {
     this.selectedStation = this.selectedRoute?.stations.find( station => station.properties["id"] === stationId)
-    
+
     const stationType = this.selectedStation?.properties["type"];
     const matchingOption = this.stationTypeOptions?.find(opt => opt.label === stationType || opt.value === stationType);
     const typeValue = matchingOption ? matchingOption.value : stationType;
-    
+
     this.editStationForm.patchValue({
       name: this.selectedStation?.properties["name"],
       type: typeValue,
@@ -327,31 +335,40 @@ export class OrganizerRouteViewComponent implements OnInit {
     });
     this.showEditStationForm = true;
   }
-// dodo primeng ConfirmDialog
   onDeleteStation(stationId: string) {
     if (!this.selectedRoute) {
-      console.warn('Nie wybrano trasy.');
       return;
     }
 
-    const request = {
-      routeId: this.selectedRoute.id,
-      stationId: stationId,
-    }
-    this.backofficeSendService.deleteStationToRoute(request).subscribe({
-      next: (updatedRoute) => {
-        this.routes = this.routes.map(route =>
-        route.id === updatedRoute.id ? updatedRoute : route
-        );
-        this.selectRoute(updatedRoute);
-      },
-      error: (err) => console.log('dodo error', err)
-    })
+    const station = this.selectedRoute.stations.find(s => s.properties['id'] === stationId);
+    const stationName = station?.properties['name'] || 'to stanowisko';
+
+    this.confirmationService.confirm({
+      message: `Czy na pewno chcesz usunąć stanowisko "${stationName}"?`,
+      header: 'Potwierdzenie usunięcia',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Tak',
+      rejectLabel: 'Nie',
+      accept: () => {
+        const request = {
+          routeId: this.selectedRoute!.id,
+          stationId: stationId,
+        }
+        this.backofficeSendService.deleteStationToRoute(request).subscribe({
+          next: (updatedRoute) => {
+            this.routes = this.routes.map(route =>
+            route.id === updatedRoute.id ? updatedRoute : route
+            );
+            this.selectRoute(updatedRoute);
+          },
+          error: (err) => console.log(err)
+        })
+      }
+    });
   }
 
   onToggleStationMount(stationId: string) {
     if (!this.selectedRoute) {
-      console.warn('Nie wybrano trasy.');
       return;
     }
 
@@ -367,13 +384,12 @@ export class OrganizerRouteViewComponent implements OnInit {
         this.selectedRoute = updatedRoute;
         this.expandedRoutes = { [`${updatedRoute.id}`]: true };
       },
-      error: (err) => console.log('dodo error', err)
+      error: (err) => console.log(err)
     })
   }
 
   onSubmitEditStationForm(){
     if (!this.selectedRoute || !this.selectedStation) {
-      console.warn('Nie wybrano trasy lub stanowiska.');
       return;
     }
 
@@ -393,7 +409,7 @@ export class OrganizerRouteViewComponent implements OnInit {
         );
         this.selectRoute(updatedRoute);
       },
-      error: (err) => console.log('dodo error', err)
+      error: (err) => console.log(err)
     })
     this.showEditStationForm = false
     this.editStationForm.reset()
@@ -408,7 +424,7 @@ export class OrganizerRouteViewComponent implements OnInit {
   async onQrCodeStationGenerateClick(station: Station) {
     const routeName = this.selectedRoute?.name || '';
     const stationName = station.properties["name"] || '';
-    
+
     await this.qrCodeGenerator.generateQrCodeWithText(
       station.properties["id"],
       routeName,
@@ -456,7 +472,6 @@ export class OrganizerRouteViewComponent implements OnInit {
     });
 
     if (uniqueMapIds.size === 0) {
-      console.log('Brak map do pobrania dla istniejących tras');
       return;
     }
     this.isLoading = true;
@@ -469,7 +484,7 @@ export class OrganizerRouteViewComponent implements OnInit {
       );
       await Promise.allSettled(downloads);
     } catch (err) {
-      console.error('Błąd podczas pobierania map dla tras:', err);
+      console.error(err);
     } finally {
       this.isLoading = false;
     }

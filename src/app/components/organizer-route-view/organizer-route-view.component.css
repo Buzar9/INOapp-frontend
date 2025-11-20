@@ -16,6 +16,7 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 /* Tabela PrimeNG - wymuszenie scrollowania */
@@ -270,42 +271,6 @@
    RESPONSIVE - MOBILE
    ========================= */
 @media (max-width: 768px) {
-  /* Ukryj splitter - pokaż elementy jeden pod drugim */
-  ::ng-deep .p-splitter {
-    flex-direction: column !important;
-    height: auto !important;
-  }
-  
-  ::ng-deep .p-splitter-panel {
-    width: 100% !important;
-    min-width: 100% !important;
-  }
-  
-  ::ng-deep .p-splitter-gutter {
-    display: none !important;
-  }
-  
-  .table-panel {
-    height: 50vh;
-    min-height: 300px;
-  }
-  
-  /* Mapa - mniejsze marginesy i padding na mobile */
-  .map-panel-content {
-    height: 50vh;
-  }
-  
-  .map-wrapper {
-    padding: 0.5rem;
-    height: 50vh;
-  }
-  
-  .map-container {
-    max-width: 100%;
-    height: calc(50vh - 1rem);
-    border-radius: 4px;
-  }
-  
   /* Tabela tras */
   .routes-table {
     font-size: 0.85rem;
@@ -358,15 +323,18 @@
     gap: 0.2rem;
   }
   
-  /* Przyciski zarządzania trasą - full width na mobile */
+  /* Przyciski zarządzania trasą - inline na mobile */
   .route-management-actions {
-    flex-direction: column;
-    gap: 0.4rem;
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
   
   .route-management-actions button {
-    width: 100%;
-    justify-content: flex-start;
+    flex: 0 0 auto;
+    min-width: 2.5rem;
   }
 }
 
@@ -427,7 +395,48 @@
 }
 
 /* =========================
-   LANDSCAPE MODE
+   ORIENTATION - PORTRAIT (pionowy)
+   ========================= */
+@media (max-width: 768px) and (orientation: portrait) {
+  /* W trybie pionowym - panele jeden nad drugim */
+  ::ng-deep .p-splitter {
+    flex-direction: column !important;
+    height: calc(100vh - 60px) !important;
+  }
+
+  ::ng-deep .p-splitter-panel {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 50% !important;
+  }
+
+  ::ng-deep .p-splitter-gutter {
+    display: none !important;
+  }
+}
+
+/* =========================
+   ORIENTATION - LANDSCAPE (poziomy)
+   ========================= */
+@media (max-width: 1024px) and (orientation: landscape) {
+  /* W trybie poziomym - panele obok siebie (lewy i prawy) */
+  ::ng-deep .p-splitter {
+    flex-direction: row !important;
+    height: calc(100vh - 60px) !important;
+  }
+
+  ::ng-deep .p-splitter-panel {
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+
+  ::ng-deep .p-splitter-gutter {
+    display: flex !important;
+  }
+}
+
+/* =========================
+   LANDSCAPE MODE - BARDZO NISKI EKRAN
    ========================= */
 @media (orientation: landscape) and (max-height: 500px) {
   ::ng-deep .p-datatable-wrapper {
