@@ -2,29 +2,41 @@
   <p-splitter [panelSizes]="[40, 60]" [style]="{'height': 'calc(100vh - 60px)'}">
     <ng-template #panel>
       <div class="table-panel">
-        <p-table [value]="routes" dataKey="id" [expandedRowKeys]="expandedRoutes" [scrollable]="true" scrollHeight="flex"
-                 styleClass="routes-table"
-                 (onRowExpand)="onRouteExpand($event)"
-                 (onRowCollapse)="onRouteCollapse($event)">
-        <ng-template #header>
-          <tr>
-            <th style="width: 9rem">
-              <div class="header-actions">
-                <button
-                  pButton pRipple
-                  type="button"
-                  icon="pi pi-plus"
-                  [rounded]="true"
-                  (click)="onCreateRouteClick()">
-                </button>
-              </div>
-            </th>
-            <th style="width: 2.5rem"></th>
-            <th>
-              Trasa
-            </th>
-          </tr>
-        </ng-template>
+        <div *ngIf="!isConsolidatedView">
+          <p-table [value]="routes" dataKey="id" [expandedRowKeys]="expandedRoutes" [scrollable]="true" scrollHeight="flex"
+                   styleClass="routes-table"
+                   (onRowExpand)="onRouteExpand($event)"
+                   (onRowCollapse)="onRouteCollapse($event)">
+          <ng-template #header>
+            <tr>
+              <th style="width: 9rem">
+                <div class="header-actions">
+                  <button
+                    pButton pRipple
+                    type="button"
+                    icon="pi pi-plus"
+                    [rounded]="true"
+                    (click)="onCreateRouteClick()">
+                  </button>
+                </div>
+              </th>
+              <th style="width: 2.5rem"></th>
+              <th>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Trasa</span>
+                  <button
+                    pButton
+                    type="button"
+                    label="Wszystkie stanowiska"
+                    icon="pi pi-map-marker"
+                    [rounded]="true"
+                    size="small"
+                    (click)="onViewAllStationsClick()">
+                  </button>
+                </div>
+              </th>
+            </tr>
+          </ng-template>
         <ng-template #body let-route let-expanded="expanded">
           <tr>
             <td>
@@ -129,14 +141,75 @@
           </tr>
         </ng-template>
       </p-table>
+        </div>
+
+        <div *ngIf="isConsolidatedView && consolidatedRouteView">
+          <p-table [value]="consolidatedRouteView.consolidatedStations">
+            <ng-template #header>
+              <tr>
+                <th colspan="3">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                      <span>Wszystkie stanowiska</span>
+                      <p-select
+                        [options]="backgroundMapsOptions"
+                        [(ngModel)]="selectedConsolidatedBackgroundMapId"
+                        (onChange)="onConsolidatedMapChange($event)"
+                        [checkmark]="true"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Mapa">
+                      </p-select>
+                    </div>
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-arrow-left"
+                      [rounded]="true"
+                      size="small"
+                      (click)="onBackToRoutesClick()">
+                    </button>
+                  </div>
+                </th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-station>
+              <tr>
+                <td colspan="3">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="flex: 1; min-width: 0;">
+                      <div>
+                        <strong>{{ station.routeName }} - {{ station.name }}</strong>
+                        <span [style.color]="station.isMounted ? '#39FF14' : '#FF073A'"
+                              style="margin-left: 0.5rem; font-size: 0.9em;">
+                          ({{ station.isMounted ? 'rozstawione' : 'nie rozstawione' }})
+                        </span>
+                      </div>
+                      <div style="font-size: 0.9em; color: #ccc; margin-top: 0.2rem;">{{ station.note }}</div>
+                    </div>
+                    <button
+                      pButton
+                      icon="pi pi-thumbtack"
+                      [severity]="station.isMounted ? 'success' : 'secondary'"
+                      [rounded]="true"
+                      (click)="onToggleConsolidatedStationMount(station.id)"
+                      [title]="station.isMounted ? 'Kod QR na miejscu' : 'Brak kodu QR'"
+                      style="flex-shrink: 0;">
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
       </div>
     </ng-template>
     <ng-template #panel>
       <div class="map-panel-content" [class.fullscreen]="isMapFullscreen">
-        <button 
-          pButton 
-          type="button" 
-          [icon]="isMapFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'" 
+        <button
+          pButton
+          type="button"
+          [icon]="isMapFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
           [rounded]="true"
           (click)="toggleMapFullscreen()"
           class="fullscreen-toggle-btn"
@@ -145,8 +218,8 @@
         <div class="map-wrapper">
           <div class="map-container">
             <backoffice-map
-              *ngIf="selectedRoute"
-              [stationsToShow]="selectedRoute?.stations || []"
+              *ngIf="selectedRoute && !isConsolidatedView"
+              [stationsToShow]="selectedRoute.stations"
               [backgroundMapId]="getSelectedBackgroundMapId()"
               [minZoom]="getSelectedMinZoom()"
               [maxZoom]="getSelectedMaxZoom()"
@@ -156,9 +229,26 @@
               (pickedCoordinates)="onReceivedPointedCoordinates($event)">
             </backoffice-map>
 
-            <div *ngIf="!selectedRoute" class="no-route-selected">
+            <backoffice-map
+              *ngIf="isConsolidatedView && consolidatedRouteView && selectedConsolidatedBackgroundMapId"
+              [stationsToShow]="getConsolidatedStationsAsGeoView()"
+              [backgroundMapId]="getConsolidatedBackgroundMapId()"
+              [minZoom]="getConsolidatedMinZoom()"
+              [maxZoom]="getConsolidatedMaxZoom()"
+              [northEast]="getConsolidatedNorthEast()"
+              [southWest]="getConsolidatedSouthWest()"
+              [showCenterCoordinates]="true"
+              (pickedCoordinates)="onReceivedPointedCoordinates($event)">
+            </backoffice-map>
+
+            <div *ngIf="!selectedRoute && !isConsolidatedView" class="no-route-selected">
               <i class="pi pi-compass" style="font-size: 3rem; color: #ccc;"></i>
               <p>Wybierz trasę z listy aby zobaczyć podgląd</p>
+            </div>
+
+            <div *ngIf="isConsolidatedView && !selectedConsolidatedBackgroundMapId" class="no-route-selected">
+              <i class="pi pi-map" style="font-size: 3rem; color: #ccc;"></i>
+              <p>Wybierz mapę z listy aby zobaczyć podgląd</p>
             </div>
 
             <div *ngIf="isLoading" class="map-loading-overlay">

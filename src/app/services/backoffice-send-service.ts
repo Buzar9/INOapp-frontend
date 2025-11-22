@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { RaceResult } from "./response/RaceResults";
-import { AddStationToRouteRequest, CreateCategoryRequest, CreateCompetitionRequest, CreateUnitRequest, DeleteBackgroundMapRequest, DeleteCategoryRequest, DeleteRouteRequest, DeleteStationRequest, DeleteUnitRequest, EditRouteRequest, EditStationRequest, EditUnitRequest } from "./backoffice-requests";
+import { AddStationToRouteRequest, CreateCategoryRequest, CreateCompetitionRequest, CreateUnitRequest, DeleteBackgroundMapRequest, DeleteCategoryRequest, DeleteRouteRequest, DeleteStationRequest, DeleteUnitRequest, EditRouteRequest, EditStationRequest, EditUnitRequest, ToggleStationMountRequest, GetConsolidatedRouteViewRequest } from "./backoffice-requests";
 import { CreateRouteRequest } from "./request/CreateRouteRequest"
 import { Station } from "../services/response/Station"
 import { Route } from "./response/Route";
@@ -14,6 +14,7 @@ import { CompetitionResultFilterRequest } from "./request/CompetitionResultFilte
 import { BackgroundMapOption } from "./response/BackgroundMapOption";
 import { GetAllBackgroundMapsRequest } from "./request/GetAllBackgroundMapsRequest copy";
 import { BackgroundMap } from "./response/BackgroundMap";
+import { ConsolidatedRouteView } from "./response/ConsolidatedRouteView";
 
 
 @Injectable({
@@ -93,7 +94,7 @@ export class BackofficeSendService {
       return this.http.post<Route>(`${this.apiUrl}/routes/delete_station`, request)
     }
 
-    toggleStationMount(request: { routeId: string, stationId: string }): Observable<Route> {
+    toggleStationMount(request: ToggleStationMountRequest): Observable<Route> {
       return this.http.post<Route>(`${this.apiUrl}/routes/toggle_station_mount`, request)
     }
 
@@ -154,6 +155,12 @@ export class BackofficeSendService {
       return this.http.post(`${this.apiUrl}/background_maps/add`, formData, {
         reportProgress: true,
         observe: 'events'
+      });
+    }
+
+    getConsolidatedRouteView(request: GetConsolidatedRouteViewRequest): Observable<ConsolidatedRouteView> {
+      return this.http.post<ConsolidatedRouteView>(`${this.apiUrl}/routes/consolidated_routes`, request, {
+        headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
       });
     }
 }

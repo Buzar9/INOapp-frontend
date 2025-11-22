@@ -9,24 +9,27 @@ import { AutoFocusModule } from 'primeng/autofocus';
 import { TableModule, TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
 import { Route } from '../../services/response/Route';
 import { Coordinates } from '../model/Coordinates';
-import { Station } from '../../services/response/Station';
+import { Station, ConsolidatedStationView } from '../../services/response/Station';
+import { ConsolidatedRouteView } from '../../services/response/ConsolidatedRouteView';
 import { SplitterModule } from 'primeng/splitter';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TabsModule } from 'primeng/tabs';
 import { DictionaryModel } from '../../services/response/DictionaryModel';
 import { SelectModule } from 'primeng/select';
 import { BackgroundMapOption } from '../../services/response/BackgroundMapOption';
+import { BackgroundMap } from '../../services/response/BackgroundMap';
 import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
 import { QrCodeGeneratorService } from '../../services/qr-code-generator.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { TileDbService } from '../../services/tile-db.service';
+import { FormsModule } from '@angular/forms';
 
 
 @Component({
   selector: 'organizer-route-view',
   standalone: true,
-  imports: [CommonModule, TableModule, SelectModule, BackofficeMapComponent, ReactiveFormsModule, DialogModule, AutoFocusModule, ButtonModule, SplitterModule, TabsModule, ProgressSpinnerModule, ConfirmDialogModule],
+  imports: [CommonModule, TableModule, SelectModule, BackofficeMapComponent, ReactiveFormsModule, FormsModule, DialogModule, AutoFocusModule, ButtonModule, SplitterModule, TabsModule, ProgressSpinnerModule, ConfirmDialogModule],
   providers: [ConfirmationService],
   templateUrl: './organizer-route-view.component.html',
   styleUrl: './organizer-route-view.component.css'
@@ -37,6 +40,8 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   routes: Route[] = []
   selectedRoute?: Route
+  consolidatedRouteView?: ConsolidatedRouteView
+  isConsolidatedView: boolean = false
   addRouteForm: FormGroup
   showRouteNameForm: boolean = false;
 
@@ -55,6 +60,8 @@ export class OrganizerRouteViewComponent implements OnInit {
   stationTypeOptions?: DictionaryModel[]
 
   backgroundMapsOptions: BackgroundMapOption[] = [];
+  backgroundMaps: BackgroundMap[] = [];
+  selectedConsolidatedBackgroundMapId: string | undefined;
   isLoading: boolean = false;
   isMapFullscreen: boolean = false;
 
@@ -113,6 +120,13 @@ export class OrganizerRouteViewComponent implements OnInit {
     this.backofficeSendService.getBackgroundMapOptions(request).subscribe ({
         next: (response) => {
           this.backgroundMapsOptions = response;
+        },
+        error: (err) => console.log(err)
+    })
+
+    this.backofficeSendService.getBackgroundMaps(request).subscribe ({
+        next: (response) => {
+          this.backgroundMaps = response;
         },
         error: (err) => console.log(err)
     })
@@ -570,5 +584,145 @@ export class OrganizerRouteViewComponent implements OnInit {
     } catch (err) {
       console.error('Error untracking map usage:', err);
     }
+  }
+
+  onViewAllStationsClick() {
+    this.isConsolidatedView = true;
+    this.selectedRoute = undefined;
+    this.expandedRoutes = {};
+
+    this.isLoading = true;
+    const request = { competitionId: 'Competition123' };
+
+    this.backofficeSendService.getConsolidatedRouteView(request).subscribe({
+      next: (consolidatedRouteView) => {
+        this.consolidatedRouteView = consolidatedRouteView;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading consolidated route view:', err);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onToggleConsolidatedStationMount(stationId: string) {
+    if (!this.isConsolidatedView || !this.consolidatedRouteView) {
+      return;
+    }
+
+    const station = this.consolidatedRouteView.consolidatedStations.find(s => s.id === stationId);
+    if (!station) {
+      return;
+    }
+
+    const request = {
+      routeId: station.routeId,
+      stationId: stationId,
+    };
+
+    this.backofficeSendService.toggleStationMount(request).subscribe({
+      next: () => {
+        // Zaktualizuj stan stacji w widoku consolidated
+        station.isMounted = !station.isMounted;
+
+        setTimeout(() => {
+          if (this.mapComponent && this.consolidatedRouteView) {
+            this.mapComponent.setStations(this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView.consolidatedStations));
+          }
+        }, 100);
+      },
+      error: (err) => console.error('Error toggling consolidated station mount:', err)
+    });
+  }
+
+  onBackToRoutesClick() {
+    this.isConsolidatedView = false;
+    this.consolidatedRouteView = undefined;
+    this.selectedRoute = undefined;
+    this.expandedRoutes = {};
+    this.selectedConsolidatedBackgroundMapId = undefined;
+  }
+
+  convertConsolidatedStationsToGeoView(stations: ConsolidatedStationView[]): Station[] {
+    return stations.map(station => ({
+      type: 'Feature',
+      geometry: station.geometry,
+      properties: {
+        id: station.id,
+        name: station.name,
+        type: station.type,
+        note: station.note,
+        accuracy: station.accuracy.toString(),
+        isMounted: station.isMounted.toString(),
+        routeId: station.routeId,
+        routeName: station.routeName
+      }
+    }));
+  }
+
+  getConsolidatedStationsAsGeoView(): Station[] {
+    if (!this.consolidatedRouteView) {
+      return [];
+    }
+    return this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView.consolidatedStations);
+  }
+
+  async onConsolidatedMapChange(event: any) {
+    const selectedMapId = event.value;
+    this.selectedConsolidatedBackgroundMapId = selectedMapId;
+
+    const selectedMap = this.backgroundMaps.find(map => map.id === selectedMapId);
+
+    if (selectedMap && this.consolidatedRouteView) {
+      this.isLoading = true;
+      try {
+        await this.mapDownloader.downloadMap(selectedMap.id, {
+          name: selectedMap.name,
+          minZoom: selectedMap.minZoom,
+          maxZoom: selectedMap.maxZoom,
+          bounds: {
+            north: selectedMap.northEast?.[0],
+            east: selectedMap.northEast?.[1],
+            south: selectedMap.southWest?.[0],
+            west: selectedMap.southWest?.[1]
+          }
+        });
+
+        setTimeout(() => {
+          if (this.mapComponent && this.consolidatedRouteView) {
+            this.mapComponent.setStations(this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView.consolidatedStations));
+          }
+        }, 300);
+      } catch (err) {
+        console.error('Error loading selected map:', err);
+      } finally {
+        this.isLoading = false;
+      }
+    }
+  }
+
+  getConsolidatedBackgroundMapId(): string | null {
+    return this.selectedConsolidatedBackgroundMapId || null;
+  }
+
+  getConsolidatedMinZoom(): number {
+    const selectedMap = this.backgroundMaps.find(m => m.id === this.selectedConsolidatedBackgroundMapId);
+    return selectedMap?.minZoom || 0;
+  }
+
+  getConsolidatedMaxZoom(): number {
+    const selectedMap = this.backgroundMaps.find(m => m.id === this.selectedConsolidatedBackgroundMapId);
+    return selectedMap?.maxZoom || 0;
+  }
+
+  getConsolidatedNorthEast(): [number, number] {
+    const selectedMap = this.backgroundMaps.find(m => m.id === this.selectedConsolidatedBackgroundMapId);
+    return selectedMap?.northEast || [0, 0];
+  }
+
+  getConsolidatedSouthWest(): [number, number] {
+    const selectedMap = this.backgroundMaps.find(m => m.id === this.selectedConsolidatedBackgroundMapId);
+    return selectedMap?.southWest || [0, 0];
   }
 }

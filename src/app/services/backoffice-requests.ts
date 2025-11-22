@@ -26,6 +26,11 @@ export type DeleteStationRequest = {
     stationId: string
 }
 
+export type ToggleStationMountRequest = {
+    routeId: string,
+    stationId: string
+}
+
 export type GetStationsRequest = {
     categoryId: string
 }
@@ -69,4 +74,8 @@ export type GetBackgroundMapRequest = {
 
 export type DeleteBackgroundMapRequest = {
     backgroundMapId: string
+}
+
+export type GetConsolidatedRouteViewRequest = {
+    competitionId: string
 }
