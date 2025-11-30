@@ -3,11 +3,11 @@
     <h1>INOapp</h1>
     <p class="subtitle">Nic co biegnące nie jest mi obce!</p>
   </div>
-  <div class="role-question">
+  <div class="role-question" *ngIf="showOrganizerOption">
     <h2>Bierzesz udział jako?</h2>
   </div>
   <div class="button-container">
     <button pButton label="Uczestnik" (click)="navigateToParticipant()"></button>
-    <button pButton label="Organizator" (click)="navigateToOrganizer()"></button>
+    <button pButton label="Organizator" (click)="navigateToOrganizer()" *ngIf="showOrganizerOption"></button>
   </div>
 </div>
