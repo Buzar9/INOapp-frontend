@@ -86,11 +86,29 @@
     top: 60px !important;
     right: 6px !important;
   }
-  
+
   ::ng-deep .leaflet-control-zoom a {
     width: 50px !important;
     height: 50px !important;
     line-height: 50px !important;
     font-size: 24px !important;
   }
+}
+
+/* GPS segment styling - usuń domyślną obwódkę przy focus/click */
+::ng-deep .gps-segment {
+  outline: none !important;
+}
+
+::ng-deep path.gps-segment {
+  outline: none !important;
+}
+
+::ng-deep .gps-segment:focus {
+  outline: none !important;
+}
+
+/* Kursor pointer dla segmentów GPS */
+::ng-deep .leaflet-interactive.gps-segment {
+  cursor: pointer;
 }

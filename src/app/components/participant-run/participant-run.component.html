@@ -1,7 +1,19 @@
 <div class="container">
+  <!-- Hamburger Menu Button (top-left) -->
+  <button
+    *ngIf="wasRunActivate && !isRunFinished"
+    pButton
+    pRipple
+    type="button"
+    icon="pi pi-bars"
+    class="hamburger-menu-button p-button-rounded"
+    title="Menu"
+    (click)="toggleMenu()">
+  </button>
+
   <div class="orientation-warning-container" *ngIf="isPortraitMode && showOrientationWarning">
-    <p-message 
-      severity="warn" 
+    <p-message
+      severity="warn"
       styleClass="orientation-message"
       [closable]="true"
       (onClose)="dismissOrientationWarning()">
@@ -12,27 +24,39 @@
     </p-message>
   </div>
 
-  <div class="top-texts" *ngIf="wasRunActivate">
-    <span title="Czas biegu">
-      <i class="pi pi-stopwatch"></i>
-      {{raceTimeDisplay}}
-    </span>
-    <span *ngIf="!isRunFinished" title="Aktualny czas">
-      <i class="pi pi-clock"></i>
-      {{currentTime}}
-    </span>
-    <span title="Punkty kontrolne">
+  <!-- Compact Top Bar (top-right) - tylko kluczowe statystyki -->
+  <div class="compact-top-bar" *ngIf="wasRunActivate && !isRunFinished">
+    <span class="compact-stat" title="Punkty kontrolne">
       <i class="pi pi-star"></i>
       {{checkpointsNumber}}
     </span>
+    <span class="compact-stat" title="Czas biegu">
+      <i class="pi pi-stopwatch"></i>
+      {{raceTimeDisplay}}
+    </span>
+    <span class="compact-stat" title="Aktualny czas">
+      <i class="pi pi-clock"></i>
+      {{currentTime}}
+    </span>
+  </div>
+
+  <!-- Finish Top Bar (po zakończeniu biegu) -->
+  <div class="finish-top-bar" *ngIf="wasRunActivate && isRunFinished">
+    <span class="compact-stat" title="Punkty kontrolne">
+      <i class="pi pi-star"></i>
+      {{checkpointsNumber}}
+    </span>
+    <span class="compact-stat" title="Czas biegu">
+      <i class="pi pi-stopwatch"></i>
+      {{raceTimeDisplay}}
+    </span>
     <button
-      *ngIf="isRunFinished"
       pButton
       pRipple
       type="button"
       icon="pi pi-sign-out"
       class="p-button-rounded p-button-danger"
-      title="Zakończ bieg"
+      title="Nowa trasa"
       (click)="onNewRoute()">
     </button>
   </div>
@@ -47,26 +71,14 @@
     [southWest]="backgroundMap?.southWest">
   </participant-map>
 
-  <!-- Przycisk reset po lewej stronie -->
-  <button
-    *ngIf="!isRunFinished"
-    pButton
-    pRipple
-    type="button"
-    icon="pi pi-home"
-    class="reset-view-button p-button-rounded floating-left"
-    title="Powrót do centrum mapy"
-    (click)="resetMapView()">
-  </button>
-
-  <!-- Przycisk QR po prawej stronie -->
+  <!-- Przycisk QR (główny floating button) -->
   <button
     *ngIf="!isRunFinished"
     pButton
     pRipple
     type="button"
     icon="pi pi-qrcode"
-    class="qr-scanner-icon p-button-rounded floating-right"
+    class="qr-scanner-icon p-button-rounded"
     title="Skanuj kod QR"
     (click)="toggleScanner()">
   </button>
@@ -85,4 +97,88 @@
       <p>Zapisywanie punktu kontrolnego</p>
     </div>
   </div>
+
+  <!-- Hamburger Menu Dialog -->
+  <p-dialog
+    [(visible)]="showMenu"
+    [modal]="true"
+    [closable]="true"
+    [dismissableMask]="true"
+    styleClass="hamburger-menu-dialog"
+    header="Menu">
+    <div class="menu-options">
+      <button
+        pButton
+        pRipple
+        type="button"
+        icon="pi pi-home"
+        label="Centruj mapę"
+        class="menu-option-button"
+        (click)="resetMapView(); showMenu = false">
+      </button>
+      <button
+        pButton
+        pRipple
+        type="button"
+        icon="pi pi-map-marker"
+        label="Ustawienia śledzenia trasy"
+        [class]="'menu-option-button' + (gpsTrackingEnabled ? ' tracking-active' : '')"
+        (click)="toggleGpsSettings()">
+      </button>
+      <div class="menu-info">
+        <div class="menu-info-item">
+          <i class="pi pi-clock"></i>
+          <span>{{currentTime}}</span>
+        </div>
+        <div class="menu-info-item" *ngIf="batteryLevel < 100">
+          <i class="pi pi-bolt"></i>
+          <span>{{batteryLevel}}%</span>
+        </div>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- GPS Settings Dialog -->
+  <p-dialog
+    [(visible)]="showGpsSettings"
+    [modal]="true"
+    [closable]="true"
+    [dismissableMask]="true"
+    styleClass="gps-settings-dialog"
+    header="Ustawienia GPS Tracking">
+    <div class="gps-mode-selector">
+      <div
+        *ngFor="let mode of [TrackingMode.HIGH, TrackingMode.MEDIUM, TrackingMode.LOW, TrackingMode.OFF]"
+        class="gps-mode-option"
+        [class.selected]="currentGpsMode === mode"
+        (click)="onGpsModeChange(mode)">
+        <div class="gps-mode-radio"></div>
+        <div class="gps-mode-info">
+          <span class="gps-mode-label">{{ getModeLabel(mode) }}</span>
+          <span class="gps-mode-description">{{ getModeDescription(mode) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="gps-status-info">
+      <div class="gps-status-item">
+        <span class="gps-status-label">Status:</span>
+        <span class="gps-status-value">{{ gpsTrackingEnabled ? 'Aktywny' : 'Nieaktywny' }}</span>
+      </div>
+      <div class="gps-status-item">
+        <span class="gps-status-label">Tryb:</span>
+        <span class="gps-status-value">{{ getModeLabel(currentGpsMode) }}</span>
+      </div>
+    </div>
+
+    <div class="gps-auto-adjust">
+      <span class="gps-auto-adjust-label">Auto-dostosowanie przy niskiej baterii</span>
+      <p-inputSwitch [(ngModel)]="autoAdjustEnabled" (onChange)="onAutoAdjustChange()"></p-inputSwitch>
+    </div>
+
+    <div class="gps-warning" *ngIf="currentGpsMode === TrackingMode.OFF">
+      <i class="pi pi-exclamation-triangle"></i>
+      Wyłączenie trackingu GPS uniemożliwi wyświetlenie szczegółowej trasy po zakończeniu biegu.
+    </div>
+  </p-dialog>
 </div>

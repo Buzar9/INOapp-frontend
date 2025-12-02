@@ -14,6 +14,7 @@ import { Header } from "primeng/api";
 import { GetBackgroundMapRequest, GetStationsRequest } from "./backoffice-requests";
 import { Station } from "./response/Station";
 import { BackgroundMap } from "./response/BackgroundMap";
+import { GpsTrackPoint, GpsTrackResponse } from "../models/gps-track.model";
 
 
 @Injectable({
@@ -58,5 +59,31 @@ export class ParticipantSendService {
 
     getBackgroundMap(request: GetBackgroundMapRequest): Observable<BackgroundMap> {
         return this.http.post<BackgroundMap>(`${this.apiUrl}/background_maps`, request)
+    }
+
+    // GPS Track Methods
+    uploadGpsTrackBatch(runId: string, points: GpsTrackPoint[]): Observable<{uploadedCount: number, runId: string}> {
+        const request = {
+            runId: runId,
+            points: points.map(p => ({
+                timestamp: p.timestamp,
+                location: {
+                    lat: p.lat,
+                    lng: p.lng,
+                    accuracy: p.accuracy
+                }
+            }))
+        };
+        const url = `${this.apiUrl}/run_trucks/batch`;
+        console.log('[ParticipantSendService] Uploading GPS batch to:', url);
+        console.log('[ParticipantSendService] Request payload:', request);
+        return this.http.post<{uploadedCount: number, runId: string}>(url, request);
+    }
+
+    getGpsTrack(runId: string): Observable<GpsTrackResponse> {
+        return this.http.post<GpsTrackResponse>(
+            `${this.apiUrl}/run_trucks`,
+            { runId: runId }
+        );
     }
 }

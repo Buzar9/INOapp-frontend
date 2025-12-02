@@ -6,7 +6,6 @@
   import { NetworkService } from '../../services/request/NetworkService';
   import { ParticipantStateService } from '../../services/participant-state.service';
   import { Router } from '@angular/router';
-  import { Location } from '@angular/common';
   import { ParticipantMapComponent } from '../map/participant-map.component';
   import { ButtonModule } from 'primeng/button';
   import { RippleModule } from 'primeng/ripple';
@@ -20,11 +19,17 @@
   import { BackgroundMap } from '../../services/response/BackgroundMap';
   import { TileDbService } from '../../services/tile-db.service';
   import { ViewChild } from '@angular/core';
+  import { GpsTrackingService } from '../../services/gps-tracking.service';
+  import { BatteryService } from '../../services/battery.service';
+  import { TrackingMode, TRACKING_CONFIGS } from '../../models/gps-track.model';
+  import { DialogModule } from 'primeng/dialog';
+  import { FormsModule } from '@angular/forms';
+  import { InputSwitchModule } from 'primeng/inputswitch';
 
   @Component({
     selector: 'participant',
     standalone: true,
-    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, ProgressSpinnerModule, QrScannerComponent],
+    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, ProgressSpinnerModule, QrScannerComponent, DialogModule, FormsModule, InputSwitchModule],
     templateUrl: './participant-run.component.html',
     styleUrls: ['./participant-run.component.css']
   })
@@ -51,6 +56,16 @@
 
     backgroundMap: BackgroundMap | null = null;
 
+    // GPS Tracking
+    showMenu: boolean = false;
+    showGpsSettings: boolean = false;
+    gpsTrackingEnabled: boolean = false;
+    currentGpsMode: TrackingMode = TrackingMode.HIGH;
+    batteryLevel: number = 100;
+    autoAdjustEnabled: boolean = true;
+    TrackingMode = TrackingMode;
+    TRACKING_CONFIGS = TRACKING_CONFIGS;
+
     private timerSubscription: Subscription = new Subscription();
 
     private subscriptions: Subscription = new Subscription();
@@ -61,7 +76,8 @@
     private participantStateService: ParticipantStateService,
     private networkService: NetworkService,
     private tileDbService: TileDbService,
-    private location: Location
+    private gpsTrackingService: GpsTrackingService,
+    private batteryService: BatteryService
   ){}
 
     async ngOnInit(): Promise<void> {
@@ -113,6 +129,20 @@
               categoryId: sessionBackup.categoryId
             });
             this.participantStateService.setParticipantName({ participantName: sessionBackup.participantName });
+
+            // Przywróć GPS tracking jeśli był aktywny
+            if (sessionBackup.wasRunActivate && !sessionBackup.isRunFinished && sessionBackup.gpsTrackingEnabled) {
+              console.log('[ParticipantRun] Restoring GPS tracking from session backup');
+              if (sessionBackup.gpsTrackingMode) {
+                this.currentGpsMode = sessionBackup.gpsTrackingMode as TrackingMode;
+              }
+              // Tracking zostanie wystartowany w initGpsTracking po załadowaniu preferencji
+              setTimeout(async () => {
+                if (this.currentGpsMode !== TrackingMode.OFF) {
+                  await this.gpsTrackingService.startTracking(sessionBackup.runId);
+                }
+              }, 1000);
+            }
           } else {
             console.log('[ParticipantRun] No session backup found - starting fresh');
           }
@@ -144,7 +174,7 @@
       this.timerSubscription = interval(1000).subscribe(() => {
         const now = new Date();
         this.currentTime = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: false});
-        if (this.runStartTime > 0 && this.wasRunActivate) {
+        if (this.runStartTime > 0 && this.wasRunActivate && !this.isRunFinished) {
           const elapsed = Date.now() - this.runStartTime;
           this.raceTimeDisplay = this.formatTime(elapsed);
         }
@@ -160,11 +190,19 @@
         setTimeout(() => this.checkOrientation(), 100);
       });
       window.addEventListener('resize', () => this.checkOrientation());
+
+      // Inicjalizacja GPS tracking
+      this.initGpsTracking();
     }
 
     ngOnDestroy(): void {
       this.timerSubscription.unsubscribe();
       this.subscriptions.unsubscribe();
+
+      // Stop GPS tracking
+      if (this.gpsTrackingEnabled) {
+        this.gpsTrackingService.stopTracking();
+      }
     }
 
     toggleScanner() {
@@ -179,7 +217,7 @@
       this.isScanning = true;
 
       const timestamp = new Date().getTime().toString();
-      const location = await this.getLocationWithTimeout(5000) || {lat:"0.0", lng:"0.0", accuracy:"0.0"}
+      const location = await this.getLocationWithTimeout(10000) || this.getFallbackLocation()
       let requestId = crypto.randomUUID()
 
       let request = {
@@ -201,7 +239,7 @@
       }
 
       const timer = setTimeout(() => {
-        console.warn('Geolokalizacja - timeout');
+        console.log('[ParticipantRun] Geolokalizacja - timeout, using fallback location');
         resolve(null);
       }, timeout);
 
@@ -216,12 +254,29 @@
         },
         (error) => {
           clearTimeout(timer);
-          console.error('Błąd pobierania lokalizacji:', error);
+          console.error('[ParticipantRun] Błąd pobierania lokalizacji:', error);
           resolve(null);
         },
         { enableHighAccuracy: true }
       );
     });
+  }
+
+  private getFallbackLocation(): { lat: string, lng: string, accuracy: string } {
+    // Spróbuj użyć ostatniej znanej pozycji z GPS tracking service
+    const lastPosition = this.gpsTrackingService.getLastPosition();
+    if (lastPosition) {
+      console.log('[ParticipantRun] Using last known position from GPS tracking');
+      return {
+        lat: lastPosition.coords.latitude.toString(),
+        lng: lastPosition.coords.longitude.toString(),
+        accuracy: lastPosition.coords.accuracy.toString()
+      };
+    }
+
+    // Jeśli GPS tracking nie ma pozycji, zwróć domyślną
+    console.warn('[ParticipantRun] No GPS position available, using default location (0,0)');
+    return { lat: "0.0", lng: "0.0", accuracy: "0.0" };
   }
 
   // dodo moze to powinno byc w send service?
@@ -252,7 +307,7 @@
     localStorage.setItem('pendingRequests', JSON.stringify(updatedRequests));
   }
 
-  private handleAddControlPointResponse(response: RunMetricAfterControlPoint) {
+  private async handleAddControlPointResponse(response: RunMetricAfterControlPoint) {
     this.setLocalStorageItem('runStartTime', `${response.startTime}`)
     this.runStartTime = response.startTime;
 
@@ -266,11 +321,50 @@
       this.setLocalStorageItem('raceTimeDisplay', this.raceTimeDisplay)
     }
 
+    const wasActiveBefore = this.wasRunActivate;
     this.wasRunActivate = response.wasActivate;
     this.setLocalStorageItem('wasRunActivate', `${response.wasActivate}`)
 
+    const wasFinishedBefore = this.isRunFinished;
     this.isRunFinished = response.isFinished
     this.setLocalStorageItem('isRunFinished', `${response.isFinished}`)
+
+    // Start GPS tracking gdy bieg się rozpoczyna
+    if (!wasActiveBefore && response.wasActivate) {
+      const runId = this.getLocalStorageItem('runId');
+      console.log('[ParticipantRun] Run activated. RunId:', runId, 'GPS Mode:', this.currentGpsMode);
+
+      if (runId) {
+        console.log('[ParticipantRun] Starting GPS tracking for run:', runId);
+        try {
+          await this.gpsTrackingService.startTracking(runId);
+          console.log('[ParticipantRun] GPS tracking started successfully');
+        } catch (error) {
+          console.error('[ParticipantRun] Failed to start GPS tracking:', error);
+        }
+      }
+    }
+
+    // Stop GPS tracking gdy bieg się kończy
+    if (!wasFinishedBefore && response.isFinished) {
+      console.log('[ParticipantRun] Run finished, stopping GPS tracking');
+      await this.gpsTrackingService.stopTracking();
+      console.log('[ParticipantRun] GPS tracking stopped');
+
+      // Pobierz i wyświetl trasę GPS z backendu
+      const runId = this.getLocalStorageItem('runId');
+      if (runId) {
+        await this.loadAndDisplayGpsTrack(runId);
+      }
+
+      // Wyczyść lokalne punkty GPS z IndexedDB (są już na backendzie)
+      try {
+        await this.gpsTrackingService.clearAllTrackPoints();
+        console.log('[ParticipantRun] Local GPS points cleared from IndexedDB');
+      } catch (error) {
+        console.error('[ParticipantRun] Error clearing local GPS points:', error);
+      }
+    }
 
     // Zapisz backup stanu do IndexedDB po każdej zmianie
     this.saveSessionBackup();
@@ -328,6 +422,20 @@
 
   async onNewRoute(): Promise<void> {
     this.router.navigateByUrl('').then(async () => {
+      const runId = this.getLocalStorageItem('runId');
+
+      // Stop GPS tracking
+      if (this.gpsTrackingEnabled) {
+        await this.gpsTrackingService.stopTracking();
+      }
+
+      // Usuń GPS track points
+      try {
+        await this.gpsTrackingService.clearAllTrackPoints();
+      } catch (error) {
+        console.error('[ParticipantRun] Error clearing GPS track:', error);
+      }
+
       this.runStartTime = 0;
       this.runFinishTime = 0;
       this.raceTimeDisplay = '00:00';
@@ -397,11 +505,133 @@
       runStartTime: this.runStartTime,
       raceTimeDisplay: this.raceTimeDisplay,
       checkpointsNumber: this.checkpointsNumber,
-      pendingRequests: pendingRequests
+      pendingRequests: pendingRequests,
+      gpsTrackingEnabled: this.gpsTrackingEnabled,
+      gpsTrackingMode: this.currentGpsMode
     };
 
     this.tileDbService.saveParticipantSession(sessionState).catch(err => {
       console.error('[ParticipantRun] Error saving session backup to IndexedDB:', err);
     });
+  }
+
+  /**
+   * GPS TRACKING METHODS
+   */
+
+  private initGpsTracking(): void {
+    // Wczytaj preferencje GPS
+    const preferences = this.gpsTrackingService.getPreferences();
+    this.currentGpsMode = preferences.mode;
+    this.autoAdjustEnabled = preferences.autoAdjustOnLowBattery;
+
+    // Subskrybuj status trackingu
+    this.subscriptions.add(
+      this.gpsTrackingService.isTracking().subscribe(tracking => {
+        this.gpsTrackingEnabled = tracking;
+      })
+    );
+
+    // Subskrybuj tryb trackingu
+    this.subscriptions.add(
+      this.gpsTrackingService.getCurrentMode().subscribe(mode => {
+        this.currentGpsMode = mode;
+      })
+    );
+
+    // Subskrybuj status baterii
+    this.subscriptions.add(
+      this.batteryService.getBatteryStatus().subscribe(status => {
+        this.batteryLevel = status.levelPercentage;
+      })
+    );
+  }
+
+  toggleMenu(): void {
+    this.showMenu = !this.showMenu;
+  }
+
+  toggleGpsSettings(): void {
+    this.showGpsSettings = !this.showGpsSettings;
+    this.showMenu = false;
+  }
+
+  async onGpsModeChange(mode: TrackingMode): Promise<void> {
+    if (mode === TrackingMode.OFF && this.gpsTrackingEnabled) {
+      // Potwierdzenie wyłączenia
+      const preferences = this.gpsTrackingService.getPreferences();
+      if (preferences.warnBeforeDisabling) {
+        // W produkcji użyj PrimeNG ConfirmDialog
+        const confirmed = confirm('Wyłączenie trackingu GPS uniemożliwi wyświetlenie szczegółowej trasy po zakończeniu biegu. Kontynuować?');
+        if (!confirmed) {
+          return;
+        }
+      }
+    }
+
+    await this.gpsTrackingService.changeTrackingMode(mode);
+    this.currentGpsMode = mode;
+    this.savePreferencesAndBackup();
+  }
+
+  getModeLabel(mode: TrackingMode): string {
+    switch (mode) {
+      case TrackingMode.OFF: return 'Wyłączony';
+      case TrackingMode.LOW: return 'Oszczędny';
+      case TrackingMode.MEDIUM: return 'Zbalansowany';
+      case TrackingMode.HIGH: return 'Dokładny';
+      case TrackingMode.MAX: return 'Maksymalny';
+      default: return '';
+    }
+  }
+
+  getModeDescription(mode: TrackingMode): string {
+    return TRACKING_CONFIGS[mode].description;
+  }
+
+  onAutoAdjustChange(): void {
+    const preferences = this.gpsTrackingService.getPreferences();
+    preferences.autoAdjustOnLowBattery = this.autoAdjustEnabled;
+    this.gpsTrackingService.savePreferences(preferences);
+  }
+
+  private savePreferencesAndBackup(): void {
+    this.saveSessionBackup();
+  }
+
+  private async loadAndDisplayGpsTrack(runId: string): Promise<void> {
+    try {
+      console.log('[ParticipantRun] Loading GPS track for runId:', runId);
+      const trackResponse = await new Promise<any>((resolve, reject) => {
+        this.sendService.getGpsTrack(runId).subscribe({
+          next: (response) => resolve(response),
+          error: (error) => reject(error)
+        });
+      });
+
+      if (!trackResponse || !trackResponse.segments || trackResponse.segments.length === 0) {
+        console.log('[ParticipantRun] No GPS track data available');
+        return;
+      }
+
+      console.log('[ParticipantRun] GPS track loaded:', trackResponse);
+
+      // Wyświetl trasę na mapie
+      this.displayGpsTrackOnMap(trackResponse);
+    } catch (error) {
+      console.error('[ParticipantRun] Failed to load GPS track:', error);
+    }
+  }
+
+  private displayGpsTrackOnMap(trackResponse: any): void {
+    if (!this.mapComponent) {
+      console.error('[ParticipantRun] Map component not available');
+      return;
+    }
+
+    console.log('[ParticipantRun] Displaying GPS track with', trackResponse.segments.length, 'segments');
+
+    // Deleguj wyświetlanie do komponentu mapy
+    this.mapComponent.displayGpsTrack(trackResponse.segments, trackResponse.stats);
   }
 }

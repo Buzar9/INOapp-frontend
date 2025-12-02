@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { GpsTrackPoint } from '../models/gps-track.model';
 
 export interface MapMetadata {
   id: string;
@@ -32,6 +33,8 @@ export interface ParticipantSessionState {
   checkpointsNumber: number;
   pendingRequests: any[];      // Kolejka zaległych requestów do wysłania
   savedAt: number;             // Timestamp zapisania stanu
+  gpsTrackingEnabled?: boolean; // Czy tracking GPS był włączony
+  gpsTrackingMode?: string;     // Tryb trackingu
 }
 
 interface TileRecord {
@@ -48,9 +51,11 @@ interface TileRecord {
 export class TileDbService {
   private dbPromise?: Promise<IDBDatabase>;
   private dbName = 'offline-maps';
+  private dbVersion = 5;  // Zwiększona wersja aby wymusić upgrade
   private tilesStore = 'tiles';
   private mapsStore = 'maps';
   private sessionStore = 'session';  // Nowy store dla stanu sesji uczestnika
+  private gpsTracksStore = 'gps-tracks';  // Store dla punktów GPS trackingu
 
   constructor() {
     // Przydatne do szybkiego debugowania z konsoli: window.tileDbDebug.countTilesForMap('mapId')
@@ -72,11 +77,13 @@ export class TileDbService {
     if (!this.dbPromise) {
       this.dbPromise = new Promise((resolve, reject) => {
         const openInitial = () => {
-          const req = indexedDB.open(this.dbName);
+          const req = indexedDB.open(this.dbName, this.dbVersion);
 
-          req.onupgradeneeded = () => {
+          req.onupgradeneeded = (event) => {
             const db = req.result;
-            console.log('TileDbService: onupgradeneeded - creating object stores');
+            const oldVersion = event.oldVersion;
+            console.log(`TileDbService: onupgradeneeded - upgrading from v${oldVersion} to v${this.dbVersion}`);
+
             if (!db.objectStoreNames.contains(this.tilesStore)) {
               const tiles = db.createObjectStore(this.tilesStore, { keyPath: 'key' });
               tiles.createIndex('byMap', 'mapId', { unique: false });
@@ -88,6 +95,19 @@ export class TileDbService {
             if (!db.objectStoreNames.contains(this.sessionStore)) {
               db.createObjectStore(this.sessionStore, { keyPath: 'id' });
             }
+
+            // GPS tracks store - usuń stary i utwórz nowy jeśli upgrade z wersji < 5
+            if (oldVersion < 5 && db.objectStoreNames.contains(this.gpsTracksStore)) {
+              console.log('TileDbService: Dropping old gps-tracks store for schema update');
+              db.deleteObjectStore(this.gpsTracksStore);
+            }
+
+            if (!db.objectStoreNames.contains(this.gpsTracksStore)) {
+              console.log('TileDbService: Creating gps-tracks store with proper schema');
+              const gpsStore = db.createObjectStore(this.gpsTracksStore, { keyPath: 'timestamp' });
+              gpsStore.createIndex('byTimestamp', 'timestamp', { unique: false });
+              gpsStore.createIndex('byUploadStatus', 'uploadedToBackend', { unique: false });
+            }
           };
 
           req.onsuccess = () => {
@@ -96,19 +116,22 @@ export class TileDbService {
             const hasTiles = db.objectStoreNames.contains(this.tilesStore);
             const hasMaps = db.objectStoreNames.contains(this.mapsStore);
             const hasSession = db.objectStoreNames.contains(this.sessionStore);
-            if (hasTiles && hasMaps && hasSession) {
+            const hasGpsTracks = db.objectStoreNames.contains(this.gpsTracksStore);
+            if (hasTiles && hasMaps && hasSession && hasGpsTracks) {
               resolve(db);
               return;
             }
 
             const newVersion = (db.version || 0) + 1;
-            console.warn(`TileDbService: object stores missing (tiles:${hasTiles} maps:${hasMaps} session:${hasSession}), upgrading DB to v${newVersion}`);
+            console.warn(`TileDbService: object stores missing (tiles:${hasTiles} maps:${hasMaps} session:${hasSession} gpsTracks:${hasGpsTracks}), upgrading DB to v${newVersion}`);
             db.close();
 
             const req2 = indexedDB.open(this.dbName, newVersion);
-            req2.onupgradeneeded = () => {
+            req2.onupgradeneeded = (event2) => {
               const db2 = req2.result;
-              console.log('TileDbService: onupgradeneeded (forced) - creating missing object stores');
+              const oldVersion2 = event2.oldVersion;
+              console.log(`TileDbService: onupgradeneeded (forced) - upgrading from v${oldVersion2} to v${newVersion}`);
+
               if (!db2.objectStoreNames.contains(this.tilesStore)) {
                 const tiles = db2.createObjectStore(this.tilesStore, { keyPath: 'key' });
                 tiles.createIndex('byMap', 'mapId', { unique: false });
@@ -119,6 +142,19 @@ export class TileDbService {
               }
               if (!db2.objectStoreNames.contains(this.sessionStore)) {
                 db2.createObjectStore(this.sessionStore, { keyPath: 'id' });
+              }
+
+              // GPS tracks store - usuń stary i utwórz nowy jeśli upgrade z wersji < 5
+              if (oldVersion2 < 5 && db2.objectStoreNames.contains(this.gpsTracksStore)) {
+                console.log('TileDbService: Dropping old gps-tracks store for schema update (forced)');
+                db2.deleteObjectStore(this.gpsTracksStore);
+              }
+
+              if (!db2.objectStoreNames.contains(this.gpsTracksStore)) {
+                console.log('TileDbService: Creating gps-tracks store with proper schema (forced)');
+                const gpsStore = db2.createObjectStore(this.gpsTracksStore, { keyPath: 'timestamp' });
+                gpsStore.createIndex('byTimestamp', 'timestamp', { unique: false });
+                gpsStore.createIndex('byUploadStatus', 'uploadedToBackend', { unique: false });
               }
             };
             req2.onsuccess = () => resolve(req2.result);
@@ -447,5 +483,119 @@ export class TileDbService {
   async hasParticipantSession(): Promise<boolean> {
     const session = await this.getParticipantSession();
     return session !== null;
+  }
+
+  /**
+   * METODY ZARZĄDZANIA GPS TRACKING POINTS
+   * Uproszczone - punkty GPS są teraz minimalne (timestamp, lat, lng, accuracy)
+   */
+
+  /**
+   * Zapisuje punkt GPS do IndexedDB.
+   */
+  async saveGpsPoint(point: GpsTrackPoint): Promise<void> {
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.gpsTracksStore], 'readwrite');
+    tx.objectStore(this.gpsTracksStore).put(point);
+    await this.txDone(tx);
+  }
+
+  /**
+   * Pobiera wszystkie punkty GPS (dla bieżącej sesji).
+   */
+  async getAllGpsPoints(): Promise<GpsTrackPoint[]> {
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.gpsTracksStore], 'readonly');
+    const store = tx.objectStore(this.gpsTracksStore);
+
+    const points: GpsTrackPoint[] = [];
+
+    await new Promise<void>((resolve, reject) => {
+      const req = store.openCursor();
+      req.onsuccess = () => {
+        const cursor = req.result as IDBCursorWithValue | null;
+        if (cursor) {
+          points.push(cursor.value as GpsTrackPoint);
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    // Sortuj po timestamp
+    points.sort((a, b) => a.timestamp - b.timestamp);
+    return points;
+  }
+
+  /**
+   * Pobiera punkty GPS które nie zostały jeszcze wysłane do backendu.
+   */
+  async getPendingGpsPoints(): Promise<GpsTrackPoint[]> {
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.gpsTracksStore], 'readonly');
+    const store = tx.objectStore(this.gpsTracksStore);
+    const index = store.index('byUploadStatus');
+
+    const points: GpsTrackPoint[] = [];
+
+    await new Promise<void>((resolve, reject) => {
+      const req = index.openCursor(IDBKeyRange.only(false));
+      req.onsuccess = () => {
+        const cursor = req.result as IDBCursorWithValue | null;
+        if (cursor) {
+          points.push(cursor.value as GpsTrackPoint);
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    // Sortuj po timestamp
+    points.sort((a, b) => a.timestamp - b.timestamp);
+    return points;
+  }
+
+  /**
+   * Oznacza punkty jako wysłane do backendu (po pomyślnym uploadzie).
+   */
+  async markGpsPointsAsUploaded(timestamps: number[]): Promise<void> {
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.gpsTracksStore], 'readwrite');
+    const store = tx.objectStore(this.gpsTracksStore);
+
+    for (const timestamp of timestamps) {
+      const point = await this.promisify<GpsTrackPoint | undefined>(store.get(timestamp));
+      if (point) {
+        point.uploadedToBackend = true;
+        store.put(point);
+      }
+    }
+
+    await this.txDone(tx);
+  }
+
+  /**
+   * Usuwa wszystkie punkty GPS z IndexedDB.
+   * Używane po zakończeniu biegu lub przy rozpoczęciu nowej trasy.
+   * UWAGA: Nie usuwa punktów z backendu - tylko z lokalnej bazy.
+   */
+  async clearAllGpsPoints(): Promise<void> {
+    const db = await this.ensureDb();
+    const tx = db.transaction([this.gpsTracksStore], 'readwrite');
+    tx.objectStore(this.gpsTracksStore).clear();
+    await this.txDone(tx);
+  }
+
+  /**
+   * Zlicza wszystkie punkty GPS.
+   */
+  async countAllGpsPoints(): Promise<number> {
+    const db = await this.ensureDb();
+    const store = db.transaction([this.gpsTracksStore], 'readonly').objectStore(this.gpsTracksStore);
+    return await this.promisify<number>(store.count());
   }
 }

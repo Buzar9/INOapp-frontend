@@ -60,7 +60,7 @@ export class ParticipantRegisterComponent {
             participantUnit: parsedScan.participantUnitName
         })
     }
-
+// dodo przy skanowaniu inita nie pobierac zdjecia z aparatu
     onSubmit() {
         this.isLoading = true;
 
