@@ -208,6 +208,54 @@ ngx-scanner-qrcode::before {
     0 0 0 8px rgba(139, 90, 60, 0.15) !important;
 }
 
+/* Torch button - flashlight styling */
+.torch-button.p-button {
+  background: linear-gradient(135deg, rgba(70, 70, 50, 0.95) 0%, rgba(50, 50, 40, 0.95) 100%) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.torch-button.p-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(90, 90, 60, 0.95) 0%, rgba(70, 70, 50, 0.95) 100%) !important;
+  box-shadow: 
+    0 12px 35px rgba(200, 180, 50, 0.4),
+    0 0 0 8px rgba(200, 180, 50, 0.15) !important;
+}
+
+/* Torch active state - glowing yellow */
+.torch-button.torch-active.p-button {
+  background: linear-gradient(135deg, rgba(255, 200, 50, 0.95) 0%, rgba(220, 170, 30, 0.95) 100%) !important;
+  color: #1a1a1a !important;
+  box-shadow: 
+    0 8px 30px rgba(255, 200, 50, 0.6),
+    0 0 0 6px rgba(255, 200, 50, 0.25),
+    0 0 40px rgba(255, 200, 50, 0.4) !important;
+  animation: torch-glow 1.5s ease-in-out infinite;
+}
+
+.torch-button.torch-active.p-button:hover {
+  background: linear-gradient(135deg, rgba(255, 210, 70, 0.95) 0%, rgba(240, 190, 50, 0.95) 100%) !important;
+  box-shadow: 
+    0 12px 40px rgba(255, 200, 50, 0.7),
+    0 0 0 8px rgba(255, 200, 50, 0.3),
+    0 0 50px rgba(255, 200, 50, 0.5) !important;
+}
+
+@keyframes torch-glow {
+  0%, 100% {
+    box-shadow: 
+      0 8px 30px rgba(255, 200, 50, 0.6),
+      0 0 0 6px rgba(255, 200, 50, 0.25),
+      0 0 40px rgba(255, 200, 50, 0.4);
+  }
+  50% {
+    box-shadow: 
+      0 8px 35px rgba(255, 200, 50, 0.7),
+      0 0 0 10px rgba(255, 200, 50, 0.3),
+      0 0 50px rgba(255, 200, 50, 0.5);
+  }
+}
+
 /* File scan results - hidden by default */
 .file-scan-result {
   margin-top: 1rem;

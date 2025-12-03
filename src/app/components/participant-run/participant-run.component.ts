@@ -25,11 +25,14 @@
   import { DialogModule } from 'primeng/dialog';
   import { FormsModule } from '@angular/forms';
   import { InputSwitchModule } from 'primeng/inputswitch';
+  import { DropdownModule } from 'primeng/dropdown';
+  import { TrackingModeService } from '../../services/tracking-mode.service';
+  import { TrackingModeComponent } from '../tracking-mode/tracking-mode.component';
 
   @Component({
     selector: 'participant',
     standalone: true,
-    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, ProgressSpinnerModule, QrScannerComponent, DialogModule, FormsModule, InputSwitchModule],
+    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, ProgressSpinnerModule, QrScannerComponent, DialogModule, FormsModule, InputSwitchModule, DropdownModule, TrackingModeComponent],
     templateUrl: './participant-run.component.html',
     styleUrls: ['./participant-run.component.css']
   })
@@ -66,6 +69,20 @@
     TrackingMode = TrackingMode;
     TRACKING_CONFIGS = TRACKING_CONFIGS;
 
+    // Tracking Mode (power saving) - ultra minimized state
+    isInTrackingMode: boolean = false;
+    showTrackingModeInfo: boolean = false;
+
+    // Auto Screen Dimming settings (auto-activate tracking mode after inactivity)
+    autoTrackingModeEnabled: boolean = false;
+    autoTrackingModeDelay: number = 60; // seconds (default 1 minute)
+    private inactivityTimer: any = null;
+    private lastInteractionTime: number = Date.now();
+
+    // Dialog-specific auto-dimming settings (initialized with default enabled)
+    dialogAutoTrackingEnabled: boolean = true; // Enabled by default in dialog
+    dialogAutoTrackingDelay: number = 60; // seconds (default 1 minute)
+
     private timerSubscription: Subscription = new Subscription();
 
     private subscriptions: Subscription = new Subscription();
@@ -77,7 +94,8 @@
     private networkService: NetworkService,
     private tileDbService: TileDbService,
     private gpsTrackingService: GpsTrackingService,
-    private batteryService: BatteryService
+    private batteryService: BatteryService,
+    private trackingModeService: TrackingModeService
   ){}
 
     async ngOnInit(): Promise<void> {
@@ -151,14 +169,10 @@
         }
       }
 
-      let stationRequest = {
-        categoryId: this.getLocalStorageItem('categoryId')
+      // Pobierz stanowiska tylko jeśli bieg już był aktywowany (przywracanie sesji)
+      if (this.wasRunActivate) {
+        this.loadStations();
       }
-
-      this.sendService.getStations(stationRequest).subscribe({
-        next: (response) => {this.stationsToShow = response, console.log('dodo stacje', response)},
-        error: (err) => console.log('dodo error', err)
-      })
 
       let backgroundMapRequest = {
         competitionId: 'Competition123',
@@ -178,6 +192,11 @@
           const elapsed = Date.now() - this.runStartTime;
           this.raceTimeDisplay = this.formatTime(elapsed);
         }
+
+        // Update tracking mode data if active
+        if (this.isInTrackingMode) {
+          this.updateTrackingModeData();
+        }
       });
 
       this.networkService.getOnlineStatus().subscribe(status => {
@@ -191,6 +210,9 @@
       });
       window.addEventListener('resize', () => this.checkOrientation());
 
+      // Visibility change listener for Wake Lock reacquisition
+      document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+
       // Inicjalizacja GPS tracking
       this.initGpsTracking();
     }
@@ -202,6 +224,11 @@
       // Stop GPS tracking
       if (this.gpsTrackingEnabled) {
         this.gpsTrackingService.stopTracking();
+      }
+
+      // Exit tracking mode if active
+      if (this.isInTrackingMode) {
+        this.exitTrackingMode();
       }
     }
 
@@ -307,6 +334,20 @@
     localStorage.setItem('pendingRequests', JSON.stringify(updatedRequests));
   }
 
+  private loadStations(): void {
+    const stationRequest = {
+      categoryId: this.getLocalStorageItem('categoryId')
+    };
+
+    this.sendService.getStations(stationRequest).subscribe({
+      next: (response) => {
+        this.stationsToShow = response;
+        console.log('dodo stacje', response);
+      },
+      error: (err) => console.log('dodo error', err)
+    });
+  }
+
   private async handleAddControlPointResponse(response: RunMetricAfterControlPoint) {
     this.setLocalStorageItem('runStartTime', `${response.startTime}`)
     this.runStartTime = response.startTime;
@@ -329,8 +370,11 @@
     this.isRunFinished = response.isFinished
     this.setLocalStorageItem('isRunFinished', `${response.isFinished}`)
 
-    // Start GPS tracking gdy bieg się rozpoczyna
+    // Start GPS tracking i pobierz stanowiska gdy bieg się rozpoczyna
     if (!wasActiveBefore && response.wasActivate) {
+      // Pobierz stanowiska po aktywacji biegu
+      this.loadStations();
+
       const runId = this.getLocalStorageItem('runId');
       console.log('[ParticipantRun] Run activated. RunId:', runId, 'GPS Mode:', this.currentGpsMode);
 
@@ -343,12 +387,22 @@
           console.error('[ParticipantRun] Failed to start GPS tracking:', error);
         }
       }
+
+      // Start auto screen dimming timer if enabled
+      if (this.autoTrackingModeEnabled) {
+        this.startInactivityTimer();
+        console.log('[ParticipantRun] Auto screen dimming timer started');
+      }
     }
 
     // Stop GPS tracking gdy bieg się kończy
     if (!wasFinishedBefore && response.isFinished) {
       console.log('[ParticipantRun] Run finished, stopping GPS tracking');
       await this.gpsTrackingService.stopTracking();
+
+      // Clear auto tracking timer
+      this.clearInactivityTimer();
+
       console.log('[ParticipantRun] GPS tracking stopped');
 
       // Pobierz i wyświetl trasę GPS z backendu
@@ -468,6 +522,12 @@
   resetMapView() {
     if (this.mapComponent) {
       this.mapComponent.resetMapView();
+    }
+  }
+
+  highlightStations(): void {
+    if (this.mapComponent) {
+      this.mapComponent.pulseStations();
     }
   }
 
@@ -633,5 +693,219 @@
 
     // Deleguj wyświetlanie do komponentu mapy
     this.mapComponent.displayGpsTrack(trackResponse.segments, trackResponse.stats);
+  }
+
+  // ============================================
+  // TRACKING MODE (Power Saving) Methods
+  // ============================================
+
+  /**
+   * Toggle tracking mode (power saving mode with black screen)
+   */
+  async toggleTrackingMode(): Promise<void> {
+    if (this.isInTrackingMode) {
+      await this.exitTrackingMode();
+    } else {
+      await this.enterTrackingMode();
+    }
+  }
+
+  /**
+   * Enter tracking mode (black screen, Wake Lock, GPS optimization)
+   */
+  async enterTrackingMode(): Promise<void> {
+    console.log('[ParticipantRun] Entering tracking mode');
+
+    // Show info dialog first time
+    const hasSeenInfo = localStorage.getItem('trackingModeInfoSeen');
+    if (!hasSeenInfo) {
+      this.showTrackingModeInfo = true;
+      return; // Wait for user to confirm
+    }
+
+    await this.activateTrackingMode();
+  }
+
+  /**
+   * Actually activate tracking mode (called after info dialog or directly)
+   */
+  async activateTrackingMode(): Promise<void> {
+    try {
+      // Enable Wake Lock
+      const wakeLockEnabled = await this.trackingModeService.enableTrackingMode();
+      if (!wakeLockEnabled) {
+        console.warn('[ParticipantRun] Wake Lock not enabled, but continuing');
+      }
+
+      // Optimize GPS for battery saving
+      await this.gpsTrackingService.optimizeForTrackingMode();
+
+      // Set tracking mode flag
+      this.isInTrackingMode = true;
+
+      // Close menu
+      this.showMenu = false;
+
+      console.log('[ParticipantRun] Tracking mode activated');
+    } catch (error) {
+      console.error('[ParticipantRun] Failed to enter tracking mode:', error);
+    }
+  }
+
+  /**
+   * Exit tracking mode and restore normal view
+   */
+  async exitTrackingMode(): Promise<void> {
+    console.log('[ParticipantRun] Exiting tracking mode');
+
+    try {
+      // Disable Wake Lock
+      await this.trackingModeService.disableTrackingMode();
+
+      // Restore original GPS mode
+      await this.gpsTrackingService.restoreOriginalMode();
+
+      // Clear tracking mode flag
+      this.isInTrackingMode = false;
+
+      // Restart inactivity timer if auto mode is enabled
+      if (this.autoTrackingModeEnabled && this.wasRunActivate && !this.isRunFinished) {
+        this.resetInactivityTimer();
+      }
+
+      console.log('[ParticipantRun] Tracking mode deactivated');
+    } catch (error) {
+      console.error('[ParticipantRun] Failed to exit tracking mode:', error);
+    }
+  }
+
+  /**
+   * Start inactivity timer for auto screen dimming
+   */
+  private startInactivityTimer(): void {
+    if (!this.autoTrackingModeEnabled || this.isInTrackingMode) {
+      return;
+    }
+
+    this.clearInactivityTimer();
+
+    console.log(`[ParticipantRun] Starting auto-dimming timer: ${this.autoTrackingModeDelay}s`);
+
+    this.inactivityTimer = setTimeout(async () => {
+      if (!this.isInTrackingMode && this.wasRunActivate && !this.isRunFinished) {
+        console.log('[ParticipantRun] Auto-dimming screen after inactivity');
+        await this.enterTrackingMode();
+      }
+    }, this.autoTrackingModeDelay * 1000);
+  }
+
+  /**
+   * Reset inactivity timer (called on user interaction)
+   */
+  private resetInactivityTimer(): void {
+    this.lastInteractionTime = Date.now();
+    this.startInactivityTimer();
+  }
+
+  /**
+   * Clear inactivity timer
+   */
+  private clearInactivityTimer(): void {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+  }
+
+  /**
+   * Toggle auto screen dimming (auto-activate tracking mode after inactivity)
+   */
+  toggleAutoTrackingMode(): void {
+    this.autoTrackingModeEnabled = !this.autoTrackingModeEnabled;
+
+    if (this.autoTrackingModeEnabled && !this.isInTrackingMode && this.wasRunActivate && !this.isRunFinished) {
+      this.startInactivityTimer();
+    } else {
+      this.clearInactivityTimer();
+    }
+
+    console.log(`[ParticipantRun] Auto screen dimming: ${this.autoTrackingModeEnabled ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Change auto screen dimming delay
+   */
+  changeAutoTrackingDelay(seconds: number): void {
+    this.autoTrackingModeDelay = seconds;
+
+    // Restart timer with new delay if enabled
+    if (this.autoTrackingModeEnabled && !this.isInTrackingMode) {
+      this.resetInactivityTimer();
+    }
+
+    console.log(`[ParticipantRun] Auto dimming delay changed to: ${seconds}s`);
+  }
+
+  /**
+   * Register user interaction (to reset inactivity timer)
+   */
+  registerUserInteraction(): void {
+    if (this.autoTrackingModeEnabled && !this.isInTrackingMode) {
+      this.resetInactivityTimer();
+    }
+  }
+
+  /**
+   * Update tracking mode data
+   * Note: Battery level is already updated by existing battery service subscription
+   * This method is now minimal/empty as GPS data was removed per user request
+   */
+  updateTrackingModeData(): void {
+    if (!this.isInTrackingMode) return;
+
+    // Battery level is already updated by existing battery service subscription
+    // No additional data needed in tracking mode (ultra-minimal approach)
+  }
+
+  /**
+   * Confirm tracking mode info and activate
+   */
+  confirmTrackingModeInfo(): void {
+    localStorage.setItem('trackingModeInfoSeen', 'true');
+
+    // Transfer dialog settings to main settings
+    this.autoTrackingModeEnabled = this.dialogAutoTrackingEnabled;
+    this.autoTrackingModeDelay = this.dialogAutoTrackingDelay;
+
+    // Start timer if auto-dimming is enabled
+    if (this.autoTrackingModeEnabled && this.wasRunActivate && !this.isRunFinished) {
+      this.startInactivityTimer();
+    }
+
+    this.showTrackingModeInfo = false;
+    this.activateTrackingMode();
+  }
+
+  /**
+   * Handle dialog auto-tracking toggle change
+   */
+  onDialogAutoTrackingChange(): void {
+    console.log(`[ParticipantRun] Dialog auto-dimming: ${this.dialogAutoTrackingEnabled ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Get tracking mode info message based on platform
+   */
+  getTrackingModeInfoMessage(): string {
+    return this.trackingModeService.getWakeLockMessage();
+  }
+
+  /**
+   * Handle visibility change to reacquire Wake Lock
+   */
+  private handleVisibilityChange(): void {
+    if (this.isInTrackingMode) {
+      this.trackingModeService.handleVisibilityChange();
+    }
   }
 }

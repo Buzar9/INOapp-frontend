@@ -1,7 +1,7 @@
-<div class="container">
+<div class="container" (click)="registerUserInteraction()" (touchstart)="registerUserInteraction()">
   <!-- Hamburger Menu Button (top-left) -->
   <button
-    *ngIf="wasRunActivate && !isRunFinished"
+    *ngIf="wasRunActivate"
     pButton
     pRipple
     type="button"
@@ -71,17 +71,31 @@
     [southWest]="backgroundMap?.southWest">
   </participant-map>
 
-  <!-- Przycisk QR (główny floating button) -->
-  <button
-    *ngIf="!isRunFinished"
-    pButton
-    pRipple
-    type="button"
-    icon="pi pi-qrcode"
-    class="qr-scanner-icon p-button-rounded"
-    title="Skanuj kod QR"
-    (click)="toggleScanner()">
-  </button>
+  <!-- Przyciski floating (QR + Tracking Mode) -->
+  <div class="floating-buttons" *ngIf="!isRunFinished">
+    <!-- Przycisk Tracking Mode - tylko po aktywacji biegu -->
+    <button
+      *ngIf="wasRunActivate"
+      pButton
+      pRipple
+      type="button"
+      icon="pi pi-moon"
+      [class]="'tracking-mode-floating-button p-button-rounded' + (isInTrackingMode ? ' active' : '')"
+      title="Tryb oszczędzania energii"
+      (click)="toggleTrackingMode()">
+    </button>
+
+    <!-- Przycisk QR - zawsze widoczny przed zakończeniem -->
+    <button
+      pButton
+      pRipple
+      type="button"
+      icon="pi pi-qrcode"
+      class="qr-scanner-icon p-button-rounded"
+      title="Skanuj kod QR"
+      (click)="toggleScanner()">
+    </button>
+  </div>
 
   <qr-scanner
     *ngIf="showScanner"
@@ -120,11 +134,56 @@
         pButton
         pRipple
         type="button"
+        icon="pi pi-eye"
+        label="Pokaż stanowiska"
+        class="menu-option-button"
+        (click)="highlightStations(); showMenu = false">
+      </button>
+      <!-- Opcja ustawień GPS - dostępna tylko podczas aktywnego biegu -->
+      <button
+        *ngIf="!isRunFinished"
+        pButton
+        pRipple
+        type="button"
         icon="pi pi-map-marker"
         label="Ustawienia śledzenia trasy"
         [class]="'menu-option-button' + (gpsTrackingEnabled ? ' tracking-active' : '')"
         (click)="toggleGpsSettings()">
       </button>
+      <!-- Informacja o zakończonym śledzeniu trasy - widoczna po zakończeniu biegu -->
+      <div *ngIf="isRunFinished" class="gps-tracking-finished-info">
+        <i class="pi pi-check-circle"></i>
+        <span>Śledzenie trasy zakończone</span>
+      </div>
+
+      <!-- Auto Screen Dimming Settings - dostępne podczas aktywnego biegu -->
+      <div *ngIf="!isRunFinished && wasRunActivate" class="auto-dimming-section">
+        <div class="auto-dimming-header">
+          <span class="auto-dimming-label">Auto-wyciemnienie ekranu</span>
+          <p-inputSwitch [(ngModel)]="autoTrackingModeEnabled" (onChange)="toggleAutoTrackingMode()"></p-inputSwitch>
+        </div>
+        <div *ngIf="autoTrackingModeEnabled" class="auto-dimming-delay">
+          <span class="delay-label">Opóźnienie:</span>
+          <p-dropdown
+            [(ngModel)]="autoTrackingModeDelay"
+            [options]="[
+              {label: '30 sekund', value: 30},
+              {label: '1 minuta', value: 60},
+              {label: '2 minuty', value: 120},
+              {label: '5 minut', value: 300}
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="changeAutoTrackingDelay(autoTrackingModeDelay)"
+            styleClass="delay-dropdown">
+          </p-dropdown>
+        </div>
+        <div *ngIf="autoTrackingModeEnabled" class="auto-dimming-info">
+          <i class="pi pi-info-circle"></i>
+          <span>Czarny ekran włączy się automatycznie po braku aktywności</span>
+        </div>
+      </div>
+
       <div class="menu-info">
         <div class="menu-info-item">
           <i class="pi pi-clock"></i>
@@ -179,6 +238,79 @@
     <div class="gps-warning" *ngIf="currentGpsMode === TrackingMode.OFF">
       <i class="pi pi-exclamation-triangle"></i>
       Wyłączenie trackingu GPS uniemożliwi wyświetlenie szczegółowej trasy po zakończeniu biegu.
+    </div>
+  </p-dialog>
+
+  <!-- Tracking Mode Component (Power Saving Black Screen) -->
+  <app-tracking-mode
+    *ngIf="isInTrackingMode"
+    [batteryLevel]="batteryLevel"
+    (exitTrackingMode)="exitTrackingMode()">
+  </app-tracking-mode>
+
+  <!-- Tracking Mode Info Dialog (First Time) -->
+  <p-dialog
+    [(visible)]="showTrackingModeInfo"
+    [modal]="true"
+    [closable]="false"
+    [dismissableMask]="false"
+    styleClass="tracking-mode-info-dialog"
+    header="Tryb Oszczędzania Energii">
+    <div class="tracking-mode-info-content">
+      <p class="info-title">Czarny ekran oszczędza baterię podczas biegu</p>
+
+      <div class="info-features">
+        <div class="info-feature">
+          <i class="pi pi-moon"></i>
+          <span>Ekran pozostanie włączony, ale czarny</span>
+        </div>
+        <div class="info-feature">
+          <i class="pi pi-map-marker"></i>
+          <span>GPS nadal śledzi Twoją trasę</span>
+        </div>
+      </div>
+
+      <!-- Auto Screen Dimming Settings in First-Time Dialog -->
+      <div class="info-auto-dimming-section">
+        <div class="info-auto-dimming-header">
+          <span class="info-auto-dimming-label">Auto-wyciemnienie po braku aktywności</span>
+          <p-inputSwitch [(ngModel)]="dialogAutoTrackingEnabled" (onChange)="onDialogAutoTrackingChange()"></p-inputSwitch>
+        </div>
+        <div *ngIf="dialogAutoTrackingEnabled" class="info-auto-dimming-delay">
+          <span class="delay-label">Opóźnienie:</span>
+          <p-dropdown
+            [(ngModel)]="dialogAutoTrackingDelay"
+            [options]="[
+              {label: '30 sekund', value: 30},
+              {label: '1 minuta', value: 60},
+              {label: '2 minuty', value: 120},
+              {label: '5 minut', value: 300}
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="delay-dropdown">
+          </p-dropdown>
+        </div>
+      </div>
+
+      <div class="info-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Rozumiem, włącz tryb"
+          class="p-button-success"
+          (click)="confirmTrackingModeInfo()">
+        </button>
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Anuluj"
+          class="p-button-secondary"
+          (click)="showTrackingModeInfo = false">
+        </button>
+      </div>
     </div>
   </p-dialog>
 </div>

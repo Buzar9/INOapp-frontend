@@ -1,0 +1,248 @@
+/* Tracking Mode Container - Full Screen Black */
+.tracking-mode-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  color: #00ff00; /* Green - minimal power consumption on OLED */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none; /* Prevent default touch actions */
+}
+
+/* Ultra Minimal HUD with Drifting Animation */
+.tracking-hud {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+
+  /* Anti-burn-in: slower drift animation */
+  animation: drift-hud 180s ease-in-out infinite;
+}
+
+/* Drift animation for HUD - prevents OLED burn-in */
+@keyframes drift-hud {
+  0%, 100% {
+    transform: translate(-50%, -50%);
+  }
+  25% {
+    transform: translate(calc(-50% + 15px), calc(-50% - 12px));
+  }
+  50% {
+    transform: translate(calc(-50% - 10px), calc(-50% + 15px));
+  }
+  75% {
+    transform: translate(calc(-50% + 12px), calc(-50% + 10px));
+  }
+}
+
+/* Time Display - Smaller and Darker */
+.time-display {
+  font-size: 48px;
+  font-weight: 600;
+  color: #4a6741;
+  letter-spacing: 3px;
+}
+
+/* Battery Display */
+.battery-display {
+  font-size: 18px;
+  font-weight: 500;
+  color: #4a6741;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.battery-display i {
+  font-size: 20px;
+}
+
+
+
+/* Battery Colors */
+.battery-good {
+  color: #4a6741; /* Dark green */
+}
+
+.battery-medium {
+  color: #6b6b3a; /* Dark yellow-green */
+}
+
+.battery-low {
+  color: #6b4a2a; /* Dark orange */
+}
+
+.battery-critical {
+  color: #6b2a2a; /* Dark red */
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.3;
+  }
+}
+
+/* Exit Button - Bottom Center (Mobile-Friendly) with Drift */
+.exit-button {
+  position: fixed;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 160px;
+  padding: 14px 30px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  background-color: transparent;
+  color: #4a6741;
+  border: 2px solid #4a6741;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  touch-action: auto;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+
+  /* Large tap target for mobile */
+  min-height: 50px;
+
+  /* Anti-burn-in: drift animation (phase-shifted from HUD) */
+  animation: drift-button 180s ease-in-out infinite;
+  animation-delay: -90s; /* Start at opposite phase */
+}
+
+/* Drift animation for button - opposite phase to HUD */
+@keyframes drift-button {
+  0%, 100% {
+    transform: translateX(-50%);
+  }
+  25% {
+    transform: translateX(calc(-50% - 12px));
+  }
+  50% {
+    transform: translateX(calc(-50% + 10px));
+  }
+  75% {
+    transform: translateX(calc(-50% - 8px));
+  }
+}
+
+.exit-button:hover,
+.exit-button:active {
+  background-color: #4a6741;
+  color: #000000;
+  box-shadow: 0 0 20px rgba(74, 103, 65, 0.4);
+}
+
+.exit-button:active {
+  transform: translateX(-50%) scale(0.97);
+  animation: none; /* Disable drift during active state */
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .time-display {
+    font-size: 42px;
+  }
+
+  .battery-display {
+    font-size: 16px;
+  }
+
+  .battery-display i {
+    font-size: 18px;
+  }
+
+  .exit-button {
+    bottom: 2.5rem;
+    min-width: 150px;
+    padding: 13px 28px;
+    font-size: 13px;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .time-display {
+    font-size: 38px;
+  }
+
+  .battery-display {
+    font-size: 15px;
+  }
+
+  .battery-display i {
+    font-size: 17px;
+  }
+
+  .exit-button {
+    bottom: 2rem;
+    min-width: 140px;
+    padding: 12px 25px;
+    font-size: 12px;
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 360px) {
+  .time-display {
+    font-size: 34px;
+  }
+
+  .battery-display {
+    font-size: 14px;
+  }
+
+  .battery-display i {
+    font-size: 16px;
+  }
+
+  .exit-button {
+    bottom: 1.5rem;
+    min-width: 130px;
+    padding: 11px 22px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+}
+
+/* Landscape mode - adjust for horizontal screens */
+@media (orientation: landscape) and (max-height: 600px) {
+  .tracking-hud {
+    gap: 30px;
+  }
+
+  .time-display {
+    font-size: 36px;
+  }
+
+  .battery-display {
+    font-size: 14px;
+  }
+
+  .exit-button {
+    bottom: 1.5rem;
+    min-height: 42px;
+    padding: 10px 24px;
+    font-size: 12px;
+  }
+}

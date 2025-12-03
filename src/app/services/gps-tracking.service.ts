@@ -139,6 +139,38 @@ export class GpsTrackingService {
   }
 
   /**
+   * Optymalizuje GPS dla trybu oszczędzania energii (tracking mode)
+   * Przełącza na LOW mode z optymalnymi ustawieniami dla oszczędzania baterii
+   */
+  async optimizeForTrackingMode(): Promise<void> {
+    console.log('[GpsTrackingService] Optimizing for tracking mode (power saving)');
+
+    // Zapisz oryginalny tryb, aby móc go przywrócić
+    if (!this.originalModeBeforeAutoAdjust) {
+      this.originalModeBeforeAutoAdjust = this.currentMode;
+    }
+
+    // Przełącz na LOW mode (najniższe zużycie baterii przy zachowaniu trackingu)
+    await this.changeTrackingMode(TrackingMode.LOW);
+    console.log('[GpsTrackingService] GPS optimized for tracking mode (switched to LOW)');
+  }
+
+  /**
+   * Przywraca oryginalny tryb GPS po wyjściu z tracking mode
+   */
+  async restoreOriginalMode(): Promise<void> {
+    console.log('[GpsTrackingService] Restoring original GPS mode');
+
+    if (this.originalModeBeforeAutoAdjust) {
+      await this.changeTrackingMode(this.originalModeBeforeAutoAdjust);
+      this.originalModeBeforeAutoAdjust = undefined;
+      console.log('[GpsTrackingService] Original GPS mode restored');
+    } else {
+      console.log('[GpsTrackingService] No original mode to restore');
+    }
+  }
+
+  /**
    * Rozpoczyna nasłuchiwanie pozycji GPS
    */
   private startGeolocationWatch(): void {

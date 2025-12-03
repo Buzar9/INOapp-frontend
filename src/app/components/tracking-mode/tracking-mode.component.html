@@ -1,0 +1,20 @@
+<div class="tracking-mode-container">
+  <!-- Ultra Minimal HUD - tylko godzina i bateria -->
+  <div class="tracking-hud">
+    <!-- Current Time (large, centered) -->
+    <div class="time-display">
+      {{ currentTime | date:'HH:mm' }}
+    </div>
+
+    <!-- Battery Level -->
+    <div class="battery-display" [class]="getBatteryClass()">
+      <i class="pi pi-bolt"></i>
+      <span>{{ batteryLevel() }}%</span>
+    </div>
+  </div>
+
+  <!-- Exit Button - Bottom Center (mobile-friendly) -->
+  <button class="exit-button" (click)="onExitClick()">
+    WRÓĆ DO MAPY
+  </button>
+</div>

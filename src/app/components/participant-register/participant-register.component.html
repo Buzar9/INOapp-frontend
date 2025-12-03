@@ -17,7 +17,7 @@
       <h2>Zeskanuj kod QR</h2>
       <p>Skieruj kamerę na kod QR otrzymany od organizatora</p>
     </div>
-    <qr-scanner (qrCodeScanned)="receiveInitScan($event)" (close)="toggleScanner()"></qr-scanner>
+    <qr-scanner [downloadImage]="false" (qrCodeScanned)="receiveInitScan($event)" (close)="toggleScanner()"></qr-scanner>
   </div>
 
   <!-- Formularz z pseudonimem -->

@@ -1,7 +1,7 @@
 <div class="scanner-container">
   <div class="scanner-area">
     <ngx-scanner-qrcode #action="scanner" [config]="config" (event)="onEvent($event, action)"></ngx-scanner-qrcode>
-    
+
     <div *ngIf="action.isLoading" class="loading-overlay">
       <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
       <p class="loading-text">Uruchamianie kamery...</p>
@@ -9,17 +9,27 @@
   </div>
 
   <div class="controls">
-    <button pButton pRipple 
-            class="control-button file-button" 
-            icon="pi pi-folder-open" 
+    <button pButton pRipple
+            class="control-button file-button"
+            icon="pi pi-folder-open"
             (click)="fileInput.click()"
             pTooltip="Wybierz plik z QR kodem"
             tooltipPosition="bottom">
     </button>
 
-    <button pButton pRipple 
-            class="control-button close-button" 
-            icon="pi pi-times" 
+    <button *ngIf="isTorchAvailable"
+            pButton pRipple
+            class="control-button torch-button"
+            [class.torch-active]="isTorchOn"
+            icon="pi pi-bolt"
+            (click)="toggleTorch()"
+            [pTooltip]="isTorchOn ? 'Wyłącz latarkę' : 'Włącz latarkę'"
+            tooltipPosition="bottom">
+    </button>
+
+    <button pButton pRipple
+            class="control-button close-button"
+            icon="pi pi-times"
             (click)="closeScanner()"
             pTooltip="Zamknij skaner"
             tooltipPosition="bottom">

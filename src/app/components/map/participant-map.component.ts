@@ -52,6 +52,14 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   private gpsStationaryMarkers: L.CircleMarker[] = [];
   private gpsSegments: Array<{polyline: L.Polyline, originalColor: string}> = [];
   private selectedSegment?: {polyline: L.Polyline, originalColor: string};
+  private stationCircles: L.Circle[] = [];
+  private interactivePolygons: L.Polygon[] = [];
+  private isAnimatingStations: boolean = false;
+
+  // Konfiguracja interaktywnych stref stanowisk
+  private readonly DEFAULT_INTERACTIVE_RADIUS = 15; // Domyślny promień w metrach (bez sąsiadów)
+  private readonly MIN_INTERACTIVE_RADIUS = 3; // Minimalny promień w metrach
+  private readonly POLYGON_SEGMENTS = 16; // Liczba segmentów poligonu (więcej = gładszy kształt)
 
   constructor(
     private participantSendService: ParticipantSendService,
@@ -193,53 +201,83 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
-    for (const station of stations) {
-        const lat = station.geometry.coordinates[1]
-        const lng = station.geometry.coordinates[0]
+    // Wyczyść stare elementy
+    this.stationCircles.forEach(circle => {
+      if (this.map.hasLayer(circle)) {
+        this.map.removeLayer(circle);
+      }
+    });
+    this.stationCircles = [];
 
-        const coordinates = L.latLng(lat, lng)
+    this.interactivePolygons.forEach(polygon => {
+      if (this.map.hasLayer(polygon)) {
+        this.map.removeLayer(polygon);
+      }
+    });
+    this.interactivePolygons = [];
 
-        const circle = L.circle(coordinates, {
-          color: '#ff2e00',
-          fillColor: '#ff2e00',
-          fillOpacity: 1,
-          radius: 1,
-          interactive: false,
-        })
+    // Przygotuj dane stanowisk z koordynatami
+    const stationData = stations.map(station => ({
+      station,
+      lat: station.geometry.coordinates[1],
+      lng: station.geometry.coordinates[0],
+      coordinates: L.latLng(station.geometry.coordinates[1], station.geometry.coordinates[0])
+    }));
 
-        circle.addTo(this.map)
+    for (let i = 0; i < stationData.length; i++) {
+      const { station, lat, lng, coordinates } = stationData[i];
 
-        const interactiveCircle = L.circle(coordinates, {
-          color: 'transparent',
-          fillColor: 'transparent',
-          radius: 30,
-          interactive: true
-        })
+      // Widoczne kółko stanowiska
+      const circle = L.circle(coordinates, {
+        color: '#ff2e00',
+        fillColor: '#ff2e00',
+        fillOpacity: 1,
+        radius: 1,
+        interactive: false,
+      });
 
-        const popup = `<div style="text-align: center;">
-                    <h2>${station.properties['name']}</h2>
-                  </div>
-                  <span>${station.properties['note']}</span>`
+      circle.addTo(this.map);
+      this.stationCircles.push(circle);
 
-        const leafletPopup = L.popup().setContent(popup);
-        interactiveCircle.bindPopup(leafletPopup);
+      // Oblicz interaktywny poligon
+      const interactivePolygonPoints = this.calculateInteractivePolygon(
+        coordinates,
+        stationData,
+        i
+      );
 
-        interactiveCircle.on('popupopen', (e) => {
-          const openedPopup = e.popup;
-          if (!this.openPopups.includes(openedPopup)) {
-            this.openPopups.push(openedPopup);
-          }
-        });
+      const interactivePolygon = L.polygon(interactivePolygonPoints, {
+        color: 'transparent',
+        fillColor: 'transparent',
+        fillOpacity: 0,
+        interactive: true
+      });
 
-        interactiveCircle.on('popupclose', (e) => {
-          const closedPopup = e.popup;
-          const index = this.openPopups.indexOf(closedPopup);
-          if (index > -1) {
-            this.openPopups.splice(index, 1);
-          }
-        });
+      const popup = `<div style="text-align: center;">
+                  <h2>${station.properties['name']}</h2>
+                </div>
+                <span>${station.properties['note']}</span>`;
 
-        interactiveCircle.addTo(this.map)
+      const leafletPopup = L.popup().setContent(popup);
+      interactivePolygon.bindPopup(leafletPopup);
+
+      interactivePolygon.on('popupopen', (e) => {
+        const openedPopup = e.popup;
+        if (!this.openPopups.includes(openedPopup)) {
+          this.openPopups.push(openedPopup);
+        }
+      });
+
+      interactivePolygon.on('popupclose', (e) => {
+        const closedPopup = e.popup;
+        const index = this.openPopups.indexOf(closedPopup);
+        if (index > -1) {
+          this.openPopups.splice(index, 1);
+        }
+      });
+
+      interactivePolygon.addTo(this.map);
+      this.interactivePolygons.push(interactivePolygon);
     }
 
     if (this.addStationsTimeout) {
@@ -251,6 +289,75 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     }, 200);
   }
 
+  /**
+   * Oblicza punkty poligonu interaktywnego dla stanowiska.
+   * Poligon rozciąga się do DEFAULT_INTERACTIVE_RADIUS w kierunkach bez sąsiadów,
+   * ale skraca się do połowy odległości do sąsiada gdy jest blisko.
+   */
+  private calculateInteractivePolygon(
+    center: L.LatLng,
+    allStations: Array<{station: Station, lat: number, lng: number, coordinates: L.LatLng}>,
+    currentIndex: number
+  ): L.LatLng[] {
+    const points: L.LatLng[] = [];
+    const angleStep = (2 * Math.PI) / this.POLYGON_SEGMENTS;
+
+    for (let seg = 0; seg < this.POLYGON_SEGMENTS; seg++) {
+      const angle = seg * angleStep;
+
+      // Znajdź minimalną dozwoloną odległość w tym kierunku
+      let maxRadius = this.DEFAULT_INTERACTIVE_RADIUS;
+
+      for (let j = 0; j < allStations.length; j++) {
+        if (j === currentIndex) continue;
+
+        const neighbor = allStations[j];
+        const distance = center.distanceTo(neighbor.coordinates);
+
+        // Oblicz kąt do sąsiada
+        const dx = neighbor.lng - center.lng;
+        const dy = neighbor.lat - center.lat;
+        const angleToNeighbor = Math.atan2(dy, dx);
+
+        // Sprawdź czy sąsiad jest w tym kierunku (z tolerancją kątową)
+        let angleDiff = Math.abs(angle - angleToNeighbor);
+        if (angleDiff > Math.PI) {
+          angleDiff = 2 * Math.PI - angleDiff;
+        }
+
+        // Im bliżej kierunku sąsiada, tym większy wpływ na ograniczenie promienia
+        // Używamy cosinusa do płynnego przejścia
+        const influence = Math.cos(angleDiff);
+
+        if (influence > 0) {
+          // Sąsiad ma wpływ w tym kierunku
+          // Promień = połowa odległości do sąsiada (żeby nie nachodzić)
+          const limitedRadius = (distance / 2) * influence + this.DEFAULT_INTERACTIVE_RADIUS * (1 - influence);
+          maxRadius = Math.min(maxRadius, Math.max(this.MIN_INTERACTIVE_RADIUS, limitedRadius));
+        }
+      }
+
+      // Oblicz punkt na poligonie
+      const point = this.destinationPoint(center, maxRadius, angle);
+      points.push(point);
+    }
+
+    return points;
+  }
+
+  /**
+   * Oblicza punkt docelowy na podstawie punktu startowego, odległości (w metrach) i kąta (w radianach).
+   */
+  private destinationPoint(start: L.LatLng, distanceMeters: number, angleRadians: number): L.LatLng {
+    // Prosta aproksymacja dla małych odległości
+    // 1 stopień szerokości geograficznej ≈ 111320 metrów
+    // 1 stopień długości geograficznej ≈ 111320 * cos(lat) metrów
+    const latOffset = (distanceMeters * Math.sin(angleRadians)) / 111320;
+    const lngOffset = (distanceMeters * Math.cos(angleRadians)) / (111320 * Math.cos(start.lat * Math.PI / 180));
+
+    return L.latLng(start.lat + latOffset, start.lng + lngOffset);
+  }
+
   public resetMapView(): void {
     if (this.destroyed) return;
     this.closeAllPopups();
@@ -259,6 +366,82 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
 
   public hidePopups(): void {
     this.closeAllPopups();
+  }
+
+  public zoomIn(): void {
+    if (!this.map || this.destroyed) return;
+    const currentZoom = this.map.getZoom();
+    const maxZoom = this.maxZoom || this.defaultMaxZoom;
+    if (currentZoom < maxZoom) {
+      this.map.zoomIn(0.5);
+    }
+  }
+
+  public zoomOut(): void {
+    if (!this.map || this.destroyed) return;
+    const currentZoom = this.map.getZoom();
+    const minZoom = this.minZoom || this.defaultMinZoom;
+    if (currentZoom > minZoom) {
+      this.map.zoomOut(0.5);
+    }
+  }
+
+  public pulseStations(): void {
+    if (this.isAnimatingStations || this.stationCircles.length === 0) {
+      return;
+    }
+
+    this.isAnimatingStations = true;
+    const originalRadius = 1;
+    const maxRadius = 15;
+    const animationDuration = 400; // ms na fazę powiększania/zmniejszania
+    const holdDuration = 600; // ms trzymania w powiększeniu
+    const steps = 20;
+    const stepDuration = animationDuration / steps;
+
+    // Faza 1: Powiększanie
+    let currentStep = 0;
+    const growInterval = setInterval(() => {
+      currentStep++;
+      const progress = currentStep / steps;
+      // Easing: ease-out quad
+      const easedProgress = 1 - (1 - progress) * (1 - progress);
+      const newRadius = originalRadius + (maxRadius - originalRadius) * easedProgress;
+
+      this.stationCircles.forEach(circle => {
+        circle.setRadius(newRadius);
+      });
+
+      if (currentStep >= steps) {
+        clearInterval(growInterval);
+
+        // Faza 2: Trzymanie
+        setTimeout(() => {
+          // Faza 3: Zmniejszanie
+          let shrinkStep = 0;
+          const shrinkInterval = setInterval(() => {
+            shrinkStep++;
+            const shrinkProgress = shrinkStep / steps;
+            // Easing: ease-in quad
+            const easedShrinkProgress = shrinkProgress * shrinkProgress;
+            const newRadius = maxRadius - (maxRadius - originalRadius) * easedShrinkProgress;
+
+            this.stationCircles.forEach(circle => {
+              circle.setRadius(newRadius);
+            });
+
+            if (shrinkStep >= steps) {
+              clearInterval(shrinkInterval);
+              // Przywróć dokładnie oryginalny rozmiar
+              this.stationCircles.forEach(circle => {
+                circle.setRadius(originalRadius);
+              });
+              this.isAnimatingStations = false;
+            }
+          }, stepDuration);
+        }, holdDuration);
+      }
+    }, stepDuration);
   }
 
   private centerMapProperly(): void {
@@ -674,6 +857,21 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.closeAllPopups();
+
+    // Wyczyść stanowiska
+    this.stationCircles.forEach(circle => {
+      if (this.map && this.map.hasLayer(circle)) {
+        this.map.removeLayer(circle);
+      }
+    });
+    this.stationCircles = [];
+
+    this.interactivePolygons.forEach(polygon => {
+      if (this.map && this.map.hasLayer(polygon)) {
+        this.map.removeLayer(polygon);
+      }
+    });
+    this.interactivePolygons = [];
 
     // Wyczyść GPS track
     this.clearGpsTrack();
