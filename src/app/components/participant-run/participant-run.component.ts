@@ -47,8 +47,7 @@
     isScanning: boolean = false;
     wasRunActivate: boolean = false;
     isRunFinished: boolean = false;
-    isPortraitMode: boolean = false;
-    showOrientationWarning: boolean = true;    runStartTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
+    runStartTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
     runFinishTime: number = Number(this.getLocalStorageItem('runStartTime')) || 0;
     raceTimeDisplay: string = '00:00';
     currentTime: string = '';
@@ -203,12 +202,6 @@
         this.isOnline = status;
         this.retryPendingRequests()
       });
-
-      this.checkOrientation();
-      window.addEventListener('orientationchange', () => {
-        setTimeout(() => this.checkOrientation(), 100);
-      });
-      window.addEventListener('resize', () => this.checkOrientation());
 
       // Visibility change listener for Wake Lock reacquisition
       document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
@@ -529,22 +522,6 @@
     if (this.mapComponent) {
       this.mapComponent.pulseStations();
     }
-  }
-
-  private checkOrientation(): void {
-    const isPortrait = window.innerHeight > window.innerWidth;
-
-    this.isPortraitMode = isPortrait;
-
-    if (isPortrait) {
-      this.showOrientationWarning = true;
-    } else {
-      this.showOrientationWarning = false;
-    }
-  }
-
-  dismissOrientationWarning(): void {
-    this.showOrientationWarning = false;
   }
 
   /**

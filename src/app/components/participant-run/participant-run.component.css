@@ -6,13 +6,6 @@
 .top-texts span{display:flex;align-items:center;gap:.5rem;font-weight:600}
 .top-texts i{font-size:1.1rem;color:var(--color-accent)}
 
-/* Orientation Warning */
-.orientation-warning-container{position:absolute;top:1rem;left:50%;transform:translateX(-50%);width:calc(100% - 2rem);max-width:400px;z-index:15;animation:slideDown .4s ease-out}
-.orientation-warning-container+.top-texts{top:85px}
-.message-content{display:flex;align-items:center;gap:.8rem;flex:1}
-.message-text{font-size:.9rem;font-weight:600;color:var(--color-text-light);white-space:nowrap}
-.rotating-phone{font-size:1.4rem;color:var(--color-text-light);animation:phoneRotate 2s ease-in-out infinite}
-
 /* Map & Scanner positioning */
 participant-map{position:absolute;inset:0;z-index:1}
 qr-scanner{background:var(--color-panel)}
@@ -36,6 +29,7 @@ qr-scanner{background:var(--color-panel)}
 .qr-scanner-icon{width:3.5rem!important;height:3.5rem!important;border-radius:50%!important;background:rgba(40,48,40,.65)!important;border:1px solid var(--color-accent)!important;color:var(--color-accent)!important;box-shadow:0 4px 16px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s ease;padding:0!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .qr-scanner-icon:hover{background:rgba(40,48,40,.8)!important;color:var(--color-text-light);transform:scale(1.08);box-shadow:0 6px 20px rgba(0,0,0,.5)}
 .qr-scanner-icon:active{transform:scale(.95)}
+.qr-scanner-icon.scanning{opacity:.5;cursor:not-allowed;pointer-events:none}
 .qr-scanner-icon .pi{font-size:1.8rem;text-shadow:0 0 8px rgba(0,0,0,.8),0 0 4px rgba(0,0,0,.9);filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
 
 /* Top Bars */
@@ -111,7 +105,7 @@ qr-scanner{background:var(--color-panel)}
 ::ng-deep .gps-settings-dialog .p-dialog{background:var(--color-panel);border:1px solid var(--color-accent);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.8);max-width:500px;width:90vw}
 ::ng-deep .gps-settings-dialog .p-dialog-header{background:var(--color-panel);color:var(--color-text-light);border-bottom:1px solid var(--color-accent);padding:1.2rem}
 ::ng-deep .gps-settings-dialog .p-dialog-content{background:var(--color-panel);color:var(--color-text);padding:1.5rem}
-::ng-deep .tracking-mode-info-dialog .p-dialog{background:var(--color-panel);border:2px solid var(--color-accent);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.9);max-width:500px;width:90vw}
+::ng-deep .tracking-mode-info-dialog .p-dialog{background:var(--color-panel);border:2px solid var(--color-accent);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.9);max-width:500px;width:90vw;position:fixed;top:2rem;left:50%;transform:translateX(-50%);margin:0}
 ::ng-deep .tracking-mode-info-dialog .p-dialog-header{background:var(--color-panel);color:var(--color-text-light);border-bottom:2px solid var(--color-accent);padding:1.2rem;text-align:center}
 ::ng-deep .tracking-mode-info-dialog .p-dialog-content{background:var(--color-panel);color:var(--color-text);padding:1.5rem}
 
@@ -135,28 +129,23 @@ qr-scanner{background:var(--color-panel)}
 .info-actions button{width:100%;padding:.8rem;font-size:1rem;border-radius:var(--radius)}
 
 /* Keyframes */
-@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes slideInUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes phoneRotate{0%,100%{transform:rotate(0)}25%,75%{transform:rotate(-90deg)}}
 @keyframes pulse{0%,100%{box-shadow:0 4px 12px rgba(184,115,51,.6)}50%{box-shadow:0 4px 20px rgba(184,115,51,1)}}
 
 /* Media Queries */
-@media (min-width:769px){.orientation-warning-container,.orientation-warning-container+.top-texts{display:none}}
 
 @media (max-width:768px){
   .top-texts{left:1rem;right:1rem;transform:none;padding:.6rem 1rem;gap:1rem;font-size:.8rem;width:auto;max-width:calc(100vw - 2rem)}
   .top-texts span{font-size:.8rem}
   .top-texts i{font-size:1rem}
+  ::ng-deep .tracking-mode-info-dialog .p-dialog{top:1rem;width:95vw}
 }
 
 @media (max-width:480px){
   .top-texts{gap:.8rem;font-size:.75rem;padding:.5rem .8rem;min-height:45px;justify-content:space-around}
   .top-texts span{font-size:.75rem;gap:.3rem}
   .top-texts i{font-size:.9rem}
-  .orientation-warning-container{top:.5rem;width:calc(100% - 1rem);max-width:none}
-  .orientation-warning-container+.top-texts{top:65px}
-  .message-text{font-size:.8rem}
-  .rotating-phone{font-size:1.2rem}
+  ::ng-deep .tracking-mode-info-dialog .p-dialog{top:0.5rem}
   .hamburger-menu-button{top:.5rem;left:.5rem;width:2.5rem!important;height:2.5rem!important}
   .compact-top-bar,.finish-top-bar{top:.5rem;right:.5rem;padding:.4rem .6rem;gap:.6rem}
   .compact-stat{font-size:.85rem;gap:.3rem}
@@ -190,5 +179,4 @@ qr-scanner{background:var(--color-panel)}
   .tracking-mode-floating-button .pi{font-size:1.4rem}
 }
 
-@media (orientation:landscape){.orientation-warning-container,.orientation-warning-container+.top-texts{display:none}}
 @media (orientation:landscape) and (max-height:500px){.top-texts{padding:.4rem .6rem;font-size:.75rem;min-height:35px}}
