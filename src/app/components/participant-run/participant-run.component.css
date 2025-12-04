@@ -11,13 +11,13 @@ participant-map{position:absolute;inset:0;z-index:1}
 qr-scanner{background:var(--color-panel)}
 .fullscreen-mode{position:fixed;inset:0;z-index:1000;background:var(--color-background)}
 
-/* Scanning Overlay - centered */
-.scanning-overlay{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2000;animation:fadeInScale .3s ease-out}
-.scanning-content{display:flex;flex-direction:column;align-items:center;gap:1rem;color:var(--color-text-light);padding:1.5rem 2rem;background:rgba(40,48,40,.95);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.7);border:1px solid var(--color-accent);min-width:220px;max-width:300px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);text-align:center}
-.scanning-content h2{margin:0;font-size:1.1rem;font-weight:600;color:var(--color-text-light)}
-.scanning-content p{margin:0;font-size:.9rem;opacity:.85}
-.scanning-content ::ng-deep .custom-spinner{width:40px!important;height:40px!important}
-@keyframes fadeInScale{from{opacity:0;transform:translate(-50%,-50%) scale(.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+/* Scanning Overlay - bottom */
+.scanning-overlay{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);z-index:2000;animation:fadeInSlideUp .3s ease-out}
+.scanning-content{display:flex;flex-direction:row;align-items:center;gap:.6rem;color:var(--color-text-light);padding:.6rem 1rem;background:rgba(40,48,40,.95);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.5);border:1px solid var(--color-accent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);text-align:left}
+.scanning-content h2{margin:0;font-size:.9rem;font-weight:600;color:var(--color-text-light)}
+.scanning-content p{display:none}
+.scanning-content ::ng-deep .custom-spinner{width:24px!important;height:24px!important}
+@keyframes fadeInSlideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
 /* Hamburger button (top-right, always fixed) */
 .hamburger-menu-button{position:fixed;top:1rem;right:1rem;z-index:1002;width:2.75rem!important;height:2.75rem!important;min-width:44px!important;min-height:44px!important;border-radius:50%!important;background:rgba(40,48,40,.65)!important;border:1px solid var(--color-accent)!important;color:var(--color-accent)!important;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s ease;padding:0!important;-webkit-tap-highlight-color:transparent;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);outline:none!important;box-shadow:0 4px 12px rgba(0,0,0,.4)}
@@ -188,9 +188,8 @@ qr-scanner{background:var(--color-panel)}
   .compact-stat i{font-size:.9rem}
   .qr-scanner-icon{width:3rem!important;height:3rem!important;min-width:48px!important;min-height:48px!important}
   .qr-scanner-icon .pi{font-size:1.6rem}
-  .scanning-overlay{bottom:1.5rem;right:1.5rem}
-  .scanning-content{padding:.8rem 1rem;gap:.8rem;min-width:180px;max-width:260px}
-  .scanning-content p{font-size:.85rem}
+  .scanning-overlay{bottom:1rem}
+  .scanning-content{padding:.5rem .8rem;gap:.5rem}
   .gps-mode-option{padding:.6rem .8rem}
   .gps-mode-label{font-size:.9rem}
   .gps-mode-description{font-size:.8rem}
@@ -207,9 +206,8 @@ qr-scanner{background:var(--color-panel)}
   .compact-stat{font-size:.8rem}
   .qr-scanner-icon{width:2.75rem!important;height:2.75rem!important;min-width:44px!important;min-height:44px!important}
   .qr-scanner-icon .pi{font-size:1.4rem}
-  .scanning-overlay{bottom:1rem;right:1rem}
-  .scanning-content{padding:.7rem .9rem;gap:.6rem;min-width:160px;max-width:240px}
-  .scanning-content p{font-size:.8rem}
+  .scanning-overlay{bottom:.8rem}
+  .scanning-content{padding:.4rem .6rem;gap:.4rem}
   .floating-buttons{bottom:1rem;right:1rem;gap:.6rem}
   .tracking-mode-floating-button{width:2.75rem!important;height:2.75rem!important;min-width:44px!important;min-height:44px!important}
   .tracking-mode-floating-button .pi{font-size:1.4rem}
