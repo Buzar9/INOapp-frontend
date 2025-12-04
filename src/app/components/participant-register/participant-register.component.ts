@@ -2,7 +2,7 @@ import { Component } from "@angular/core";
 import { ParticipantSendService } from "../../services/participant-send-service";
 import { ParticipantStateService } from "../../services/participant-state.service";
 import { Router } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { QrScannerComponent } from "../qr-scanner/qr-scanner.component";
 import { CommonModule } from "@angular/common";
 import { MapDownloaderService } from "../../services/map-downloader-dodo.service";
@@ -40,7 +40,7 @@ export class ParticipantRegisterComponent {
         private router: Router,
         private formBuilder: FormBuilder,) {
             this.participantForm = this.formBuilder.group({
-            participantName: ['']
+            participantName: ['', [Validators.required, Validators.pattern(/\S/)]]
         })
         }
 

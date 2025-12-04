@@ -29,7 +29,8 @@
     
     <form [formGroup]="participantForm" (ngSubmit)="onSubmit()">
       <div class="input-container">
-        <input type="text" pInputText formControlName="participantName" placeholder="Twój pseudonim" class="participant-input"/>
+        <input type="text" pInputText formControlName="participantName" placeholder="Twój pseudonim" class="participant-input" [ngClass]="{'ng-invalid ng-dirty': participantForm.get('participantName')?.invalid && participantForm.get('participantName')?.touched}"/>
+        <small *ngIf="participantForm.get('participantName')?.invalid && participantForm.get('participantName')?.touched" class="error-message">Pseudonim jest wymagany</small>
       </div>
       <div class="button-container">
         <button pButton type="submit" [disabled]="participantForm.invalid || isLoading" class="start-button">
