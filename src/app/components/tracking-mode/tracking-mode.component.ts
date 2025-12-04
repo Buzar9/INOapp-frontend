@@ -14,8 +14,9 @@ import { interval, Subscription } from 'rxjs';
   styleUrl: './tracking-mode.component.css'
 })
 export class TrackingModeComponent implements OnInit, OnDestroy {
-  // Input signals - minimal (only battery)
+  // Input signals
   batteryLevel = input<number>(100); // 0-100%
+  gpsTrackingEnabled = input<boolean>(false);
 
   // Output event
   exitTrackingMode = output<void>();

@@ -1,15 +1,25 @@
 <div class="tracking-mode-container">
-  <!-- Ultra Minimal HUD - tylko godzina i bateria -->
+  <!-- Ultra Minimal HUD - godzina, GPS i bateria -->
   <div class="tracking-hud">
     <!-- Current Time (large, centered) -->
     <div class="time-display">
       {{ currentTime | date:'HH:mm' }}
     </div>
 
-    <!-- Battery Level -->
-    <div class="battery-display" [class]="getBatteryClass()">
-      <i class="pi pi-bolt"></i>
-      <span>{{ batteryLevel() }}%</span>
+    <!-- Status indicators row -->
+    <div class="status-row">
+      <!-- GPS Indicator (same as top bar) -->
+      <span class="gps-indicator" 
+            [class.active]="gpsTrackingEnabled()"
+            [class.off]="!gpsTrackingEnabled()">
+        <i class="pi pi-map-marker"></i>
+      </span>
+
+      <!-- Battery Level -->
+      <div class="battery-display" [class]="getBatteryClass()">
+        <i class="pi pi-bolt"></i>
+        <span>{{ batteryLevel() }}%</span>
+      </div>
     </div>
   </div>
 

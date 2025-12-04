@@ -62,7 +62,7 @@
     showMenu: boolean = false;
     showGpsSettings: boolean = false;
     gpsTrackingEnabled: boolean = false;
-    currentGpsMode: TrackingMode = TrackingMode.HIGH;
+    currentGpsMode: TrackingMode = TrackingMode.AUTO;
     batteryLevel: number = 100;
     autoAdjustEnabled: boolean = true;
     TrackingMode = TrackingMode;
@@ -411,6 +411,10 @@
       } catch (error) {
         console.error('[ParticipantRun] Error clearing local GPS points:', error);
       }
+
+      // Wyczyść preferencje GPS z localStorage (reset do domyślnych przy następnym biegu)
+      localStorage.removeItem('gps-tracking-preferences');
+      console.log('[ParticipantRun] GPS preferences cleared from localStorage');
     }
 
     // Zapisz backup stanu do IndexedDB po każdej zmianie
@@ -576,12 +580,47 @@
       })
     );
 
-    // Subskrybuj status baterii
+    // Subskrybuj status baterii i automatycznie dostosuj tryb GPS jeśli AUTO
     this.subscriptions.add(
       this.batteryService.getBatteryStatus().subscribe(status => {
+        const previousBatteryLevel = this.batteryLevel;
         this.batteryLevel = status.levelPercentage;
+        
+        // Auto-adjust GPS mode based on battery level when in AUTO mode
+        if (this.currentGpsMode === TrackingMode.AUTO && this.gpsTrackingEnabled) {
+          this.autoAdjustGpsMode(status.levelPercentage, previousBatteryLevel);
+        }
       })
     );
+  }
+
+  // Przechowuje aktualny efektywny tryb GPS w trybie AUTO
+  private effectiveGpsMode: TrackingMode = TrackingMode.HIGH;
+
+  /**
+   * Automatycznie dostosowuje tryb GPS na podstawie poziomu baterii
+   */
+  private autoAdjustGpsMode(batteryLevel: number, previousBatteryLevel: number): void {
+    let newEffectiveMode: TrackingMode;
+    
+    if (batteryLevel > 50) {
+      newEffectiveMode = TrackingMode.HIGH;
+    } else if (batteryLevel > 30) {
+      newEffectiveMode = TrackingMode.MEDIUM;
+    } else if (batteryLevel > 15) {
+      newEffectiveMode = TrackingMode.LOW;
+    } else {
+      // Poniżej 15% - nadal śledzimy ale oszczędnie
+      newEffectiveMode = TrackingMode.LOW;
+    }
+    
+    // Zmień tylko jeśli efektywny tryb się zmienił
+    if (newEffectiveMode !== this.effectiveGpsMode) {
+      this.effectiveGpsMode = newEffectiveMode;
+      // Użyj wewnętrznej metody serwisu do zmiany konfiguracji bez nadpisywania preferencji
+      this.gpsTrackingService.applyEffectiveConfig(newEffectiveMode);
+      console.log(`[ParticipantRun] Auto GPS adjust: battery ${batteryLevel}% -> effective mode: ${newEffectiveMode}`);
+    }
   }
 
   toggleMenu(): void {
@@ -613,6 +652,7 @@
 
   getModeLabel(mode: TrackingMode): string {
     switch (mode) {
+      case TrackingMode.AUTO: return 'Auto';
       case TrackingMode.OFF: return 'Wyłączony';
       case TrackingMode.LOW: return 'Oszczędny';
       case TrackingMode.MEDIUM: return 'Zbalansowany';
@@ -821,6 +861,27 @@
     }
 
     console.log(`[ParticipantRun] Auto dimming delay changed to: ${seconds}s`);
+  }
+
+  /**
+   * Handle auto-wygaszanie dropdown change (0 = disabled, >0 = enabled with delay)
+   */
+  onAutoWygaszanieChange(seconds: number): void {
+    if (seconds === 0) {
+      // Disable auto screen dimming
+      this.autoTrackingModeEnabled = false;
+      this.clearInactivityTimer();
+      console.log('[ParticipantRun] Auto screen dimming: disabled');
+    } else {
+      // Enable with specified delay
+      this.autoTrackingModeEnabled = true;
+      this.autoTrackingModeDelay = seconds;
+      
+      if (!this.isInTrackingMode && this.wasRunActivate && !this.isRunFinished) {
+        this.startInactivityTimer();
+      }
+      console.log(`[ParticipantRun] Auto screen dimming: enabled with ${seconds}s delay`);
+    }
   }
 
   /**

@@ -13,7 +13,7 @@ import { ParticipantSendService } from './participant-send-service';
 
 const PREFERENCES_KEY = 'gps-tracking-preferences';
 const DEFAULT_PREFERENCES: UserTrackingPreferences = {
-  mode: TrackingMode.HIGH,
+  mode: TrackingMode.AUTO,
   autoAdjustOnLowBattery: true,
   warnBeforeDisabling: true
 };
@@ -24,13 +24,13 @@ const DEFAULT_PREFERENCES: UserTrackingPreferences = {
 export class GpsTrackingService {
   private watchId: number | null = null;
   private currentRunId: string | null = null;
-  private currentMode: TrackingMode = TrackingMode.HIGH;
-  private currentConfig: TrackingConfig = TRACKING_CONFIGS[TrackingMode.HIGH];
+  private currentMode: TrackingMode = TrackingMode.AUTO;
+  private currentConfig: TrackingConfig = TRACKING_CONFIGS[TrackingMode.AUTO];
 
   private lastSavedPoint: GeolocationPosition | null = null;
 
   private isTracking$ = new BehaviorSubject<boolean>(false);
-  private currentMode$ = new BehaviorSubject<TrackingMode>(TrackingMode.HIGH);
+  private currentMode$ = new BehaviorSubject<TrackingMode>(TrackingMode.AUTO);
   private lastError$ = new BehaviorSubject<string | null>(null);
 
   private batterySubscription?: Subscription;
@@ -135,6 +135,30 @@ export class GpsTrackingService {
     // Jeśli wyłączamy tracking, flush buffer
     if (oldMode !== TrackingMode.OFF && newMode === TrackingMode.OFF) {
       await this.flushBuffer();
+    }
+  }
+
+  /**
+   * Stosuje efektywną konfigurację GPS bez zmiany zapisanego trybu użytkownika.
+   * Używane przez tryb AUTO do dynamicznego dostosowywania parametrów GPS.
+   */
+  applyEffectiveConfig(effectiveMode: TrackingMode): void {
+    if (effectiveMode === TrackingMode.AUTO || effectiveMode === TrackingMode.OFF) {
+      return; // Nie stosuj AUTO ani OFF jako efektywnego trybu
+    }
+
+    console.log('[GpsTrackingService] Applying effective config for mode:', effectiveMode);
+    
+    this.currentConfig = TRACKING_CONFIGS[effectiveMode];
+
+    // Jeśli tracking aktywny, zrestartuj watch z nową konfiguracją
+    if (this.isTracking$.value && this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+
+      if (this.currentConfig.enabled) {
+        this.startGeolocationWatch();
+      }
     }
   }
 

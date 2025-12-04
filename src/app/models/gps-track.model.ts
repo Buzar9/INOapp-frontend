@@ -39,6 +39,7 @@ export interface GpsTrackResponse {
 }
 
 export enum TrackingMode {
+  AUTO = 'AUTO',
   OFF = 'OFF',
   LOW = 'LOW',
   MEDIUM = 'MEDIUM',
@@ -55,6 +56,13 @@ export interface TrackingConfig {
 }
 
 export const TRACKING_CONFIGS: Record<TrackingMode, TrackingConfig> = {
+  [TrackingMode.AUTO]: {
+    enabled: true,
+    interval: 15000,
+    minDistance: 10,
+    accuracy: 'high',
+    description: 'Automatycznie dostosowuje do poziomu baterii'
+  },
   [TrackingMode.OFF]: {
     enabled: false,
     interval: null,
