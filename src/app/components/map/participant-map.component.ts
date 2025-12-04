@@ -53,8 +53,13 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   private gpsSegments: Array<{polyline: L.Polyline, originalColor: string}> = [];
   private selectedSegment?: {polyline: L.Polyline, originalColor: string};
   private stationCircles: L.Circle[] = [];
+  private stationCirclesMap: Map<string, L.Circle> = new Map(); // Mapowanie stationId → circle
   private interactivePolygons: L.Polygon[] = [];
   private isAnimatingStations: boolean = false;
+
+  // Kolory stanowisk
+  private readonly STATION_COLOR_DEFAULT = '#ff2e00';   // Czerwony - niezeskanowane
+  private readonly STATION_COLOR_SCANNED = '#00c853';   // Zielony - zeskanowane
 
   // Konfiguracja interaktywnych stref stanowisk
   private readonly DEFAULT_INTERACTIVE_RADIUS = 15; // Domyślny promień w metrach (bez sąsiadów)
@@ -208,6 +213,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
     this.stationCircles = [];
+    this.stationCirclesMap.clear();
 
     this.interactivePolygons.forEach(polygon => {
       if (this.map.hasLayer(polygon)) {
@@ -226,11 +232,12 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
 
     for (let i = 0; i < stationData.length; i++) {
       const { station, lat, lng, coordinates } = stationData[i];
+      const stationId = station.properties['id'];
 
       // Widoczne kółko stanowiska
       const circle = L.circle(coordinates, {
-        color: '#ff2e00',
-        fillColor: '#ff2e00',
+        color: this.STATION_COLOR_DEFAULT,
+        fillColor: this.STATION_COLOR_DEFAULT,
         fillOpacity: 1,
         radius: 1,
         interactive: false,
@@ -238,6 +245,11 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
 
       circle.addTo(this.map);
       this.stationCircles.push(circle);
+
+      // Zapisz mapowanie stationId → circle
+      if (stationId) {
+        this.stationCirclesMap.set(stationId, circle);
+      }
 
       // Oblicz interaktywny poligon
       const interactivePolygonPoints = this.calculateInteractivePolygon(
@@ -366,6 +378,43 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
 
   public hidePopups(): void {
     this.closeAllPopups();
+  }
+
+  /**
+   * Oznacza stanowiska jako zeskanowane (zmienia kolor na zielony)
+   * @param stationIds Lista ID stanowisk do oznaczenia
+   */
+  public markStationsAsScanned(stationIds: string[]): void {
+    if (!stationIds || stationIds.length === 0) {
+      return;
+    }
+
+    console.log('[ParticipantMap] Marking stations as scanned:', stationIds);
+
+    for (const stationId of stationIds) {
+      const circle = this.stationCirclesMap.get(stationId);
+      if (circle) {
+        circle.setStyle({
+          color: this.STATION_COLOR_SCANNED,
+          fillColor: this.STATION_COLOR_SCANNED
+        });
+        console.log(`[ParticipantMap] Station ${stationId} marked as scanned`);
+      } else {
+        console.warn(`[ParticipantMap] Station ${stationId} not found in map`);
+      }
+    }
+  }
+
+  /**
+   * Resetuje wszystkie stanowiska do domyślnego koloru
+   */
+  public resetStationColors(): void {
+    this.stationCircles.forEach(circle => {
+      circle.setStyle({
+        color: this.STATION_COLOR_DEFAULT,
+        fillColor: this.STATION_COLOR_DEFAULT
+      });
+    });
   }
 
   public zoomIn(): void {

@@ -22,9 +22,9 @@
     </span>
   </div>
 
-  <!-- Hamburger Menu Button (top-right) -->
+  <!-- Hamburger Menu Button (top-right) - ukryty po zakończeniu biegu -->
   <button
-    *ngIf="wasRunActivate"
+    *ngIf="wasRunActivate && !isRunFinished"
     pButton
     pRipple
     type="button"
@@ -34,25 +34,87 @@
     (click)="toggleMenu()">
   </button>
 
-  <!-- Finish Top Bar (po zakończeniu biegu) -->
-  <div class="finish-top-bar" *ngIf="wasRunActivate && isRunFinished">
-    <span class="compact-stat" title="Punkty kontrolne">
-      <i class="pi pi-star"></i>
-      {{checkpointsNumber}}
-    </span>
-    <span class="compact-stat" title="Czas biegu">
-      <i class="pi pi-stopwatch"></i>
-      {{raceTimeDisplay}}
-    </span>
-    <button
-      pButton
-      pRipple
-      type="button"
-      icon="pi pi-sign-out"
-      class="p-button-rounded p-button-danger"
-      title="Nowa trasa"
-      (click)="onNewRoute()">
-    </button>
+  <!-- Przycisk zamknięcia podsumowania (top-right) - widoczny tylko po zakończeniu biegu -->
+  <button
+    *ngIf="isRunFinished"
+    pButton
+    pRipple
+    type="button"
+    icon="pi pi-times"
+    class="close-summary-button p-button-rounded"
+    title="Zakończ podsumowanie"
+    (click)="onCloseSummary()">
+  </button>
+
+  <!-- Panel podsumowania po zakończeniu biegu - dwukolumnowy layout -->
+  <div class="finish-summary-panel" 
+       *ngIf="isRunFinished" 
+       [class.expanded]="isSummaryExpanded" 
+       [class.collapsed]="!isSummaryExpanded">
+    
+    <!-- Uchwyt do przeciągania (swipe indicator) -->
+    <div class="swipe-handle" (click)="toggleSummaryPanel()"></div>
+
+    <!-- Skrócony widok gdy zwinięte - wszystkie statystyki na środku -->
+    <div class="summary-collapsed-view" *ngIf="!isSummaryExpanded" (click)="toggleSummaryPanel()">
+      <span class="collapsed-stat">
+        <i class="pi pi-stopwatch"></i>
+        {{trackStats?.totalDuration || raceTimeDisplay}}
+      </span>
+      <span class="collapsed-stat">
+        <i class="pi pi-map"></i>
+        {{trackStats?.totalDistance || '--'}}
+      </span>
+      <span class="collapsed-stat">
+        <i class="pi pi-gauge"></i>
+        {{trackStats?.averageSpeed || '--'}}
+      </span>
+      <span class="collapsed-stat">
+        <i class="pi pi-star"></i>
+        {{checkpointsNumber}}
+      </span>
+    </div>
+
+    <!-- Dwukolumnowy kontener - tylko gdy rozwinięte -->
+    <div class="summary-columns" *ngIf="isSummaryExpanded">
+      <!-- Lewa kolumna - statystyki -->
+      <div class="stats-column">
+        <div class="stat-item" title="Czas trasy">
+          <i class="pi pi-stopwatch"></i>
+          <span>{{trackStats?.totalDuration || raceTimeDisplay}}</span>
+        </div>
+        <div class="stat-item" title="Dystans">
+          <i class="pi pi-map"></i>
+          <span>{{trackStats?.totalDistance || '--'}}</span>
+        </div>
+        <div class="stat-item" title="Śr. prędkość">
+          <i class="pi pi-gauge"></i>
+          <span>{{trackStats?.averageSpeed || '--'}}</span>
+        </div>
+        <div class="stat-item" title="Punkty kontrolne">
+          <i class="pi pi-star"></i>
+          <span>{{checkpointsNumber}}</span>
+        </div>
+      </div>
+
+      <!-- Prawa kolumna - przewijalna lista stanowisk -->
+      <div class="stations-column">
+        <div class="stations-header">
+          <span>Stanowiska</span>
+        </div>
+        <div class="stations-list" *ngIf="scannedStations.length > 0" (click)="$event.stopPropagation()">
+          <div class="station-item" *ngFor="let station of scannedStations">
+            <span class="station-name">{{station.stationName}}</span>
+            <span class="station-type">{{station.stationTypeLabel}}</span>
+            <span class="station-time">{{station.scannedAt}}</span>
+          </div>
+        </div>
+        <div class="stations-placeholder" *ngIf="scannedStations.length === 0">
+          <i class="pi pi-info-circle"></i>
+          <span>Brak danych</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <participant-map
@@ -303,4 +365,12 @@
       </div>
     </div>
   </p-dialog>
+
+  <!-- Confirm Dialog dla zamknięcia podsumowania -->
+  <p-confirmDialog 
+    key="finishConfirm"
+    styleClass="finish-confirm-dialog"
+    [closable]="false"
+    [style]="{width: '90vw', maxWidth: '400px'}">
+  </p-confirmDialog>
 </div>

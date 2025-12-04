@@ -15,6 +15,8 @@
   --color-text-light: #ffffff;
   --color-accent: #b87333;
   --color-accent-hover: #d2691e;
+  --color-danger: #8b2500;
+  --color-danger-hover: #a04000;
   --radius: 12px;
   --transition: 0.3s ease;
 }
@@ -635,6 +637,228 @@ button .pi-spinner {
     min-width: 3rem !important;
     min-height: 3rem !important;
     font-size: 1.3rem !important;
+  }
+}
+
+/* =========================
+   PRIMENG CONFIRM DIALOG - GLOBALNE STYLE
+   Spójna stylistyka z aplikacją (ciemny motyw, miedziany akcent)
+   ========================= */
+
+/* Overlay/mask - ciemne, rozmyte tło */
+.p-dialog-mask.p-component-overlay {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Główny kontener dialogu */
+.p-confirmdialog.p-dialog,
+.p-dialog.p-confirm-dialog {
+  background: var(--color-panel) !important;
+  border: 2px solid var(--color-accent) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8) !important;
+  max-width: 420px;
+  width: 90vw;
+  font-family: 'Special Elite', monospace;
+  overflow: hidden;
+}
+
+/* Nagłówek dialogu */
+.p-confirmdialog .p-dialog-header,
+.p-confirm-dialog .p-dialog-header {
+  background: var(--color-panel) !important;
+  color: var(--color-text-light) !important;
+  border-bottom: 1px solid var(--color-accent) !important;
+  padding: 1rem 1.25rem !important;
+  gap: 0.75rem;
+}
+
+/* Tytuł nagłówka */
+.p-confirmdialog .p-dialog-title,
+.p-confirm-dialog .p-dialog-title {
+  font-family: 'Special Elite', monospace !important;
+  font-size: 1.15rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text-light) !important;
+}
+
+/* Przycisk zamknięcia (X) w nagłówku */
+.p-confirmdialog .p-dialog-header-close,
+.p-confirm-dialog .p-dialog-header-close {
+  color: var(--color-accent) !important;
+  border-radius: 50% !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.p-confirmdialog .p-dialog-header-close:hover,
+.p-confirm-dialog .p-dialog-header-close:hover {
+  color: var(--color-text-light) !important;
+  background: rgba(184, 115, 51, 0.25) !important;
+}
+
+.p-confirmdialog .p-dialog-header-close:focus,
+.p-confirm-dialog .p-dialog-header-close:focus {
+  box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.35) !important;
+  outline: none !important;
+}
+
+/* Treść dialogu */
+.p-confirmdialog .p-dialog-content,
+.p-confirm-dialog .p-dialog-content {
+  background: var(--color-panel) !important;
+  color: var(--color-text) !important;
+  padding: 1.5rem 1.25rem !important;
+  font-family: 'Special Elite', monospace !important;
+  font-size: 1rem !important;
+  line-height: 1.6 !important;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* Wiadomość w treści */
+.p-confirmdialog .p-confirmdialog-message,
+.p-confirm-dialog .p-confirmdialog-message {
+  color: var(--color-text) !important;
+  margin: 0 !important;
+}
+
+/* Ikona ostrzeżenia */
+.p-confirmdialog .p-confirmdialog-icon,
+.p-confirm-dialog .p-confirmdialog-icon {
+  color: var(--color-accent) !important;
+  font-size: 2rem !important;
+  flex-shrink: 0;
+}
+
+/* Stopka dialogu z przyciskami */
+.p-confirmdialog .p-dialog-footer,
+.p-confirm-dialog .p-dialog-footer {
+  background: var(--color-panel) !important;
+  border-top: 1px solid rgba(184, 115, 51, 0.3) !important;
+  padding: 1rem 1.25rem !important;
+  display: flex !important;
+  gap: 0.75rem !important;
+  justify-content: flex-end !important;
+}
+
+/* Wszystkie przyciski w dialogu */
+.p-confirmdialog .p-dialog-footer .p-button,
+.p-confirm-dialog .p-dialog-footer .p-button {
+  font-family: 'Special Elite', monospace !important;
+  font-size: 0.95rem !important;
+  padding: 0.7rem 1.25rem !important;
+  border-radius: var(--radius) !important;
+  min-height: 44px !important;
+  min-width: 80px !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Przycisk akceptacji (domyślny) */
+.p-confirmdialog .p-dialog-footer .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-danger),
+.p-confirm-dialog .p-dialog-footer .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-danger) {
+  background: var(--color-accent) !important;
+  border: 1px solid var(--color-accent) !important;
+  color: var(--color-text-light) !important;
+}
+
+.p-confirmdialog .p-dialog-footer .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-danger):hover,
+.p-confirm-dialog .p-dialog-footer .p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-danger):hover {
+  background: var(--color-accent-hover) !important;
+  border-color: var(--color-accent-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 115, 51, 0.4) !important;
+}
+
+/* Przycisk anulowania (outlined/text) */
+.p-confirmdialog .p-dialog-footer .p-button.p-button-outlined,
+.p-confirmdialog .p-dialog-footer .p-button.p-button-text,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-outlined,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-text {
+  background: transparent !important;
+  border: 1px solid var(--color-accent) !important;
+  color: var(--color-accent) !important;
+}
+
+.p-confirmdialog .p-dialog-footer .p-button.p-button-outlined:hover,
+.p-confirmdialog .p-dialog-footer .p-button.p-button-text:hover,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-outlined:hover,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-text:hover {
+  background: rgba(184, 115, 51, 0.15) !important;
+  color: var(--color-text-light) !important;
+  transform: translateY(-1px);
+}
+
+/* Przycisk danger (czerwony - usuwanie) */
+.p-confirmdialog .p-dialog-footer .p-button.p-button-danger,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger {
+  background: #8b2500 !important;
+  border: 1px solid #8b2500 !important;
+  color: var(--color-text-light) !important;
+}
+
+.p-confirmdialog .p-dialog-footer .p-button.p-button-danger:hover,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger:hover {
+  background: #a04000 !important;
+  border-color: #a04000 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 37, 0, 0.5) !important;
+}
+
+/* Focus state dla wszystkich przycisków */
+.p-confirmdialog .p-dialog-footer .p-button:focus,
+.p-confirm-dialog .p-dialog-footer .p-button:focus {
+  box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.35) !important;
+  outline: none !important;
+}
+
+.p-confirmdialog .p-dialog-footer .p-button.p-button-danger:focus,
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger:focus {
+  box-shadow: 0 0 0 3px rgba(139, 37, 0, 0.35) !important;
+}
+
+/* Active state */
+.p-confirmdialog .p-dialog-footer .p-button:active,
+.p-confirm-dialog .p-dialog-footer .p-button:active {
+  transform: scale(0.98) !important;
+}
+
+/* Responsywność - małe ekrany */
+@media (max-width: 480px) {
+  .p-confirmdialog.p-dialog,
+  .p-dialog.p-confirm-dialog {
+    width: 95vw !important;
+    max-width: none !important;
+    margin: 0.5rem !important;
+  }
+  
+  .p-confirmdialog .p-dialog-header,
+  .p-confirm-dialog .p-dialog-header {
+    padding: 0.85rem 1rem !important;
+  }
+  
+  .p-confirmdialog .p-dialog-content,
+  .p-confirm-dialog .p-dialog-content {
+    padding: 1.25rem 1rem !important;
+    font-size: 0.95rem !important;
+  }
+  
+  .p-confirmdialog .p-dialog-footer,
+  .p-confirm-dialog .p-dialog-footer {
+    padding: 0.85rem 1rem !important;
+    flex-wrap: wrap;
+  }
+  
+  .p-confirmdialog .p-dialog-footer .p-button,
+  .p-confirm-dialog .p-dialog-footer .p-button {
+    flex: 1 !important;
+    min-width: 90px !important;
+    font-size: 0.9rem !important;
+    padding: 0.65rem 1rem !important;
   }
 }
 

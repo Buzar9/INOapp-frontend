@@ -15,6 +15,7 @@
   import { AddControlPointRequest } from '../../services/request/AddControlPointRequest';
 
   import { RunMetricAfterControlPoint } from '../../services/response/RunMetricAfterControlPoint';
+  import { ControlPointView, translateStationType } from '../../services/response/ControlPointView';
   import { Station } from '../../services/response/Station';
   import { BackgroundMap } from '../../services/response/BackgroundMap';
   import { TileDbService } from '../../services/tile-db.service';
@@ -28,11 +29,23 @@
   import { DropdownModule } from 'primeng/dropdown';
   import { TrackingModeService } from '../../services/tracking-mode.service';
   import { TrackingModeComponent } from '../tracking-mode/tracking-mode.component';
+  import { ConfirmDialogModule } from 'primeng/confirmdialog';
+  import { ConfirmationService } from 'primeng/api';
+
+  // Interfejs dla stanowisk w podsumowaniu (dane z backendu)
+  export interface ScannedStation {
+    stationId: string;
+    stationName: string;
+    stationType: string;        // oryginalny typ z backendu
+    stationTypeLabel: string;   // przetłumaczony typ
+    scannedAt: string;          // sformatowany czas
+  }
 
   @Component({
     selector: 'participant',
     standalone: true,
-    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, ProgressSpinnerModule, QrScannerComponent, DialogModule, FormsModule, InputSwitchModule, DropdownModule, TrackingModeComponent],
+    imports: [CommonModule, ParticipantMapComponent, ButtonModule, RippleModule, MessageModule, ProgressSpinnerModule, QrScannerComponent, DialogModule, FormsModule, InputSwitchModule, DropdownModule, TrackingModeComponent, ConfirmDialogModule],
+    providers: [ConfirmationService],
     templateUrl: './participant-run.component.html',
     styleUrls: ['./participant-run.component.css']
   })
@@ -82,6 +95,17 @@
     dialogAutoTrackingEnabled: boolean = true; // Enabled by default in dialog
     dialogAutoTrackingDelay: number = 60; // seconds (default 1 minute)
 
+    // Finish Summary Panel
+    isSummaryExpanded: boolean = true; // Domyślnie rozwinięte po zakończeniu biegu
+    scannedStations: ScannedStation[] = []; // Lista zeskanowanych stanowisk z backendu
+
+    // Statystyki GPS z backendu (run_tracks endpoint)
+    trackStats: {
+      totalDistance: string;      // np. "5.23 km"
+      totalDuration: string;      // np. "01:23:45"
+      averageSpeed: string;       // np. "7.2 km/h"
+    } | null = null;
+
     private timerSubscription: Subscription = new Subscription();
 
     private subscriptions: Subscription = new Subscription();
@@ -94,7 +118,8 @@
     private tileDbService: TileDbService,
     private gpsTrackingService: GpsTrackingService,
     private batteryService: BatteryService,
-    private trackingModeService: TrackingModeService
+    private trackingModeService: TrackingModeService,
+    private confirmationService: ConfirmationService
   ){}
 
     async ngOnInit(): Promise<void> {
@@ -355,6 +380,11 @@
       this.setLocalStorageItem('raceTimeDisplay', this.raceTimeDisplay)
     }
 
+    // Przetwórz listę zeskanowanych stanowisk z odpowiedzi
+    if (response.controlPoints && response.controlPoints.length > 0) {
+      this.processControlPoints(response.controlPoints);
+    }
+
     const wasActiveBefore = this.wasRunActivate;
     this.wasRunActivate = response.wasActivate;
     this.setLocalStorageItem('wasRunActivate', `${response.wasActivate}`)
@@ -419,6 +449,48 @@
 
     // Zapisz backup stanu do IndexedDB po każdej zmianie
     this.saveSessionBackup();
+  }
+
+  /**
+   * Przetwarza listę zeskanowanych punktów kontrolnych z backendu
+   * i aktualizuje listę stanowisk w panelu podsumowania oraz kolory na mapie
+   */
+  private processControlPoints(controlPoints: ControlPointView[]): void {
+    // Mapuj control points na format ScannedStation
+    this.scannedStations = controlPoints.map(cp => ({
+      stationId: cp.stationId,
+      stationName: cp.name,
+      stationType: cp.type,
+      stationTypeLabel: translateStationType(cp.type),
+      scannedAt: this.formatControlPointTimestamp(cp.timestamp)
+    }));
+
+    console.log('[ParticipantRun] Processed control points:', this.scannedStations);
+
+    // Aktualizuj kolory stanowisk na mapie
+    const scannedStationIds = controlPoints.map(cp => cp.stationId);
+    if (this.mapComponent) {
+      this.mapComponent.markStationsAsScanned(scannedStationIds);
+    }
+  }
+
+  /**
+   * Formatuje timestamp z backendu do czytelnego formatu czasu
+   */
+  private formatControlPointTimestamp(timestamp: string): string {
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) {
+        return timestamp; // Zwróć oryginalny jeśli nie można sparsować
+      }
+      return date.toLocaleTimeString('pl-PL', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch {
+      return timestamp;
+    }
   }
 
 // dodo kiedy tego uzyc
@@ -693,10 +765,79 @@
 
       console.log('[ParticipantRun] GPS track loaded:', trackResponse);
 
+      // Zapisz statystyki do wyświetlenia w panelu podsumowania
+      if (trackResponse.stats) {
+        this.processTrackStats(trackResponse.stats);
+      }
+
       // Wyświetl trasę na mapie
       this.displayGpsTrackOnMap(trackResponse);
     } catch (error) {
       console.error('[ParticipantRun] Failed to load GPS track:', error);
+    }
+  }
+
+  /**
+   * Mapuje enum jednostki dystansu na czytelną etykietę
+   */
+  private translateDistanceUnit(unit: string): string {
+    const unitMap: { [key: string]: string } = {
+      'KILOMETERS': 'km',
+      'METERS': 'm'
+    };
+    return unitMap[unit] || unit;
+  }
+
+  /**
+   * Mapuje enum jednostki prędkości na czytelną etykietę
+   */
+  private translateSpeedUnit(unit: string): string {
+    const unitMap: { [key: string]: string } = {
+      'KILOMETERS_PER_HOUR': 'km/h',
+      'METERS_PER_SECOND': 'm/s'
+    };
+    return unitMap[unit] || unit;
+  }
+
+  /**
+   * Mapuje enum jednostki czasu na czytelną etykietę
+   */
+  private translateDurationUnit(unit: string): string {
+    const unitMap: { [key: string]: string } = {
+      'MILLISECONDS': 'ms',
+      'SECONDS': 's',
+      'HOURS': 'h'
+    };
+    return unitMap[unit] || unit;
+  }
+
+  /**
+   * Przetwarza statystyki GPS z backendu i wyświetla z oryginalnymi jednostkami
+   */
+  private processTrackStats(stats: any): void {
+    try {
+      // Dystans - wartość z backendu + przetłumaczona jednostka
+      const distanceValue = stats.totalDistance.value;
+      const distanceUnit = this.translateDistanceUnit(stats.totalDistance.unit);
+
+      // Czas trwania - wartość z backendu + przetłumaczona jednostka
+      const durationValue = stats.totalDuration.value;
+      const durationUnit = this.translateDurationUnit(stats.totalDuration.unit);
+
+      // Prędkość - wartość z backendu + przetłumaczona jednostka
+      const speedValue = stats.averageSpeed.value;
+      const speedUnit = this.translateSpeedUnit(stats.averageSpeed.unit);
+
+      this.trackStats = {
+        totalDistance: `${distanceValue.toFixed(2)} ${distanceUnit}`,
+        totalDuration: `${durationValue.toFixed(0)} ${durationUnit}`,
+        averageSpeed: `${speedValue.toFixed(1)} ${speedUnit}`
+      };
+
+      console.log('[ParticipantRun] Track stats processed:', this.trackStats);
+    } catch (error) {
+      console.error('[ParticipantRun] Error processing track stats:', error);
+      this.trackStats = null;
     }
   }
 
@@ -944,6 +1085,45 @@
   private handleVisibilityChange(): void {
     if (this.isInTrackingMode) {
       this.trackingModeService.handleVisibilityChange();
+    }
+  }
+
+  // ==================== FINISH SUMMARY PANEL ====================
+
+  /**
+   * Toggle rozwinięcia/zwinięcia panelu podsumowania
+   */
+  toggleSummaryPanel(): void {
+    this.isSummaryExpanded = !this.isSummaryExpanded;
+  }
+
+  /**
+   * Zamknij podsumowanie i wyjdź do nowej trasy (z potwierdzeniem)
+   */
+  onCloseSummary(): void {
+    this.confirmationService.confirm({
+      key: 'finishConfirm',
+      message: 'Czy na pewno chcesz zakończyć przeglądanie trasy? Nie będziesz mógł wrócić do tego podsumowania.',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Tak, zakończ',
+      rejectLabel: 'Anuluj',
+      rejectButtonStyleClass: 'p-button-outlined',
+      accept: () => {
+        this.onNewRoute();
+      }
+    });
+  }
+
+  /**
+   * Formatuj czas skanowania stanowiska do wyświetlenia
+   */
+  formatStationTime(scannedAt: string): string {
+    if (!scannedAt) return '--:--';
+    try {
+      const date = new Date(scannedAt);
+      return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch {
+      return scannedAt;
     }
   }
 }

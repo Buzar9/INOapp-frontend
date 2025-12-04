@@ -9,12 +9,12 @@
   -webkit-touch-callout: none;
 }
 
-/* Zoom controls positioning for mobile */
+/* Zoom controls positioning for mobile - left side to avoid summary panel overlap */
 ::ng-deep .leaflet-control-zoom {
   position: absolute !important;
   top: 80px !important;
-  right: 10px !important;
-  left: auto !important;
+  left: 10px !important;
+  right: auto !important;
   z-index: 1000 !important;
 }
 
@@ -38,7 +38,8 @@
 @media (max-width: 768px) {
   ::ng-deep .leaflet-control-zoom {
     top: 70px !important;
-    right: 8px !important;
+    left: 8px !important;
+    right: auto !important;
   }
   
   ::ng-deep .leaflet-control-zoom a {
@@ -84,7 +85,8 @@
 @media (max-width: 480px) {
   ::ng-deep .leaflet-control-zoom {
     top: 60px !important;
-    right: 6px !important;
+    left: 6px !important;
+    right: auto !important;
   }
 
   ::ng-deep .leaflet-control-zoom a {
@@ -98,7 +100,7 @@
 /* Custom Zoom Controls */
 .zoom-controls {
   position: absolute;
-  bottom: 4rem;
+  top: 6.5rem;
   left: 1rem;
   z-index: 1000;
   display: flex;
@@ -171,7 +173,7 @@
 /* Mobile responsive - tablets */
 @media (max-width: 768px) {
   .zoom-controls {
-    bottom: 4rem;
+    top: 6rem;
     left: 0.8rem;
     gap: 0.5rem;
   }
@@ -186,7 +188,7 @@
 /* Mobile responsive - phones */
 @media (max-width: 480px) {
   .zoom-controls {
-    bottom: 3.5rem;
+    top: 5.5rem;
     left: 0.6rem;
     gap: 0.4rem;
   }
@@ -202,7 +204,7 @@
 /* Very small phones */
 @media (max-width: 360px) {
   .zoom-controls {
-    bottom: 3rem;
+    top: 5rem;
     left: 0.5rem;
   }
 
@@ -216,7 +218,7 @@
 /* Landscape mode adjustments */
 @media (orientation: landscape) and (max-height: 500px) {
   .zoom-controls {
-    bottom: 2.5rem;
+    top: 4.5rem;
     left: 0.5rem;
     flex-direction: column;
     gap: 0.3rem;
