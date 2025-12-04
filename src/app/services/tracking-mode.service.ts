@@ -14,6 +14,9 @@ export class TrackingModeService {
   // Keep-alive interval to prevent JavaScript throttling
   private keepAliveInterval: any = null;
 
+  // Wake Lock reacquisition interval
+  private wakeLockCheckInterval: any = null;
+
   // Tracking mode state (reactive signal)
   public isTrackingMode = signal<boolean>(false);
 
@@ -70,10 +73,13 @@ export class TrackingModeService {
       // Start keep-alive mechanism
       this.startKeepAlive();
 
+      // Start periodic Wake Lock check
+      this.startPeriodicWakeLockCheck();
+
       // Update state
       this.isTrackingMode.set(true);
 
-      console.log('Tracking mode enabled');
+      console.log('[Tracking Mode] Enabled successfully');
       return true;
     } catch (error) {
       console.error('Failed to enable tracking mode:', error);
@@ -92,10 +98,13 @@ export class TrackingModeService {
       // Stop keep-alive
       this.stopKeepAlive();
 
+      // Stop periodic Wake Lock check
+      this.stopPeriodicWakeLockCheck();
+
       // Update state
       this.isTrackingMode.set(false);
 
-      console.log('Tracking mode disabled');
+      console.log('[Tracking Mode] Disabled successfully');
     } catch (error) {
       console.error('Failed to disable tracking mode:', error);
     }
@@ -109,21 +118,33 @@ export class TrackingModeService {
       if ('wakeLock' in navigator) {
         this.wakeLock = await navigator.wakeLock.request('screen');
 
-        // Handle wake lock release (e.g., when tab becomes hidden)
+        // Handle wake lock release (e.g., when tab becomes hidden or system releases it)
         this.wakeLock.addEventListener('release', () => {
-          console.log('Wake Lock was released');
+          const timestamp = new Date().toISOString();
+          console.log(`[Wake Lock] Released at ${timestamp}`);
+
+          // Automatically reacquire if still in tracking mode
+          if (this.isTrackingMode()) {
+            console.log('[Wake Lock] Attempting to reacquire after release...');
+            setTimeout(() => {
+              this.reacquireWakeLock();
+            }, 100); // Small delay to avoid immediate reacquisition issues
+          }
         });
 
-        console.log('Wake Lock acquired');
+        const timestamp = new Date().toISOString();
+        console.log(`[Wake Lock] Acquired successfully at ${timestamp}`);
       }
     } catch (error: any) {
-      console.error('Wake Lock request failed:', error);
+      console.error('[Wake Lock] Request failed:', error);
 
       // Common errors:
       // - NotAllowedError: User didn't interact with page
       // - NotSupportedError: Wake Lock not supported
       if (error.name === 'NotAllowedError') {
-        console.warn('Wake Lock requires user interaction');
+        console.warn('[Wake Lock] Requires user interaction');
+      } else if (error.name === 'NotSupportedError') {
+        console.warn('[Wake Lock] Not supported on this device');
       }
     }
   }
@@ -181,6 +202,44 @@ export class TrackingModeService {
       clearInterval(this.keepAliveInterval);
       this.keepAliveInterval = null;
       console.log('Keep-alive mechanism stopped');
+    }
+  }
+
+  /**
+   * Start periodic Wake Lock check and reacquisition
+   * Checks every 10 seconds if Wake Lock is still active
+   */
+  private startPeriodicWakeLockCheck(): void {
+    // Clear existing interval if any
+    this.stopPeriodicWakeLockCheck();
+
+    // Check every 10 seconds
+    this.wakeLockCheckInterval = setInterval(async () => {
+      if (!this.isTrackingMode()) {
+        return; // Exit if no longer in tracking mode
+      }
+
+      // Check if Wake Lock is null or released
+      if (this.wakeLock === null || this.wakeLock.released) {
+        const timestamp = new Date().toISOString();
+        console.log(`[Wake Lock] Detected released/null Wake Lock at ${timestamp}, reacquiring...`);
+        await this.reacquireWakeLock();
+      } else {
+        console.log('[Wake Lock] Still active ✓');
+      }
+    }, 10000); // 10 seconds
+
+    console.log('[Wake Lock] Periodic check started (every 10s)');
+  }
+
+  /**
+   * Stop periodic Wake Lock check
+   */
+  private stopPeriodicWakeLockCheck(): void {
+    if (this.wakeLockCheckInterval) {
+      clearInterval(this.wakeLockCheckInterval);
+      this.wakeLockCheckInterval = null;
+      console.log('[Wake Lock] Periodic check stopped');
     }
   }
 
