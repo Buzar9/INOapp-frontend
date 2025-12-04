@@ -39,14 +39,15 @@ qr-scanner{background:var(--color-panel)}
 /* GPS Indicator */
 .gps-indicator{display:flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;border-radius:50%;transition:all .3s ease}
 .gps-indicator i{font-size:1rem;transition:color .3s ease}
+/* Zielony - GPS aktywny, wszystko działa */
 .gps-indicator.active{background:rgba(76,175,80,.2)}
-.gps-indicator.active i{color:#4caf50;animation:gps-pulse 2s ease-in-out infinite}
-.gps-indicator.searching{background:rgba(255,193,7,.2)}
-.gps-indicator.searching i{color:#ffc107;animation:gps-blink 1s ease-in-out infinite}
-.gps-indicator.off{background:rgba(244,67,54,.15)}
-.gps-indicator.off i{color:#f44336;opacity:.7}
-@keyframes gps-pulse{0%,100%{opacity:1}50%{opacity:.6}}
-@keyframes gps-blink{0%,100%{opacity:1}50%{opacity:.3}}
+.gps-indicator.active i{color:#4caf50}
+/* Czerwony - problemy (timeout, error, szukanie sygnału, słaby zasięg) */
+.gps-indicator.error{background:rgba(244,67,54,.2)}
+.gps-indicator.error i{color:#f44336}
+/* Szary - GPS wyłączony (nieaktywny) */
+.gps-indicator.off{background:rgba(128,128,128,.15)}
+.gps-indicator.off i{color:#9e9e9e;opacity:.6}
 .compact-stat{display:flex;align-items:center;gap:.4rem;font-weight:600;font-size:.9rem;color:var(--color-text);white-space:nowrap}
 .compact-stat i{font-size:1rem;color:var(--color-accent)}
 

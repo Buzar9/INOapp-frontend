@@ -31,7 +31,7 @@ export class GpsTrackingService {
 
   private isTracking$ = new BehaviorSubject<boolean>(false);
   private currentMode$ = new BehaviorSubject<TrackingMode>(TrackingMode.AUTO);
-  private lastError$ = new BehaviorSubject<string | null>(null);
+  private lastError$ = new BehaviorSubject<{ message: string; code: number } | null>(null);
 
   private batterySubscription?: Subscription;
   private originalModeBeforeAutoAdjust?: TrackingMode;
@@ -203,7 +203,7 @@ export class GpsTrackingService {
     // Check if geolocation is available
     if (!('geolocation' in navigator)) {
       console.error('[GpsTrackingService] Geolocation API not available in this browser!');
-      this.lastError$.next('Geolocation not supported');
+      this.lastError$.next({ message: 'Geolocation not supported', code: -1 });
       return;
     }
 
@@ -242,7 +242,7 @@ export class GpsTrackingService {
           console.log('[GpsTrackingService] Geolocation watch started successfully. Watch ID:', this.watchId);
         } catch (error) {
           console.error('[GpsTrackingService] Exception while starting geolocation watch:', error);
-          this.lastError$.next('Failed to start GPS watch');
+          this.lastError$.next({ message: 'Failed to start GPS watch', code: -1 });
         }
       },
       (error) => {
@@ -285,6 +285,11 @@ export class GpsTrackingService {
    */
   private async handlePosition(position: GeolocationPosition): Promise<void> {
     console.log('[GpsTrackingService] handlePosition() called. Mode:', this.currentMode, 'RunId:', this.currentRunId);
+
+    // Wyczyść błąd - otrzymaliśmy prawidłową pozycję
+    if (this.lastError$.value !== null) {
+      this.lastError$.next(null);
+    }
 
     if (!this.currentRunId) {
       console.warn('[GpsTrackingService] No currentRunId set, ignoring position');
@@ -421,7 +426,7 @@ export class GpsTrackingService {
 
     switch (error.code) {
       case error.PERMISSION_DENIED:
-        errorMessage = 'Brak dostępu do GPS';
+        errorMessage = 'GPS wyłączony systemowo';
         break;
       case error.POSITION_UNAVAILABLE:
         errorMessage = 'Pozycja GPS niedostępna';
@@ -434,7 +439,7 @@ export class GpsTrackingService {
     }
 
     console.error('[GpsTrackingService] Geolocation error:', errorMessage, error);
-    this.lastError$.next(errorMessage);
+    this.lastError$.next({ message: errorMessage, code: error.code });
   }
 
   /**
@@ -557,7 +562,7 @@ export class GpsTrackingService {
     return this.currentMode$.asObservable();
   }
 
-  getLastError(): Observable<string | null> {
+  getLastError(): Observable<{ message: string; code: number } | null> {
     return this.lastError$.asObservable();
   }
 

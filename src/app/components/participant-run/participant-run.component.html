@@ -1,11 +1,11 @@
 <div class="container" (click)="registerUserInteraction()" (touchstart)="registerUserInteraction()">
   <!-- Compact Top Bar (top-left) - kluczowe statystyki + GPS indicator -->
   <div class="compact-top-bar" *ngIf="wasRunActivate && !isRunFinished">
-    <span class="gps-indicator" 
-          [class.active]="gpsTrackingEnabled && currentGpsMode !== TrackingMode.OFF"
-          [class.searching]="gpsTrackingEnabled && !gpsTrackingEnabled"
-          [class.off]="!gpsTrackingEnabled || currentGpsMode === TrackingMode.OFF"
-          [title]="gpsTrackingEnabled ? 'GPS aktywny' : 'GPS nieaktywny'">
+    <span class="gps-indicator"
+          [class.active]="gpsStatus === 'active'"
+          [class.error]="gpsStatus === 'error'"
+          [class.off]="gpsStatus === 'off'"
+          [title]="getGpsStatusTitle()">
       <i class="pi pi-map-marker"></i>
     </span>
     <span class="compact-stat" title="Punkty kontrolne">
@@ -316,6 +316,7 @@
     *ngIf="isInTrackingMode"
     [batteryLevel]="batteryLevel"
     [gpsTrackingEnabled]="gpsTrackingEnabled"
+    [gpsStatus]="gpsStatus"
     (exitTrackingMode)="exitTrackingMode()">
   </app-tracking-mode>
 
