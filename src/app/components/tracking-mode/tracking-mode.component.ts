@@ -17,6 +17,7 @@ export class TrackingModeComponent implements OnInit, OnDestroy {
   // Input signals
   batteryLevel = input<number>(100); // 0-100%
   gpsTrackingEnabled = input<boolean>(false);
+  gpsStatus = input<'active' | 'error' | 'off'>('off'); // GPS status indicator
 
   // Output event
   exitTrackingMode = output<void>();

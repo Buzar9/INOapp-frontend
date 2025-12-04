@@ -81,6 +81,10 @@
     TrackingMode = TrackingMode;
     TRACKING_CONFIGS = TRACKING_CONFIGS;
 
+    // GPS Status for indicator (active, error, off)
+    gpsStatus: 'active' | 'error' | 'off' = 'off';
+    gpsLastError: { message: string; code: number } | null = null;
+
     // Tracking Mode (power saving) - ultra minimized state
     isInTrackingMode: boolean = false;
     showTrackingModeInfo: boolean = false;
@@ -642,6 +646,7 @@
     this.subscriptions.add(
       this.gpsTrackingService.isTracking().subscribe(tracking => {
         this.gpsTrackingEnabled = tracking;
+        this.updateGpsStatus();
       })
     );
 
@@ -649,6 +654,15 @@
     this.subscriptions.add(
       this.gpsTrackingService.getCurrentMode().subscribe(mode => {
         this.currentGpsMode = mode;
+        this.updateGpsStatus();
+      })
+    );
+
+    // Subskrybuj błędy GPS
+    this.subscriptions.add(
+      this.gpsTrackingService.getLastError().subscribe(error => {
+        this.gpsLastError = error;
+        this.updateGpsStatus();
       })
     );
 
@@ -657,13 +671,62 @@
       this.batteryService.getBatteryStatus().subscribe(status => {
         const previousBatteryLevel = this.batteryLevel;
         this.batteryLevel = status.levelPercentage;
-        
+
         // Auto-adjust GPS mode based on battery level when in AUTO mode
         if (this.currentGpsMode === TrackingMode.AUTO && this.gpsTrackingEnabled) {
           this.autoAdjustGpsMode(status.levelPercentage, previousBatteryLevel);
         }
       })
     );
+
+    // Ustaw inicjalny status GPS
+    this.updateGpsStatus();
+  }
+
+  /**
+   * Aktualizuje status GPS indicator na podstawie stanu trackingu, trybu i błędów
+   */
+  private updateGpsStatus(): void {
+    // GPS wyłączony (tryb OFF lub tracking zatrzymany)
+    if (!this.gpsTrackingEnabled || this.currentGpsMode === TrackingMode.OFF) {
+      this.gpsStatus = 'off';
+      return;
+    }
+
+    // Jeśli są błędy GPS
+    if (this.gpsLastError) {
+      // PERMISSION_DENIED (1) = GPS wyłączony systemowo → szary
+      if (this.gpsLastError.code === 1) {
+        this.gpsStatus = 'off';
+        return;
+      }
+
+      // Inne błędy (POSITION_UNAVAILABLE=2, TIMEOUT=3) → czerwony
+      this.gpsStatus = 'error';
+      return;
+    }
+
+    // GPS włączony i działa bez problemów
+    this.gpsStatus = 'active';
+  }
+
+  /**
+   * Zwraca tytuł dla GPS indicator w zależności od statusu
+   */
+  getGpsStatusTitle(): string {
+    switch (this.gpsStatus) {
+      case 'active':
+        return 'GPS aktywny - śledzenie trasy';
+      case 'error':
+        return `GPS - problem: ${this.gpsLastError?.message || 'szukanie sygnału'}`;
+      case 'off':
+        if (this.gpsLastError?.code === 1) {
+          return 'GPS wyłączony systemowo';
+        }
+        return 'GPS wyłączony';
+      default:
+        return 'GPS';
+    }
   }
 
   // Przechowuje aktualny efektywny tryb GPS w trybie AUTO

@@ -9,9 +9,10 @@
     <!-- Status indicators row -->
     <div class="status-row">
       <!-- GPS Indicator (same as top bar) -->
-      <span class="gps-indicator" 
-            [class.active]="gpsTrackingEnabled()"
-            [class.off]="!gpsTrackingEnabled()">
+      <span class="gps-indicator"
+            [class.active]="gpsStatus() === 'active'"
+            [class.error]="gpsStatus() === 'error'"
+            [class.off]="gpsStatus() === 'off'">
         <i class="pi pi-map-marker"></i>
       </span>
 

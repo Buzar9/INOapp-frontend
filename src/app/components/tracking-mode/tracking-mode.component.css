@@ -82,27 +82,32 @@
   transition: color .3s ease;
 }
 
+/* Zielony - GPS aktywny, wszystko działa */
 .gps-indicator.active {
   background: rgba(74, 103, 65, 0.2);
 }
 
 .gps-indicator.active i {
   color: #4a6741; /* Dark green - same as time/battery */
-  animation: gps-pulse 2s ease-in-out infinite;
 }
 
+/* Czerwony - problemy (timeout, error, szukanie sygnału, słaby zasięg) */
+.gps-indicator.error {
+  background: rgba(107, 42, 42, 0.2);
+}
+
+.gps-indicator.error i {
+  color: #6b2a2a; /* Dark red */
+}
+
+/* Szary - GPS wyłączony (nieaktywny) */
 .gps-indicator.off {
-  background: rgba(107, 42, 42, 0.15);
+  background: rgba(80, 80, 80, 0.15);
 }
 
 .gps-indicator.off i {
-  color: #6b2a2a; /* Dark red */
-  opacity: 0.7;
-}
-
-@keyframes gps-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  color: #505050; /* Dark gray */
+  opacity: 0.6;
 }
 
 /* Battery Display */
