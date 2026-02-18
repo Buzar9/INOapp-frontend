@@ -13,16 +13,15 @@
 .table-panel {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
-/* Tabela PrimeNG - wymuszenie scrollowania */
-::ng-deep .routes-table .p-datatable-wrapper {
-  overflow-y: auto !important;
-  max-height: 100% !important;
+.table-inner-wrapper {
+  height: 100%;
+  overflow-y: auto;
 }
 
 /* Dialogi - zwiększ z-index żeby nie były zasłaniane */
@@ -292,7 +291,7 @@
   .routes-table {
     font-size: 0.85rem;
   }
-  
+
   /* Zwiększ rozmiar przycisków dotykowych */
   .row-actions button,
   .header-actions button {
@@ -300,46 +299,46 @@
     min-height: 2.2rem !important;
     padding: 0.4rem !important;
   }
-  
+
   /* Ikony w przyciskach */
   ::ng-deep .p-button-icon {
     font-size: 1rem !important;
   }
-  
+
   /* Tabela stacji zagnieżdżona */
   ::ng-deep .p-4 {
     padding: 0.5rem !important;
   }
-  
+
   /* Nagłówki tabel */
   ::ng-deep th {
     padding: 0.6rem 0.4rem !important;
     font-size: 0.85rem !important;
   }
-  
+
   ::ng-deep td {
     padding: 0.5rem 0.3rem !important;
     font-size: 0.85rem !important;
   }
-  
+
   /* Przyciski w formach */
   .dialog-form button[type="submit"] {
     width: 100%;
     padding: 0.8rem !important;
     font-size: 1rem !important;
   }
-  
+
   /* Input fields w formularzach */
   .dialog-form input {
     padding: 0.8rem !important;
     font-size: 1rem !important;
   }
-  
+
   /* Zmniejsz odstępy w row-actions */
   .row-actions {
     gap: 0.2rem;
   }
-  
+
   /* Przyciski zarządzania trasą - inline na mobile */
   .route-management-actions {
     display: flex;
@@ -348,7 +347,7 @@
     flex-wrap: wrap;
     justify-content: flex-start;
   }
-  
+
   .route-management-actions button {
     flex: 0 0 auto;
     min-width: 2.5rem;
@@ -366,45 +365,45 @@
     top: 0.5rem !important;
     right: 0.5rem !important;
   }
-  
+
   /* Tabela - jeszcze mniejsze fonty */
   .routes-table {
     font-size: 0.8rem;
   }
-  
+
   ::ng-deep th,
   ::ng-deep td {
     padding: 0.4rem 0.3rem !important;
     font-size: 0.8rem !important;
   }
-  
+
   /* Przyciski akcji - pionowo */
   .row-actions {
     flex-direction: column;
     gap: 0.3rem;
   }
-  
+
   .row-actions button {
     width: 100%;
     min-width: 2rem !important;
     min-height: 2rem !important;
   }
-  
+
   /* Dialogi */
   ::ng-deep .p-dialog {
     width: 95vw !important;
     max-width: 95vw !important;
   }
-  
+
   ::ng-deep .p-dialog-header {
     padding: 0.8rem !important;
     font-size: 1rem !important;
   }
-  
+
   ::ng-deep .p-dialog-content {
     padding: 0.8rem !important;
   }
-  
+
   /* Scrollable table */
   ::ng-deep .p-datatable-wrapper {
     overflow-x: auto !important;
@@ -470,12 +469,12 @@
     min-width: 2.8rem !important;
     min-height: 2.8rem !important;
   }
-  
+
   /* Większe pole do klikania w row toggler */
   ::ng-deep .p-row-toggler {
     padding: 0.8rem !important;
   }
-  
+
   /* Większe checkboxy i radio buttons */
   ::ng-deep .p-checkbox,
   ::ng-deep .p-radiobutton {
