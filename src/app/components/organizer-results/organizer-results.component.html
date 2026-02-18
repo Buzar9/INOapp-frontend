@@ -1,8 +1,8 @@
-<div>
+<div class="results-container">
   <h3>Race Results</h3>
-  <p-splitter [panelSizes]="[70, 30]">
+  <p-splitter [panelSizes]="[70, 30]" [style]="{'height': 'calc(100vh - 120px)'}">
     <ng-template #panel>
-      <div style="display: flex; flex-direction: column; height: 100%;">
+      <div class="results-panel">
         <form [formGroup]="filterForm" (ngSubmit)="onFilterFormSubmit()">
           <p-multiselect [options]="teamOptions" formControlName="teamSelectedOptions" placeholder="Select Team" [maxSelectedLabels]="3"
                          display="chip"/>
@@ -17,7 +17,18 @@
                  (onRowCollapse)="onRowCollapse($event)">
           <ng-template #header>
             <tr>
-              <th style="width: 5rem"></th>
+              <th style="width: 5rem">
+                <button
+                  pButton pRipple
+                  type="button"
+                  icon="pi pi-chevron-up"
+                  [text]="true"
+                  [rounded]="true"
+                  [plain]="true"
+                  (click)="collapseAll()"
+                  title="Zwiń wszystkie">
+                </button>
+              </th>
               <th>Nickname</th>
               <th>Team</th>
               <th>Category</th>
