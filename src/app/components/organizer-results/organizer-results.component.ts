@@ -24,7 +24,18 @@ import { BackgroundMap } from '../../services/response/BackgroundMap';
   standalone: true,
   imports: [CommonModule, ScrollPanelModule, Select, TableModule, BackofficeMapComponent, TagModule, ButtonModule, SplitterModule, MultiSelectModule, FormsModule, ReactiveFormsModule],
   templateUrl: './organizer-results.component.html',
-  styles: []
+  styles: [`
+    .results-container {
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+    .results-panel {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow-y: auto;
+    }
+  `]
 })
 export class OrganizerResultsComponent implements OnInit {
   raceResults: RaceResult[] = [];
@@ -140,6 +151,12 @@ export class OrganizerResultsComponent implements OnInit {
         return 'pi pi-ban'
     }
   }
+
+    collapseAll() {
+      this.expandedRows = {};
+      this.selectedControlPoints = [];
+      this.selectedRouteStations = [];
+    }
 
     onRowExpand(event: TableRowExpandEvent) {
       this.selectedControlPoints = [...this.selectedControlPoints, ...event.data.controlPoints];
