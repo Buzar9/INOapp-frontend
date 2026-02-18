@@ -2,8 +2,8 @@
   <p-splitter [panelSizes]="[40, 60]" [style]="{'height': 'calc(100vh - 60px)'}">
     <ng-template #panel>
       <div class="table-panel">
-        <div *ngIf="!isConsolidatedView">
-          <p-table [value]="routes" dataKey="id" [expandedRowKeys]="expandedRoutes" [scrollable]="true" scrollHeight="flex"
+        <div *ngIf="!isConsolidatedView" class="table-inner-wrapper">
+          <p-table [value]="routes" dataKey="id" [expandedRowKeys]="expandedRoutes"
                    styleClass="routes-table"
                    (onRowExpand)="onRouteExpand($event)"
                    (onRowCollapse)="onRouteCollapse($event)">
@@ -16,7 +16,8 @@
                     type="button"
                     icon="pi pi-plus"
                     [rounded]="true"
-                    (click)="onCreateRouteClick()">
+                    (click)="onCreateRouteClick()"
+                    title="Dodaj trasę">
                   </button>
                 </div>
               </th>
@@ -56,28 +57,32 @@
                   type="button"
                   icon="pi pi-plus-circle"
                   [rounded]="true"
-                  (click)="onAddStationClick()">
+                  (click)="onAddStationClick()"
+                  title="Dodaj stanowisko">
                 </button>
                 <button
                   pButton pRipple
                   type="button"
                   icon="pi pi-pencil"
                   [rounded]="true"
-                  (click)="onEditRouteClick()">
+                  (click)="onEditRouteClick()"
+                  title="Edytuj trasę">
                 </button>
                 <button
                   pButton pRipple
                   type="button"
                   icon="pi pi-trash"
                   [rounded]="true"
-                  (click)="onDeleteRouteClick()">
+                  (click)="onDeleteRouteClick()"
+                  title="Usuń trasę">
                 </button>
                 <button
                   pButton pRipple
                   type="button"
                   icon="pi pi-qrcode"
                   [rounded]="true"
-                  (click)="onQrCodeRouteGenerateClick(route.stations)">
+                  (click)="onQrCodeRouteGenerateClick(route.stations)"
+                  title="Generuj kody QR">
                 </button>
               </div>
             </td>
@@ -109,19 +114,22 @@
                             pButton
                             icon="pi pi-pencil"
                             [rounded]="true"
-                            (click)="onEditStation(station.properties.id)">
+                            (click)="onEditStation(station.properties.id)"
+                            title="Edytuj stanowisko">
                           </button>
                           <button
                             pButton
                             icon="pi pi-trash"
                             [rounded]="true"
-                            (click)="onDeleteStation(station.properties.id)">
+                            (click)="onDeleteStation(station.properties.id)"
+                            title="Usuń stanowisko">
                           </button>
                           <button
                             pButton
                             icon="pi pi-qrcode"
                             [rounded]="true"
-                            (click)="onQrCodeStationGenerateClick(station)">
+                            (click)="onQrCodeStationGenerateClick(station)"
+                            title="Generuj kod QR">
                           </button>
                           <button
                             pButton
@@ -143,7 +151,7 @@
       </p-table>
         </div>
 
-        <div *ngIf="isConsolidatedView && consolidatedRouteView">
+        <div *ngIf="isConsolidatedView && consolidatedRouteView" class="table-inner-wrapper">
           <p-table [value]="consolidatedRouteView.consolidatedStations">
             <ng-template #header>
               <tr>
@@ -167,7 +175,8 @@
                       icon="pi pi-arrow-left"
                       [rounded]="true"
                       size="small"
-                      (click)="onBackToRoutesClick()">
+                      (click)="onBackToRoutesClick()"
+                      title="Wróć do listy tras">
                     </button>
                   </div>
                 </th>
