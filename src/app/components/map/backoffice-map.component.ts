@@ -30,10 +30,11 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() maxZoom: number | undefined = this.defaultMaxZoom;
   @Input() northEast: [number, number] | undefined;
   @Input() southWest: [number, number] | undefined;
-  @Input() dodoControlPoints: ControlPoint[] = [];
+  @Input() dodoControlPoints: (ControlPoint & { participantNickname: string, participantUnit: string, categoryName: string })[] = [];
   @Input() showCenterCoordinates: boolean = false;
   @Input() stationsToShow: Station[] = [];
   @Input() useIndexedDb: boolean = true; // NOWE: przełącznik źródła kafelków (IndexedDB vs assets)
+  @Input() forceStationsGreen: boolean = false;
 
   @Output() pickedCoordinates = new EventEmitter<Coordinates>();
 
@@ -46,7 +47,14 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private stationPaneName = 'stationPane';
   private accuracyPaneName = 'accuracyPane';
   private stationMarkers: L.Layer[] = [];
+  private interactivePolygons: L.Polygon[] = [];
+  private openPopups: L.Popup[] = [];
   private scaleControl?: L.Control.Scale;
+  private accuracyVisible = true;
+
+  private readonly DEFAULT_INTERACTIVE_RADIUS = 15;
+  private readonly MIN_INTERACTIVE_RADIUS = 3;
+  private readonly POLYGON_SEGMENTS = 16;
 
   // Original logical map bounds (from metadata or inputs). We'll base allowed center range on this.
   private originalBounds?: L.LatLngBounds;
@@ -112,9 +120,14 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     }
 
     if (this.map) {
+      this.closeAllPopups();
+      this.clearStations();
       this.map.off('move');
       this.map.off('zoomend');
       this.map.off('moveend');
+      this.map.off('click');
+      this.map.off('dragstart');
+      this.map.off('zoomstart');
       this.map.remove();
     }
   }
@@ -179,11 +192,16 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
 
     await this.addBaseLayer(usedMapId!);
 
+    this.setupPopupAutoHide();
+
     this.map.createPane(this.stationPaneName);
     this.map.getPane(this.stationPaneName)!.style.zIndex = '600';
 
     this.map.createPane(this.accuracyPaneName);
     this.map.getPane(this.accuracyPaneName)!.style.zIndex = '200';
+    if (!this.accuracyVisible) {
+      this.map.getPane(this.accuracyPaneName)!.style.display = 'none';
+    }
 
     this.updateAllowedCenterBounds();
 
@@ -304,18 +322,22 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   }
 
   private addStations(stations: Station[]) {
-
-    if (!this.map) {
+    if (!this.map || !stations || stations.length === 0) {
       return;
     }
 
-    for (const station of stations) {
-      const lat = station.geometry.coordinates[1];
-      const lng = station.geometry.coordinates[0];
-      const coordinates = L.latLng(lat, lng);
+    const stationData = stations.map(station => ({
+      station,
+      lat: station.geometry.coordinates[1],
+      lng: station.geometry.coordinates[0],
+      coordinates: L.latLng(station.geometry.coordinates[1], station.geometry.coordinates[0])
+    }));
+
+    for (let i = 0; i < stationData.length; i++) {
+      const { station, coordinates } = stationData[i];
 
       const isMounted = station.properties['isMounted'] === 'true';
-      const markerColor = isMounted ? '#39FF14' : '#FF073A';
+      const markerColor = this.forceStationsGreen ? '#39FF14' : (isMounted ? '#39FF14' : '#FF073A');
 
       const circle = L.circle(coordinates, {
         color: markerColor,
@@ -323,16 +345,10 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
         fillColor: markerColor,
         fillOpacity: 1,
         radius: 1,
-        pane: this.stationPaneName
+        pane: this.stationPaneName,
+        interactive: false
       });
 
-      const routeName = station.properties['routeName'];
-      const popup = `<div style="text-align: center;">
-                        ${routeName ? `<div style="font-size: 0.85em; color: #b87333; margin-bottom: 0.3em;">${routeName}</div>` : ''}
-                        <h2>${station.properties['name']}</h2>
-                      </div>
-                      <span>${station.properties['note']}</span>`;
-      circle.bindPopup(popup);
       circle.addTo(this.map);
       this.stationMarkers.push(circle);
 
@@ -343,15 +359,103 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
         fillColor: markerColor,
         fillOpacity: 0.1,
         radius: Number(station.properties['accuracy']),
-        pane: this.accuracyPaneName
+        pane: this.accuracyPaneName,
+        interactive: false
       });
 
       accuracyCircle.addTo(this.map);
       this.stationMarkers.push(accuracyCircle);
+
+      const interactivePolygonPoints = this.calculateInteractivePolygon(
+        coordinates,
+        stationData,
+        i
+      );
+
+      const interactivePolygon = L.polygon(interactivePolygonPoints, {
+        color: 'transparent',
+        fillColor: 'transparent',
+        fillOpacity: 0,
+        interactive: true
+      });
+
+      const routeName = station.properties['routeName'];
+      const popupHtml = `<div style="text-align: center;">
+                        ${routeName ? `<div style="font-size: 0.85em; color: #b87333; margin-bottom: 0.3em;">${routeName}</div>` : ''}
+                        <h2>${station.properties['name']}</h2>
+                      </div>
+                      <span>${station.properties['note']}</span>`;
+
+      const leafletPopup = L.popup().setContent(popupHtml);
+      interactivePolygon.bindPopup(leafletPopup);
+
+      interactivePolygon.on('popupopen', (e) => {
+        if (!this.openPopups.includes(e.popup)) {
+          this.openPopups.push(e.popup);
+        }
+      });
+
+      interactivePolygon.on('popupclose', (e) => {
+        const idx = this.openPopups.indexOf(e.popup);
+        if (idx > -1) {
+          this.openPopups.splice(idx, 1);
+        }
+      });
+
+      interactivePolygon.addTo(this.map);
+      this.interactivePolygons.push(interactivePolygon);
     }
   }
 
-  private addGeoViewDodo(controlPoints: ControlPoint[]) {
+  private calculateInteractivePolygon(
+    center: L.LatLng,
+    allStations: Array<{station: Station, lat: number, lng: number, coordinates: L.LatLng}>,
+    currentIndex: number
+  ): L.LatLng[] {
+    const points: L.LatLng[] = [];
+    const angleStep = (2 * Math.PI) / this.POLYGON_SEGMENTS;
+
+    for (let seg = 0; seg < this.POLYGON_SEGMENTS; seg++) {
+      const angle = seg * angleStep;
+      let maxRadius = this.DEFAULT_INTERACTIVE_RADIUS;
+
+      for (let j = 0; j < allStations.length; j++) {
+        if (j === currentIndex) continue;
+
+        const neighbor = allStations[j];
+        const distance = center.distanceTo(neighbor.coordinates);
+
+        const dx = neighbor.lng - center.lng;
+        const dy = neighbor.lat - center.lat;
+        const angleToNeighbor = Math.atan2(dy, dx);
+
+        let angleDiff = Math.abs(angle - angleToNeighbor);
+        if (angleDiff > Math.PI) {
+          angleDiff = 2 * Math.PI - angleDiff;
+        }
+
+        const influence = Math.cos(angleDiff);
+
+        if (influence > 0) {
+          const limitedRadius = (distance / 2) * influence + this.DEFAULT_INTERACTIVE_RADIUS * (1 - influence);
+          maxRadius = Math.min(maxRadius, Math.max(this.MIN_INTERACTIVE_RADIUS, limitedRadius));
+        }
+      }
+
+      const point = this.destinationPoint(center, maxRadius, angle);
+      points.push(point);
+    }
+
+    return points;
+  }
+
+  private destinationPoint(start: L.LatLng, distanceMeters: number, angleRadians: number): L.LatLng {
+    const latOffset = (distanceMeters * Math.sin(angleRadians)) / 111320;
+    const lngOffset = (distanceMeters * Math.cos(angleRadians)) / (111320 * Math.cos(start.lat * Math.PI / 180));
+    return L.latLng(start.lat + latOffset, start.lng + lngOffset);
+  }
+
+  private addGeoViewDodo(controlPoints: (ControlPoint & { participantNickname: string, participantUnit: string, categoryName: string })[]) {
     for (const controlPoint of controlPoints) {
       const location = controlPoint.geoView;
       let lat = location.geometry.coordinates[1];
@@ -377,6 +481,13 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
         color: color,
         radius: 1
       });
+      const popup = `<div style="text-align: center;">
+                        <h3>${controlPoint.name}</h3>
+                        <div>${controlPoint.participantNickname}</div>
+                        <div style="font-size: 0.85em; color: #b87333;">${controlPoint.participantUnit}</div>
+                        <div style="font-size: 0.85em; color: #b87333;">${controlPoint.categoryName}</div>
+                      </div>`;
+      circle.bindPopup(popup);
       this.addControlPointMarker(circle);
 
       const accuracyCircle = L.circle(coordinates, {
@@ -463,5 +574,49 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private clearStations() {
     this.stationMarkers.forEach(marker => this.map.removeLayer(marker));
     this.stationMarkers = [];
+
+    this.interactivePolygons.forEach(polygon => {
+      if (this.map.hasLayer(polygon)) {
+        this.map.removeLayer(polygon);
+      }
+    });
+    this.interactivePolygons = [];
+    this.openPopups = [];
+  }
+
+  private setupPopupAutoHide(): void {
+    if (!this.map) return;
+
+    this.map.on('click', (e: any) => {
+      const target = e.originalEvent?.target as HTMLElement;
+      if (!target || !target.closest('.leaflet-popup')) {
+        this.closeAllPopups();
+      }
+    });
+
+    this.map.on('dragstart', () => {
+      this.closeAllPopups();
+    });
+
+    this.map.on('zoomstart', () => {
+      this.closeAllPopups();
+    });
+  }
+
+  private closeAllPopups(): void {
+    this.openPopups.forEach(popup => {
+      this.map.closePopup(popup);
+    });
+    this.openPopups = [];
+  }
+
+  toggleAccuracyCircles(): boolean {
+    if (!this.map) return this.accuracyVisible;
+    this.accuracyVisible = !this.accuracyVisible;
+    const pane = this.map.getPane(this.accuracyPaneName);
+    if (pane) {
+      pane.style.display = this.accuracyVisible ? '' : 'none';
+    }
+    return this.accuracyVisible;
   }
 }

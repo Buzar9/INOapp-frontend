@@ -1,18 +1,29 @@
 <div class="results-container">
-  <h3>Race Results</h3>
   <p-splitter [panelSizes]="[70, 30]" [style]="{'height': 'calc(100vh - 120px)'}">
     <ng-template #panel>
       <div class="results-panel">
-        <form [formGroup]="filterForm" (ngSubmit)="onFilterFormSubmit()">
-          <p-multiselect [options]="teamOptions" formControlName="teamSelectedOptions" placeholder="Select Team" [maxSelectedLabels]="3"
-                         display="chip"/>
-          <p-multiselect [options]="categoryOptions" formControlName="categorySelectedOptions" placeholder="Select Category"
-                         [maxSelectedLabels]="3" display="chip"/>
-          <p-multiselect [options]="statusOptions" formControlName="statusSelectedOptions" placeholder="Select Status"
-                         [maxSelectedLabels]="3" display="chip"/>
-          <button pButton type="submit">Filtruj</button>
-        </form>
-        <p-select [options]="backgroundMapsOptions" [(ngModel)]="selectedBackgroundMap" (onChange)="changeMap($event)" [checkmark]="true" optionLabel="name" optionValue="id" placeholder="Mapa"></p-select>
+        <div *ngIf="isLoading" class="loading-overlay">
+          <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+        </div>
+        <div class="filters-section">
+          <form [formGroup]="filterForm" (ngSubmit)="onFilterFormSubmit()">
+            <p-multiselect [options]="teamOptions" formControlName="teamSelectedOptions" placeholder="Select Team" [maxSelectedLabels]="3"
+                           display="chip"/>
+            <p-multiselect [options]="categoryOptions" formControlName="categorySelectedOptions" placeholder="Select Category"
+                           [maxSelectedLabels]="3" display="chip"/>
+            <p-multiselect [options]="statusOptions" formControlName="statusSelectedOptions" placeholder="Select Status"
+                           [maxSelectedLabels]="3" display="chip"/>
+            <button pButton type="submit">Filtruj</button>
+          </form>
+          <p-multiselect [options]="categoryOptions" [(ngModel)]="selectedStationCategories" (onChange)="onCategoryChange($event.value)"
+                         [maxSelectedLabels]="3" display="chip" placeholder="Stanowiska wg kategorii"/>
+          <div class="map-controls">
+            <p-select [options]="backgroundMapsOptions" [(ngModel)]="selectedBackgroundMapId" (onChange)="changeMap($event)" [checkmark]="true" optionLabel="name" optionValue="id" placeholder="Mapa"></p-select>
+            <p-button [label]="accuracyVisible ? 'Ukryj dokładność' : 'Pokaż dokładność'" [outlined]="true" size="small"
+                      (click)="accuracyVisible = mapComponent.toggleAccuracyCircles()"></p-button>
+          </div>
+        </div>
+        <div class="table-section">
         <p-table [value]="raceResults" dataKey="runId" [expandedRowKeys]="expandedRows" (onRowExpand)="onRowExpand($event)"
                  (onRowCollapse)="onRowCollapse($event)">
           <ng-template #header>
@@ -21,12 +32,12 @@
                 <button
                   pButton pRipple
                   type="button"
-                  icon="pi pi-chevron-up"
+                  [icon]="allExpanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
                   [text]="true"
                   [rounded]="true"
                   [plain]="true"
-                  (click)="collapseAll()"
-                  title="Zwiń wszystkie">
+                  (click)="toggleAll()"
+                  [title]="allExpanded ? 'Zwiń wszystkie' : 'Rozwiń wszystkie'">
                 </button>
               </th>
               <th>Nickname</th>
@@ -35,10 +46,11 @@
               <th>Status</th>
               <th>Points</th>
               <th>Time</th>
+              <th>Akcje</th>
             </tr>
           </ng-template>
           <ng-template #body let-result let-expanded="expanded">
-            <tr>
+            <tr [class.canceled-row]="isRunCanceled(result.status)">
               <td>
                 <p-button type="button" pRipple [pRowToggler]="result" [text]="true" [rounded]="true" [plain]="true"
                           [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"/>
@@ -49,11 +61,17 @@
               <td>{{ result.status }}</td>
               <td>{{ getControlPointsNumber(result) }}</td>
               <td>{{ result.mainTime }}</td>
+              <td>
+                <p-button *ngIf="hasAvailableStations(result)" icon="pi pi-plus-circle" [text]="true" [rounded]="true" size="small"
+                          (click)="openAddControlPointDialog(result)" title="Zalicz punkt"></p-button>
+                <p-button *ngIf="!isRunCanceled(result.status)" icon="pi pi-ban" [text]="true" [rounded]="true" size="small"
+                          severity="danger" (click)="onCancelRunClick(result)" title="Anuluj bieg"></p-button>
+              </td>
             </tr>
           </ng-template>
           <ng-template #expandedrow let-result>
             <tr>
-              <td colspan="7">
+              <td colspan="8">
                 <div class="p-4">
                   <p-table [value]="result.controlPoints">
                     <ng-template #header>
@@ -83,6 +101,7 @@
             </tr>
           </ng-template>
         </p-table>
+        </div>
       </div>
     </ng-template>
     <ng-template #panel>
@@ -95,9 +114,33 @@
           [minZoom]="selectedBackgroundMap?.minZoom"
           [northEast]="selectedBackgroundMap?.northEast"
           [southWest]="selectedBackgroundMap?.southWest"
+          [forceStationsGreen]="true"
         >
         </backoffice-map>
       </div>
     </ng-template>
   </p-splitter>
 </div>
+
+<p-dialog header="Zalicz punkt kontrolny" [(visible)]="showAddControlPointDialog" [modal]="true" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
+  <div *ngIf="selectedResult" style="margin-bottom: 1rem;">
+    <strong>{{ selectedResult.participantNickname }}</strong> — {{ selectedResult.categoryName }}
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 1rem;">
+    <p-select [options]="availableStations" [(ngModel)]="selectedStationId"
+              optionLabel="properties.name" optionValue="properties.id"
+              placeholder="Wybierz stanowisko" [style]="{width: '100%'}"
+              [appendTo]="'body'" [baseZIndex]="10001" (onChange)="onStationSelect()">
+    </p-select>
+    <p-datepicker *ngIf="showTimePicker" [(ngModel)]="selectedTime" [timeOnly]="true" [showSeconds]="true"
+                  [appendTo]="'body'" [baseZIndex]="10001">
+    </p-datepicker>
+    <input type="text" pInputText [(ngModel)]="reporter" placeholder="Pseudonim zgłaszającego"/>
+  </div>
+  <ng-template #footer>
+    <p-button label="Anuluj" [text]="true" (click)="showAddControlPointDialog = false"></p-button>
+    <p-button label="Zatwierdź" icon="pi pi-check" (click)="submitAddControlPoint()" [disabled]="!selectedStationId"></p-button>
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog></p-confirmDialog>

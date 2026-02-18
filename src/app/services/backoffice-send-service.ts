@@ -2,7 +2,9 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { RaceResult } from "./response/RaceResults";
-import { AddStationToRouteRequest, CreateCategoryRequest, CreateCompetitionRequest, CreateUnitRequest, DeleteBackgroundMapRequest, DeleteCategoryRequest, DeleteRouteRequest, DeleteStationRequest, DeleteUnitRequest, EditRouteRequest, EditStationRequest, EditUnitRequest, ToggleStationMountRequest, GetConsolidatedRouteViewRequest } from "./backoffice-requests";
+import { AddStationToRouteRequest, CreateCategoryRequest, CreateCompetitionRequest, CreateUnitRequest, DeleteBackgroundMapRequest, DeleteCategoryRequest, DeleteRouteRequest, DeleteStationRequest, DeleteUnitRequest, EditRouteRequest, EditStationRequest, EditUnitRequest, ToggleStationMountRequest, GetConsolidatedRouteViewRequest, AddControlPointRequest, CancelRunRequest } from "./backoffice-requests";
+
+import { RunMetricAfterControlPoint } from "./response/RunMetricAfterControlPoint";
 import { CreateRouteRequest } from "./request/CreateRouteRequest"
 import { Station } from "../services/response/Station"
 import { Route } from "./response/Route";
@@ -162,5 +164,13 @@ export class BackofficeSendService {
       return this.http.post<ConsolidatedRouteView>(`${this.apiUrl}/routes/consolidated_routes`, request, {
         headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
       });
+    }
+
+    addControlPoint(request: AddControlPointRequest): Observable<RunMetricAfterControlPoint> {
+      return this.http.post<RunMetricAfterControlPoint>(`${this.apiUrl}/runs/add_control_point`, request)
+    }
+
+    cancelRun(request: CancelRunRequest): Observable<any> {
+      return this.http.post<any>(`${this.apiUrl}/runs/cancel`, request)
     }
 }

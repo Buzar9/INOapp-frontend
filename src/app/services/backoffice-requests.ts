@@ -79,3 +79,15 @@ export type DeleteBackgroundMapRequest = {
 export type GetConsolidatedRouteViewRequest = {
     competitionId: string
 }
+
+export type AddControlPointRequest = {
+    runId: string,
+    stationId: string,
+    timestamp?: string,
+    reporter?: string
+}
+
+export type CancelRunRequest = {
+    runId: string,
+    reporter: string
+}
