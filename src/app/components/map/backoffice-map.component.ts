@@ -326,7 +326,9 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
         pane: this.stationPaneName
       });
 
+      const routeName = station.properties['routeName'];
       const popup = `<div style="text-align: center;">
+                        ${routeName ? `<div style="font-size: 0.85em; color: #b87333; margin-bottom: 0.3em;">${routeName}</div>` : ''}
                         <h2>${station.properties['name']}</h2>
                       </div>
                       <span>${station.properties['note']}</span>`;

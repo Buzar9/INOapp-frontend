@@ -62,6 +62,8 @@ export class OrganizerRouteViewComponent implements OnInit {
   backgroundMapsOptions: BackgroundMapOption[] = [];
   backgroundMaps: BackgroundMap[] = [];
   selectedConsolidatedBackgroundMapId: string | undefined;
+  selectedConsolidatedStationId: string | undefined;
+  consolidatedStationsGeoView: Station[] = [];
   isLoading: boolean = false;
   isMapFullscreen: boolean = false;
 
@@ -597,6 +599,7 @@ export class OrganizerRouteViewComponent implements OnInit {
     this.backofficeSendService.getConsolidatedRouteView(request).subscribe({
       next: (consolidatedRouteView) => {
         this.consolidatedRouteView = consolidatedRouteView;
+        this.consolidatedStationsGeoView = this.convertConsolidatedStationsToGeoView(consolidatedRouteView.consolidatedStations);
         this.isLoading = false;
       },
       error: (err) => {
@@ -625,23 +628,24 @@ export class OrganizerRouteViewComponent implements OnInit {
       next: () => {
         // Zaktualizuj stan stacji w widoku consolidated
         station.isMounted = !station.isMounted;
-
-        setTimeout(() => {
-          if (this.mapComponent && this.consolidatedRouteView) {
-            this.mapComponent.setStations(this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView.consolidatedStations));
-          }
-        }, 100);
+        this.consolidatedStationsGeoView = this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView!.consolidatedStations);
       },
       error: (err) => console.error('Error toggling consolidated station mount:', err)
     });
   }
 
+  onConsolidatedStationClick(stationId: string) {
+    this.selectedConsolidatedStationId = this.selectedConsolidatedStationId === stationId ? undefined : stationId;
+  }
+
   onBackToRoutesClick() {
     this.isConsolidatedView = false;
     this.consolidatedRouteView = undefined;
+    this.consolidatedStationsGeoView = [];
     this.selectedRoute = undefined;
     this.expandedRoutes = {};
     this.selectedConsolidatedBackgroundMapId = undefined;
+    this.selectedConsolidatedStationId = undefined;
   }
 
   convertConsolidatedStationsToGeoView(stations: ConsolidatedStationView[]): Station[] {
@@ -659,13 +663,6 @@ export class OrganizerRouteViewComponent implements OnInit {
         routeName: station.routeName
       }
     }));
-  }
-
-  getConsolidatedStationsAsGeoView(): Station[] {
-    if (!this.consolidatedRouteView) {
-      return [];
-    }
-    return this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView.consolidatedStations);
   }
 
   async onConsolidatedMapChange(event: any) {
@@ -689,11 +686,9 @@ export class OrganizerRouteViewComponent implements OnInit {
           }
         });
 
-        setTimeout(() => {
-          if (this.mapComponent && this.consolidatedRouteView) {
-            this.mapComponent.setStations(this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView.consolidatedStations));
-          }
-        }, 300);
+        if (this.consolidatedRouteView) {
+          this.consolidatedStationsGeoView = this.convertConsolidatedStationsToGeoView(this.consolidatedRouteView.consolidatedStations);
+        }
       } catch (err) {
         console.error('Error loading selected map:', err);
       } finally {
