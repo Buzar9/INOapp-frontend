@@ -13,7 +13,7 @@
           <button pButton type="submit">Filtruj</button>
         </form>
         <p-select [options]="backgroundMapsOptions" [(ngModel)]="selectedBackgroundMap" (onChange)="changeMap($event)" [checkmark]="true" optionLabel="name" optionValue="id" placeholder="Mapa"></p-select>
-        <p-table [value]="raceResults" dataKey="participantNickname" [expandedRowKeys]="expandedRows" (onRowExpand)="onRowExpand($event)"
+        <p-table [value]="raceResults" dataKey="runId" [expandedRowKeys]="expandedRows" (onRowExpand)="onRowExpand($event)"
                  (onRowCollapse)="onRowCollapse($event)">
           <ng-template #header>
             <tr>

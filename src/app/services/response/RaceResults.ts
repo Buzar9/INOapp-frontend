@@ -1,6 +1,7 @@
 import { GeoView } from "./GeoView"
 
 export type RaceResult = {
+    runId: string,
     participantNickname: string,
     participantUnit: string,
     categoryName: string,
