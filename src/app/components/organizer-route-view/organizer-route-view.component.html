@@ -231,7 +231,7 @@
 
             <backoffice-map
               *ngIf="isConsolidatedView && consolidatedRouteView && selectedConsolidatedBackgroundMapId"
-              [stationsToShow]="getConsolidatedStationsAsGeoView()"
+              [stationsToShow]="consolidatedStationsGeoView"
               [backgroundMapId]="getConsolidatedBackgroundMapId()"
               [minZoom]="getConsolidatedMinZoom()"
               [maxZoom]="getConsolidatedMaxZoom()"
