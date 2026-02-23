@@ -569,7 +569,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     }, delay);
   }
 
-  displayGpsTrack(segments: any[], stats: any): void {
+  displayGpsTrack(segments: any[]): void {
     if (!this.map || !segments || segments.length === 0) {
       console.warn('[ParticipantMap] Cannot display GPS track - map not initialized or no segments');
       return;
@@ -647,9 +647,10 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     // Wyświetl statystyki jeśli dostępne
-    if (stats) {
-      this.displayGpsStats(stats);
-    }
+    // Statystyki są wyświetlane tylko w panelu na dole ekranu, nie na mapie
+    // if (stats) {
+    //   this.displayGpsStats(stats);
+    // }
 
     console.log('[ParticipantMap] GPS track displayed successfully');
   }
@@ -775,63 +776,6 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
       const hex = x.toString(16);
       return hex.length === 1 ? '0' + hex : hex;
     }).join('');
-  }
-
-  private displayGpsStats(stats: any): void {
-    // Konwersja Distance na kilometry
-    const totalDistanceKm = stats.totalDistance.unit === 'KILOMETERS'
-      ? stats.totalDistance.value
-      : stats.totalDistance.value / 1000;
-
-    // Konwersja Duration na milisekundy
-    const totalDurationMs = stats.totalDuration.unit === 'MILLISECONDS'
-      ? stats.totalDuration.value
-      : stats.totalDuration.unit === 'SECONDS'
-      ? stats.totalDuration.value * 1000
-      : stats.totalDuration.unit === 'MINUTES'
-      ? stats.totalDuration.value * 60000
-      : stats.totalDuration.value * 3600000;
-
-    // Konwersja Velocity na km/h
-    const avgSpeedKmh = stats.averageSpeed.unit === 'KILOMETERS_PER_HOUR'
-      ? stats.averageSpeed.value
-      : stats.averageSpeed.value * 3.6;
-
-    const statsHtml = `
-      <div style="background: rgba(40, 60, 50, 0.95); padding: 10px 12px; border-radius: 8px; border: 2px solid #B87333; color: #E8E8E8; font-family: monospace; min-width: 180px; max-width: 220px; margin-top: 80px;">
-        <div style="font-weight: bold; margin-bottom: 6px; color: #B87333; font-size: 13px;"><i class="pi pi-chart-bar"></i> Statystyki</div>
-        <div style="margin: 3px 0; font-size: 11px;"><i class="pi pi-map"></i> ${totalDistanceKm.toFixed(2)} km</div>
-        <div style="margin: 3px 0; font-size: 11px;"><i class="pi pi-clock"></i> ${this.formatDuration(totalDurationMs)}</div>
-        <div style="margin: 3px 0; font-size: 11px;"><i class="pi pi-gauge"></i> ${avgSpeedKmh.toFixed(1)} km/h</div>
-      </div>
-    `;
-
-    const StatsControl = L.Control.extend({
-      onAdd: () => {
-        const div = L.DomUtil.create('div', 'gps-stats-control');
-        div.innerHTML = statsHtml;
-        // Zapobiegnij propagacji eventów do mapy
-        L.DomEvent.disableClickPropagation(div);
-        return div;
-      }
-    });
-
-    new StatsControl({ position: 'topleft' }).addTo(this.map);
-  }
-
-  private formatDuration(ms: number): string {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
   }
 
   private onSegmentClick(clickedPolyline: L.Polyline, originalColor: string): void {

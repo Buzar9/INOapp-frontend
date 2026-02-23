@@ -875,6 +875,38 @@
   }
 
   /**
+   * Formatuje czas trwania do formatu HH:MM:SS
+   */
+  private formatDuration(value: number, unit: string): string {
+    let totalSeconds: number;
+
+    switch (unit) {
+      case 'HOURS':
+        // Konwersja godzin dziesiętnych na sekundy (np. 2.5h → 9000s)
+        totalSeconds = Math.floor(value * 3600);
+        break;
+
+      case 'SECONDS':
+        totalSeconds = Math.floor(value);
+        break;
+
+      case 'MILLISECONDS':
+        totalSeconds = Math.floor(value / 1000);
+        break;
+
+      default:
+        // Fallback - zwróć oryginalną wartość z jednostką
+        return `${value.toFixed(0)} ${this.translateDurationUnit(unit)}`;
+    }
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${this.pad(hours)}:${this.pad(minutes)}:${this.pad(seconds)}`;
+  }
+
+  /**
    * Przetwarza statystyki GPS z backendu i wyświetla z oryginalnymi jednostkami
    */
   private processTrackStats(stats: any): void {
@@ -883,9 +915,10 @@
       const distanceValue = stats.totalDistance.value;
       const distanceUnit = this.translateDistanceUnit(stats.totalDistance.unit);
 
-      // Czas trwania - wartość z backendu + przetłumaczona jednostka
+      // Czas trwania - formatowany do postaci HH:MM:SS
       const durationValue = stats.totalDuration.value;
-      const durationUnit = this.translateDurationUnit(stats.totalDuration.unit);
+      const durationUnit = stats.totalDuration.unit;
+      const formattedDuration = this.formatDuration(durationValue, durationUnit);
 
       // Prędkość - wartość z backendu + przetłumaczona jednostka
       const speedValue = stats.averageSpeed.value;
@@ -893,7 +926,7 @@
 
       this.trackStats = {
         totalDistance: `${distanceValue.toFixed(2)} ${distanceUnit}`,
-        totalDuration: `${durationValue.toFixed(0)} ${durationUnit}`,
+        totalDuration: formattedDuration,
         averageSpeed: `${speedValue.toFixed(1)} ${speedUnit}`
       };
 
@@ -913,7 +946,7 @@
     console.log('[ParticipantRun] Displaying GPS track with', trackResponse.segments.length, 'segments');
 
     // Deleguj wyświetlanie do komponentu mapy
-    this.mapComponent.displayGpsTrack(trackResponse.segments, trackResponse.stats);
+    this.mapComponent.displayGpsTrack(trackResponse.segments);
   }
 
   // ============================================
