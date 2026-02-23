@@ -99,6 +99,9 @@
     dialogAutoTrackingEnabled: boolean = true; // Enabled by default in dialog
     dialogAutoTrackingDelay: number = 60; // seconds (default 1 minute)
 
+    // Nazwa kategorii (wyświetlana przed aktywacją biegu)
+    categoryName: string = this.getLocalStorageItem('categoryName');
+
     // Finish Summary Panel
     isSummaryExpanded: boolean = true; // Domyślnie rozwinięte po zakończeniu biegu
     scannedStations: ScannedStation[] = []; // Lista zeskanowanych stanowisk z backendu

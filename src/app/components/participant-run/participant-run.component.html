@@ -1,4 +1,12 @@
 <div class="container" (click)="registerUserInteraction()" (touchstart)="registerUserInteraction()">
+  <!-- Category Info Bar (top-left) - przed aktywacją biegu -->
+  <div class="compact-top-bar category-bar" *ngIf="!wasRunActivate && categoryName">
+    <span class="compact-stat">
+      <i class="pi pi-tag"></i>
+      {{categoryName}}
+    </span>
+  </div>
+
   <!-- Compact Top Bar (top-left) - kluczowe statystyki + GPS indicator -->
   <div class="compact-top-bar" *ngIf="wasRunActivate && !isRunFinished">
     <span class="gps-indicator"
@@ -57,6 +65,10 @@
 
     <!-- Skrócony widok gdy zwinięte - wszystkie statystyki na środku -->
     <div class="summary-collapsed-view" *ngIf="!isSummaryExpanded" (click)="toggleSummaryPanel()">
+      <span class="collapsed-stat" *ngIf="categoryName">
+        <i class="pi pi-tag"></i>
+        {{categoryName}}
+      </span>
       <span class="collapsed-stat">
         <i class="pi pi-stopwatch"></i>
         {{trackStats?.totalDuration || raceTimeDisplay}}
@@ -77,6 +89,12 @@
 
     <!-- Dwukolumnowy kontener - tylko gdy rozwinięte -->
     <div class="summary-columns" *ngIf="isSummaryExpanded">
+      <!-- Nazwa kategorii -->
+      <div class="summary-category-name" *ngIf="categoryName">
+        <i class="pi pi-tag"></i>
+        <span>{{categoryName}}</span>
+      </div>
+
       <!-- Lewa kolumna - statystyki -->
       <div class="stats-column">
         <div class="stat-item" title="Czas trasy">
@@ -169,6 +187,7 @@
       <p>Zapisywanie punktu kontrolnego</p>
     </div>
   </div>
+
 
   <!-- Hamburger Menu Dialog - Opcja A: Sekcje + bezpośrednie kontrolki -->
   <p-dialog
