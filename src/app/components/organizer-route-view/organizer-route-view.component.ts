@@ -301,6 +301,24 @@ export class OrganizerRouteViewComponent implements OnInit {
     }, 100);
   }
 
+  centerOnGpsPosition() {
+    if (!navigator.geolocation) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (this.mapComponent) {
+          this.mapComponent.panTo(position.coords.latitude, position.coords.longitude);
+        }
+      },
+      (error) => {
+        console.error('GPS error:', error.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   onSubmitAddStationForm() {
     if (!this.selectedRoute) {
       return;
