@@ -1,4 +1,5 @@
 export type InitiateRunResponse = {
     runId: string,
-    backgroundMapId: string
+    backgroundMapId: string,
+    categoryName: string
 }

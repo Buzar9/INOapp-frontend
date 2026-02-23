@@ -162,6 +162,14 @@ qr-scanner{background:var(--color-panel)}
 .info-cancel-link{color:var(--color-text);font-size:.9rem;cursor:pointer;padding:.4rem .8rem;opacity:.6;transition:opacity .2s}
 .info-cancel-link:hover{opacity:1;text-decoration:underline}
 
+/* Category Bar (przed aktywacją biegu) */
+.compact-top-bar.category-bar{animation:fadeIn .4s ease-out}
+
+/* Category Name w panelu podsumowania (expanded) */
+.summary-category-name{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;background:rgba(184,115,51,.15);border:1px solid rgba(184,115,51,.3);border-radius:var(--radius);grid-column:1 / -1;justify-content:center}
+.summary-category-name i{color:var(--color-accent);font-size:.9rem}
+.summary-category-name span{color:var(--color-text);font-size:.95rem;font-weight:600}
+
 /* Keyframes */
 @keyframes slideInUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes pulse{0%,100%{box-shadow:0 4px 12px rgba(184,115,51,.6)}50%{box-shadow:0 4px 20px rgba(184,115,51,1)}}

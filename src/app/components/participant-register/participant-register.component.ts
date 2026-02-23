@@ -83,6 +83,7 @@ export class ParticipantRegisterComponent {
                 // Zapisz wszystkie dane sesji do localStorage
                 this.setLocalStorageItem('runId', response.runId);
                 this.setLocalStorageItem('categoryId', formData.categoryId);
+                this.setLocalStorageItem('categoryName', response.categoryName);
                 this.setLocalStorageItem('competitionId', formData.competitionId);
                 this.setLocalStorageItem('participantUnit', formData.participantUnit);
                 this.setLocalStorageItem('participantName', formData.participantName);
