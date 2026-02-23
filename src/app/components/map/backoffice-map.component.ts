@@ -142,6 +142,12 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     return { lat: center.lat, lng: center.lng };
   }
 
+  panTo(lat: number, lng: number): void {
+    if (this.map) {
+      this.map.panTo([lat, lng]);
+    }
+  }
+
   invalidateSizeAndKeepCenter(): void {
     if (this.map) {
       const currentCenter = this.map.getCenter();

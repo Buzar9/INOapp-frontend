@@ -51,6 +51,30 @@
   background-color: white;
 }
 
+.gps-center-btn {
+  position: absolute;
+  bottom: 10.5rem;
+  right: 0.625rem;
+  z-index: 1001;
+}
+
+::ng-deep .gps-center-btn.p-button {
+  background: var(--color-accent, #b87333) !important;
+  border-color: var(--color-accent, #b87333) !important;
+  color: var(--color-text-light, #ffffff) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+::ng-deep .gps-center-btn.p-button:enabled:hover {
+  background: var(--color-accent-hover, #d2691e) !important;
+  border-color: var(--color-accent-hover, #d2691e) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+
+::ng-deep .gps-center-btn.p-button .p-button-icon {
+  color: var(--color-text-light, #ffffff) !important;
+}
+
 .fullscreen-toggle-btn {
   position: absolute;
   bottom: 7.5rem;

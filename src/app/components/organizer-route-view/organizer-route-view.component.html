@@ -218,6 +218,15 @@
         <button
           pButton
           type="button"
+          icon="pi pi-compass"
+          [rounded]="true"
+          (click)="centerOnGpsPosition()"
+          class="gps-center-btn"
+          title="Centruj na pozycji GPS">
+        </button>
+        <button
+          pButton
+          type="button"
           [icon]="isMapFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
           [rounded]="true"
           (click)="toggleMapFullscreen()"
