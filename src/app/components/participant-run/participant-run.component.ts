@@ -740,7 +740,7 @@
    */
   private autoAdjustGpsMode(batteryLevel: number, previousBatteryLevel: number): void {
     let newEffectiveMode: TrackingMode;
-    
+
     if (batteryLevel > 50) {
       newEffectiveMode = TrackingMode.HIGH;
     } else if (batteryLevel > 30) {
@@ -751,7 +751,7 @@
       // Poniżej 15% - nadal śledzimy ale oszczędnie
       newEffectiveMode = TrackingMode.LOW;
     }
-    
+
     // Zmień tylko jeśli efektywny tryb się zmienił
     if (newEffectiveMode !== this.effectiveGpsMode) {
       this.effectiveGpsMode = newEffectiveMode;
@@ -1116,7 +1116,7 @@
       // Enable with specified delay
       this.autoTrackingModeEnabled = true;
       this.autoTrackingModeDelay = seconds;
-      
+
       if (!this.isInTrackingMode && this.wasRunActivate && !this.isRunFinished) {
         this.startInactivityTimer();
       }
@@ -1224,5 +1224,39 @@
     } catch {
       return scannedAt;
     }
+  }
+
+  onAbandonRunClick(): void {
+    this.showMenu = false;
+
+    setTimeout(() => {
+      this.confirmationService.confirm({
+        key: 'abandonConfirm',
+        message: 'Czy na pewno chcesz porzucić bieg? Ta decyzja jest nieodwracalna — bieg zostanie anulowany.',
+        header: 'Porzucenie biegu',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Tak, porzuć bieg',
+        rejectLabel: 'Anuluj',
+        acceptButtonStyleClass: 'p-button-danger',
+        rejectButtonStyleClass: 'p-button-outlined',
+        accept: () => {
+          const runId = this.getLocalStorageItem('runId');
+          if (!runId) return;
+
+          this.sendService.cancelRun(runId).subscribe({
+            next: () => {
+              console.log('[ParticipantRun] Run abandoned successfully');
+              this.onNewRoute();
+            },
+            error: (err) => {
+              console.error('[ParticipantRun] Error abandoning run:', err);
+            }
+          });
+        },
+        reject: () => {
+          this.showMenu = true;
+        }
+      });
+    }, 300);
   }
 }

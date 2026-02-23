@@ -6,6 +6,7 @@ export type RaceResult = {
     participantUnit: string,
     categoryName: string,
     routeId: string,
+    translatedStatus: string,
     status: string,
     startTime: string,
     finishTime: string,

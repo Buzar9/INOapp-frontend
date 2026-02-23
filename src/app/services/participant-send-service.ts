@@ -86,4 +86,8 @@ export class ParticipantSendService {
             { runId: runId }
         );
     }
+
+    cancelRun(runId: string): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}/runs/cancel`, { runId });
+    }
 }

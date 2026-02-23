@@ -32,7 +32,7 @@
 
   <!-- Hamburger Menu Button (top-right) - ukryty po zakończeniu biegu -->
   <button
-    *ngIf="wasRunActivate && !isRunFinished"
+    *ngIf="!isRunFinished"
     pButton
     pRipple
     type="button"
@@ -55,11 +55,11 @@
   </button>
 
   <!-- Panel podsumowania po zakończeniu biegu - dwukolumnowy layout -->
-  <div class="finish-summary-panel" 
-       *ngIf="isRunFinished" 
-       [class.expanded]="isSummaryExpanded" 
+  <div class="finish-summary-panel"
+       *ngIf="isRunFinished"
+       [class.expanded]="isSummaryExpanded"
        [class.collapsed]="!isSummaryExpanded">
-    
+
     <!-- Uchwyt do przeciągania (swipe indicator) -->
     <div class="swipe-handle" (click)="toggleSummaryPanel()"></div>
 
@@ -211,6 +211,7 @@
           (click)="resetMapView(); showMenu = false">
         </button>
         <button
+          *ngIf="wasRunActivate"
           pButton
           pRipple
           type="button"
@@ -221,10 +222,10 @@
         </button>
       </div>
 
-      <!-- SEKCJA: OSZCZĘDZANIE ENERGII (tylko podczas aktywnego biegu) -->
-      <div class="menu-section" *ngIf="!isRunFinished && wasRunActivate">
+      <!-- SEKCJA: USTAWIENIA (dostępna od inicjacji biegu) -->
+      <div class="menu-section" *ngIf="!isRunFinished">
         <span class="menu-section-title">Ustawienia</span>
-        
+
         <!-- GPS Mode - bezpośredni dropdown -->
         <div class="menu-setting-row">
           <div class="menu-setting-label">
@@ -283,8 +284,29 @@
         <i class="pi pi-check-circle"></i>
         <span>Bieg zakończony</span>
       </div>
+
+      <!-- SEKCJA: PORZUĆ BIEG -->
+      <div class="menu-section" *ngIf="!isRunFinished">
+        <button
+          pButton
+          pRipple
+          type="button"
+          icon="pi pi-ban"
+          label="Porzuć bieg"
+          class="menu-option-button p-button-danger p-button-outlined"
+          (click)="onAbandonRunClick()">
+        </button>
+      </div>
     </div>
   </p-dialog>
+
+  <!-- Confirm Dialog dla porzucenia biegu -->
+  <p-confirmDialog
+    key="abandonConfirm"
+    styleClass="abandon-confirm-dialog"
+    [closable]="false"
+    [style]="{width: '90vw', maxWidth: '400px'}">
+  </p-confirmDialog>
 
   <!-- GPS Settings Dialog -->
   <p-dialog
@@ -387,7 +409,7 @@
   </p-dialog>
 
   <!-- Confirm Dialog dla zamknięcia podsumowania -->
-  <p-confirmDialog 
+  <p-confirmDialog
     key="finishConfirm"
     styleClass="finish-confirm-dialog"
     [closable]="false"
