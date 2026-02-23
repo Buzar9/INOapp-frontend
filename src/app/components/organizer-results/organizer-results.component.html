@@ -58,11 +58,11 @@
               <td>{{ result.participantNickname }}</td>
               <td>{{ result.participantUnit }}</td>
               <td>{{ result.categoryName }}</td>
-              <td>{{ result.status }}</td>
+              <td>{{ result.translatedStatus }}</td>
               <td>{{ getControlPointsNumber(result) }}</td>
               <td>{{ result.mainTime }}</td>
               <td>
-                <p-button *ngIf="hasAvailableStations(result)" icon="pi pi-plus-circle" [text]="true" [rounded]="true" size="small"
+                <p-button *ngIf="hasAvailableStations(result) && !isRunCanceled(result.status)" icon="pi pi-plus-circle" [text]="true" [rounded]="true" size="small"
                           (click)="openAddControlPointDialog(result)" title="Zalicz punkt"></p-button>
                 <p-button *ngIf="!isRunCanceled(result.status)" icon="pi pi-ban" [text]="true" [rounded]="true" size="small"
                           severity="danger" (click)="onCancelRunClick(result)" title="Anuluj bieg"></p-button>
