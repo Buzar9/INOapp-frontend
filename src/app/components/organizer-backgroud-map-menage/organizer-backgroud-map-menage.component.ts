@@ -92,7 +92,7 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
         const request = { competitionId: 'Competition123' };
         this.backofficeService.getBackgroundMaps(request).subscribe({
             next: (maps) => {
-                this.backgroundMaps = maps;
+                this.backgroundMaps = maps.sort((a, b) => a.name.localeCompare(b.name));
 
                 if (clearSelection || !this.selectedMapForPreview ||
                     !maps.find(m => m.id === this.selectedMapForPreview?.id)) {
@@ -292,7 +292,7 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
                     const request = { competitionId: 'Competition123' };
                     this.backofficeService.getBackgroundMaps(request).subscribe({
                         next: (maps) => {
-                            this.backgroundMaps = maps;
+                            this.backgroundMaps = maps.sort((a, b) => a.name.localeCompare(b.name));
 
                             if (maps.length > 0) {
                                 const lastMap = maps[maps.length - 1];
@@ -343,7 +343,8 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
                 this.backofficeService.deleteBackgroundMap(request).subscribe({
                     next: async () => {
                         await this.updateStorageInfo();
-                        this.loadBackgroundMaps(true);
+                        this.backgroundMaps = this.backgroundMaps.filter(m => m.id !== mapId);
+                        this.isLoading = false;
                     },
                     error: (err) => {
                         console.error(err);

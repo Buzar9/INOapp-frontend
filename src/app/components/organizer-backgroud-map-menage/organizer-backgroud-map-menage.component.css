@@ -18,9 +18,10 @@
   gap: 0.5rem;
 }
 
-.map-management-actions {
-  margin-top: 0.5rem;
+.map-name-row {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
 }
 
