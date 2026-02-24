@@ -25,6 +25,7 @@ import { AddControlPointRequest, CancelRunRequest } from '../../services/backoff
 import { DatePicker } from 'primeng/datepicker';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
+import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
 
 @Component({
   selector: 'app-organizer-results',
@@ -104,10 +105,13 @@ export class OrganizerResultsComponent implements OnInit {
   showTimePicker = false;
   reporter: string = '';
 
+  isMapLoading = false;
+
   constructor(
     private backofficeSendService: BackofficeSendService,
     private formBuilder: FormBuilder,
     private confirmationService: ConfirmationService,
+    private mapDownloader: MapDownloaderService,
   ) {
     this.filterForm =  this.formBuilder.group({
         teamSelectedOptions: [''],
@@ -282,9 +286,31 @@ export class OrganizerResultsComponent implements OnInit {
       })
     }
 
-    changeMap(event: any) {
+    async changeMap(event: any) {
       this.selectedBackgroundMapId = event.value;
-      this.selectedBackgroundMap = this.backgroundMaps.find(map => map.id === this.selectedBackgroundMapId);
+      const map = this.backgroundMaps.find(m => m.id === this.selectedBackgroundMapId);
+
+      if (map) {
+        this.isMapLoading = true;
+        try {
+          await this.mapDownloader.downloadMap(map.id, {
+            name: map.name,
+            minZoom: map.minZoom,
+            maxZoom: map.maxZoom,
+            bounds: {
+              north: map.northEast?.[0],
+              east: map.northEast?.[1],
+              south: map.southWest?.[0],
+              west: map.southWest?.[1]
+            }
+          });
+          this.selectedBackgroundMap = map;
+        } catch (err) {
+          console.error('[OrganizerResults] Error downloading map:', err);
+        } finally {
+          this.isMapLoading = false;
+        }
+      }
     }
 
     openAddControlPointDialog(result: RaceResult) {
