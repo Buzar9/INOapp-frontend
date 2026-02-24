@@ -61,16 +61,18 @@
                 </p-button>
               </td>
               <td colspan="2">
-                <div>{{ map.name }}</div>
-                <div *ngIf="isMapSelected(map.id)" class="map-management-actions">
+                <div class="map-name-row">
+                  <span>{{ map.name }}</span>
                   <button
                     pButton
                     pRipple
                     type="button"
                     icon="pi pi-trash"
                     [rounded]="true"
+                    [text]="true"
                     severity="danger"
-                    (click)="onDeleteMap(map.id)"
+                    size="small"
+                    (click)="onDeleteMap(map.id); $event.stopPropagation()"
                     title="Usuń mapę">
                   </button>
                 </div>
