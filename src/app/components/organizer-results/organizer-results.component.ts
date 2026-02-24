@@ -26,6 +26,7 @@ import { DatePicker } from 'primeng/datepicker';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
+import { OrganizerDataCacheService } from '../../services/organizer-data-cache.service';
 
 @Component({
   selector: 'app-organizer-results',
@@ -78,6 +79,7 @@ import { MapDownloaderService } from '../../services/map-downloader-dodo.service
 export class OrganizerResultsComponent implements OnInit {
   @ViewChild(BackofficeMapComponent) mapComponent!: BackofficeMapComponent;
   accuracyVisible = true;
+  allRaceResults: RaceResult[] = [];
   raceResults: RaceResult[] = [];
   routes: Route[] = []
   expandedRows: { [key: string]: boolean } = {};
@@ -112,6 +114,7 @@ export class OrganizerResultsComponent implements OnInit {
     private formBuilder: FormBuilder,
     private confirmationService: ConfirmationService,
     private mapDownloader: MapDownloaderService,
+    private cache: OrganizerDataCacheService,
   ) {
     this.filterForm =  this.formBuilder.group({
         teamSelectedOptions: [''],
@@ -130,51 +133,101 @@ export class OrganizerResultsComponent implements OnInit {
       pageNumber: 0
     }
 
-    this.isLoading = true;
-    this.backofficeSendService.getRaceResults(initRequest).subscribe({
-      next: (data) => {
-        this.raceResults = data;
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('dodo error get', err);
-        this.isLoading = false;
-      }
-    })
+    if (this.cache.raceResults !== null) {
+      this.allRaceResults = this.cache.raceResults;
+      this.raceResults = this.allRaceResults;
+    } else {
+      this.isLoading = true;
+      this.backofficeSendService.getRaceResults(initRequest).subscribe({
+        next: (data) => {
+          this.allRaceResults = data;
+          this.raceResults = data;
+          this.cache.raceResults = data;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.error('dodo error get', err);
+          this.isLoading = false;
+        }
+      })
+    }
 
     let request = {competitionId: 'Competition123'}
-    this.backofficeSendService.getRoutes(request).subscribe({
-      next: (routes) => this.routes = routes,
-      error: (err) => console.error('dodo err', err)
-    })
 
-    this.backofficeSendService.getCategories().subscribe({
-      next: (categories) => {
-        this.categories = categories;
-        this.categoryOptions = categories.map(category => category.name);
-      },
-      error: (err) => console.error('dodo err', err)
-    })
+    if (this.cache.routes !== null) {
+      this.routes = this.cache.routes;
+    } else {
+      this.backofficeSendService.getRoutes(request).subscribe({
+        next: (routes) => {
+          this.routes = routes;
+          this.cache.routes = routes;
+        },
+        error: (err) => console.error('dodo err', err)
+      })
+    }
 
-    this.backofficeSendService.getUnits().subscribe({
-      next: (units) => this.teamOptions = units.map(unit => unit.name),
-      error: (err) => console.error('dodo err', err)
-    })
+    if (this.cache.categories !== null) {
+      this.categories = this.cache.categories;
+      this.categoryOptions = this.cache.categoryOptions!;
+    } else {
+      this.backofficeSendService.getCategories().subscribe({
+        next: (categories) => {
+          this.categories = categories;
+          this.categoryOptions = categories.map(category => category.name);
+          this.cache.categories = categories;
+          this.cache.categoryOptions = this.categoryOptions;
+        },
+        error: (err) => console.error('dodo err', err)
+      })
+    }
 
-    this.backofficeSendService.getStatusDictionary().subscribe({
-      next: (response) => this.statusOptions = response,
-      error: (err) => console.error('dodo err', err)
-    })
+    if (this.cache.units !== null) {
+      this.teamOptions = this.cache.units;
+    } else {
+      this.backofficeSendService.getUnits().subscribe({
+        next: (units) => {
+          this.teamOptions = units.map(unit => unit.name);
+          this.cache.units = this.teamOptions;
+        },
+        error: (err) => console.error('dodo err', err)
+      })
+    }
 
-    this.backofficeSendService.getBackgroundMapOptions(request).subscribe ({
-      next: (response) => this.backgroundMapsOptions = response,
-      error: (err) => console.log('dodo problem dodo', err)
-    })
+    if (this.cache.statusDictionary !== null) {
+      this.statusOptions = this.cache.statusDictionary;
+    } else {
+      this.backofficeSendService.getStatusDictionary().subscribe({
+        next: (response) => {
+          this.statusOptions = response;
+          this.cache.statusDictionary = response;
+        },
+        error: (err) => console.error('dodo err', err)
+      })
+    }
 
-    this.backofficeSendService.getBackgroundMaps(request).subscribe ({
-      next: (response) => this.backgroundMaps = response,
-      error: (err) => console.log('dodo  dodo', err)
-    })
+    if (this.cache.backgroundMapOptions !== null) {
+      this.backgroundMapsOptions = this.cache.backgroundMapOptions;
+    } else {
+      this.backofficeSendService.getBackgroundMapOptions(request).subscribe ({
+        next: (response) => {
+          this.backgroundMapsOptions = response;
+          this.cache.backgroundMapOptions = response;
+        },
+        error: (err) => console.log('dodo problem dodo', err)
+      })
+    }
+
+    if (this.cache.backgroundMaps !== null) {
+      this.backgroundMaps = this.cache.backgroundMaps;
+    } else {
+      this.backofficeSendService.getBackgroundMaps(request).subscribe ({
+        next: (response) => {
+          this.backgroundMaps = response;
+          this.cache.backgroundMaps = response;
+        },
+        error: (err) => console.log('dodo  dodo', err)
+      })
+    }
   }
 
   isRunFinished(status: string): boolean {
@@ -259,31 +312,15 @@ export class OrganizerResultsComponent implements OnInit {
       const formValues = this.filterForm.value;
 
       const teamFilters: string[] = formValues.teamSelectedOptions ? formValues.teamSelectedOptions : [];
-      const categoryFilters: string[] = formValues.categorySelectedOptions ? formValues.categorySelectedOptions : []
-      const statusFilters: string[] = formValues.statusSelectedOptions ? formValues.statusSelectedOptions : []
+      const categoryFilters: string[] = formValues.categorySelectedOptions ? formValues.categorySelectedOptions : [];
+      const statusFilters: string[] = formValues.statusSelectedOptions ? formValues.statusSelectedOptions : [];
 
-      let filter: { [key: string]: string[] } = {
-        'team': teamFilters,
-        'category': categoryFilters,
-        'status': statusFilters
-      };
-
-      let filterRequest = {
-        filter: filter,
-        pageNumber: 0
-      }
-
-      this.isLoading = true;
-      this.backofficeSendService.getRaceResults(filterRequest).subscribe({
-        next: (data) => {
-          this.raceResults = data;
-          this.isLoading = false;
-        },
-        error: (err) => {
-          console.error('dodo error get', err);
-          this.isLoading = false;
-        }
-      })
+      this.raceResults = this.allRaceResults.filter(result => {
+        if (teamFilters.length > 0 && !teamFilters.includes(result.participantUnit)) return false;
+        if (categoryFilters.length > 0 && !categoryFilters.includes(result.categoryName)) return false;
+        if (statusFilters.length > 0 && !statusFilters.includes(result.status)) return false;
+        return true;
+      });
     }
 
     async changeMap(event: any) {
@@ -416,7 +453,9 @@ export class OrganizerResultsComponent implements OnInit {
       };
       this.backofficeSendService.getRaceResults(request).subscribe({
         next: (data) => {
+          this.allRaceResults = data;
           this.raceResults = data;
+          this.cache.raceResults = data;
           this.isLoading = false;
         },
         error: (err) => {
