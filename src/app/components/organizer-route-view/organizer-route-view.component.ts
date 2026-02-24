@@ -24,6 +24,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { TileDbService } from '../../services/tile-db.service';
 import { FormsModule } from '@angular/forms';
+import { OrganizerDataCacheService } from '../../services/organizer-data-cache.service';
 
 
 @Component({
@@ -73,7 +74,8 @@ export class OrganizerRouteViewComponent implements OnInit {
     private mapDownloader: MapDownloaderService,
     private qrCodeGenerator: QrCodeGeneratorService,
     private confirmationService: ConfirmationService,
-    private tileDb: TileDbService
+    private tileDb: TileDbService,
+    private cache: OrganizerDataCacheService
   ) {
       this.addRouteForm = this.formBuilder.group({
         name: [''],
@@ -105,33 +107,54 @@ export class OrganizerRouteViewComponent implements OnInit {
 
   ngOnInit(): void {
     let request = {competitionId: 'Competition123'}
-    this.backofficeSendService.getRoutes(request).subscribe ({
+
+    if (this.cache.routes !== null) {
+      this.routes = this.cache.routes;
+    } else {
+      this.backofficeSendService.getRoutes(request).subscribe({
         next: (response) => {
-          this.routes = response
+          this.routes = response;
+          this.cache.routes = response;
         },
         error: (err) => console.log(err)
-    })
+      });
+    }
 
-    this.backofficeSendService.getStationDictionary().subscribe ({
+    if (this.cache.stationDictionary !== null) {
+      this.stationTypeOptions = this.cache.stationDictionary;
+    } else {
+      this.backofficeSendService.getStationDictionary().subscribe({
         next: (response) => {
-          this.stationTypeOptions = response
+          this.stationTypeOptions = response;
+          this.cache.stationDictionary = response;
         },
         error: (err) => console.log(err)
-    })
+      });
+    }
 
-    this.backofficeSendService.getBackgroundMapOptions(request).subscribe ({
+    if (this.cache.backgroundMapOptions !== null) {
+      this.backgroundMapsOptions = this.cache.backgroundMapOptions;
+    } else {
+      this.backofficeSendService.getBackgroundMapOptions(request).subscribe({
         next: (response) => {
           this.backgroundMapsOptions = response;
+          this.cache.backgroundMapOptions = response;
         },
         error: (err) => console.log(err)
-    })
+      });
+    }
 
-    this.backofficeSendService.getBackgroundMaps(request).subscribe ({
+    if (this.cache.backgroundMaps !== null) {
+      this.backgroundMaps = this.cache.backgroundMaps;
+    } else {
+      this.backofficeSendService.getBackgroundMaps(request).subscribe({
         next: (response) => {
           this.backgroundMaps = response;
+          this.cache.backgroundMaps = response;
         },
         error: (err) => console.log(err)
-    })
+      });
+    }
   }
 
   async onSubmitAddRouteForm() {

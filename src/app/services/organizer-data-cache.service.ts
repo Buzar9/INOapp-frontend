@@ -13,6 +13,7 @@ export class OrganizerDataCacheService {
   categoryOptions: string[] | null = null;
   units: string[] | null = null;
   statusDictionary: DictionaryModel[] | null = null;
+  stationDictionary: DictionaryModel[] | null = null;
   backgroundMapOptions: BackgroundMapOption[] | null = null;
   backgroundMaps: BackgroundMap[] | null = null;
   raceResults: RaceResult[] | null = null;
@@ -23,6 +24,7 @@ export class OrganizerDataCacheService {
     this.categoryOptions = null;
     this.units = null;
     this.statusDictionary = null;
+    this.stationDictionary = null;
     this.backgroundMapOptions = null;
     this.backgroundMaps = null;
     this.raceResults = null;
