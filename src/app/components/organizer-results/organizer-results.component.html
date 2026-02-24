@@ -12,7 +12,7 @@
             <p-multiselect [options]="categoryOptions" formControlName="categorySelectedOptions" placeholder="Select Category"
                            [maxSelectedLabels]="3" display="chip"/>
             <p-multiselect [options]="statusOptions" formControlName="statusSelectedOptions" placeholder="Select Status"
-                           [maxSelectedLabels]="3" display="chip"/>
+                           optionLabel="label" optionValue="value" [maxSelectedLabels]="3" display="chip"/>
             <button pButton type="submit">Filtruj</button>
           </form>
           <p-multiselect [options]="categoryOptions" [(ngModel)]="selectedStationCategories" (onChange)="onCategoryChange($event.value)"
