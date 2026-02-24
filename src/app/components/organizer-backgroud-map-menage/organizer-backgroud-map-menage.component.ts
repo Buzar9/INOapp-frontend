@@ -22,12 +22,14 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { StorageManagerService } from '../../services/storage-manager.service';
 import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
 import { ToastModule } from 'primeng/toast';
+import { SmartSizePipe } from '../../pipes/smart-size.pipe';
 
 @Component({
     selector:'organizer-backgroud-map-menage',
     standalone:true,
     imports:[
         CommonModule,
+        SmartSizePipe,
         ReactiveFormsModule,
         InputTextModule,
         ButtonModule,
@@ -60,6 +62,7 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
     expandedMaps: { [key: string]: boolean } = {};
     isMapFullscreen: boolean = false;
     showAddMapForm: boolean = false;
+    currentZoom?: number;
 
     // Storage info
     storageUsage = 0;
