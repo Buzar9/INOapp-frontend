@@ -37,6 +37,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() forceStationsGreen: boolean = false;
 
   @Output() pickedCoordinates = new EventEmitter<Coordinates>();
+  @Output() zoomChange = new EventEmitter<number>();
 
   private controlPointMarkers: L.Circle[] = [];
   private map!: L.Map;
@@ -214,6 +215,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     this.map.on('zoomend', () => {
       this.updateAllowedCenterBounds();
       this.updateCenterMarker();
+      this.zoomChange.emit(this.map.getZoom());
     });
     this.map.on('moveend', () => {
       this.updateAllowedCenterBounds();
@@ -227,6 +229,8 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       }
     };
     window.addEventListener('resize', this.resizeListener);
+
+    this.zoomChange.emit(this.map.getZoom());
   }
 
   private async switchBaseMap(mapId: string | undefined | null) {
@@ -538,7 +542,8 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
 
   private updateCoordinates(lat: number, lng: number): void {
     if (this.coordinatesDisplay) {
-      this.coordinatesDisplay.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      const zoom = this.map ? this.map.getZoom() : '';
+      this.coordinatesDisplay.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)} | Zoom: ${zoom}`;
     }
   }
 

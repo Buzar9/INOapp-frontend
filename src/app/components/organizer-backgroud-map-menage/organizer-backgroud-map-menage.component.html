@@ -96,7 +96,12 @@
                   
                   <div class="detail-row">
                     <span class="detail-label">Rozmiar:</span>
-                    <span class="detail-value url">{{ map.fileSize }} MB</span>
+                    <span class="detail-value url">{{ map.fileSize | smartSize }}</span>
+                  </div>
+
+                  <div class="detail-row" *ngFor="let entry of map.zoomsSize | keyvalue">
+                    <span class="detail-label">Rozmiar (zoom {{ entry.key }}):</span>
+                    <span class="detail-value url">{{ $any(entry.value) | smartSize }}</span>
                   </div>
                 </div>
               </td>
@@ -140,7 +145,8 @@
               [northEast]="selectedMapForPreview.northEast"
               [southWest]="selectedMapForPreview.southWest"
               [showCenterCoordinates]="true"
-              [stationsToShow]="[]">
+              [stationsToShow]="[]"
+              (zoomChange)="currentZoom = $event">
             </backoffice-map>
             
             <div *ngIf="!selectedMapForPreview" class="no-map-selected">
