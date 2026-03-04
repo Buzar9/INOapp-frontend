@@ -2,7 +2,7 @@
   <p-splitter [panelSizes]="[40, 60]">
     <ng-template #panel>
       <p-table [value]="categories" dataKey="id" selectionMode="single" [(selection)]="selectedCategory" [scrollable]="true"
-               scrollHeight="600px">
+               scrollHeight="600px" (onRowSelect)="onCategorySelect($event.data)">
         <ng-template #header>
           <tr>
             <th>
@@ -40,13 +40,19 @@
     </ng-template>
     <ng-template #panel>
       <div style="width: 800px; height: 600px; position: relative; z-index: 1;">
+        <div *ngIf="isLoading" class="loading-overlay">
+          <div class="loading-indicator">
+            <p-progressSpinner styleClass="custom-spinner" strokeWidth="4"></p-progressSpinner>
+            <p>Trwa pobieranie mapy, proszę czekać...</p>
+          </div>
+        </div>
         <backoffice-map
           [stationsToShow]="getStationsForCategory()"
-          [backgroundMapId]="getSelectedBackgroundMapId()"
-          [minZoom]="getSelectedMinZoom()"
-          [maxZoom]="getSelectedMaxZoom()"
-          [northEast]="getSelectedNorthEast()"
-          [southWest]="getSelectedSouthWest()"
+          [backgroundMapId]="currentMapId"
+          [minZoom]="currentMinZoom"
+          [maxZoom]="currentMaxZoom"
+          [northEast]="currentNorthEast"
+          [southWest]="currentSouthWest"
         >
         </backoffice-map>
         <p-dialog header="Dodaj kategorię" [modal]="true" [(visible)]="showAddCategoryForm">
