@@ -1,6 +1,6 @@
 <div>
-  <button pButton (click)="showCreateCompetitonForm()">Stwórz zawody</button>
-  <button pButton (click)="showLogInForm()">Zaloguj</button>
+  <!-- <button pButton (click)="showCreateCompetitonForm()">Stwórz zawody</button>
+  <button pButton (click)="showLogInForm()">Zaloguj</button> -->
   <div class="start-screen" *ngIf="isCreateCompetitonFormVisible">
     <h1>Stwórz zawody!</h1>
     <form [formGroup]="createCompetitionForm" (ngSubmit)="onSubmitCreateCompetitionForm()">

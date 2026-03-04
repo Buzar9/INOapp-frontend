@@ -8,7 +8,8 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 // AngularFire (Standalone)
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { competitionIdInterceptor } from './app/services/interceptors/competition-id.interceptor';
 import { routes } from './app/app.routes';
 
 import './styles.css';
@@ -24,7 +25,7 @@ if (environment.production) {
 bootstrapApplication(AppComponent, {
   providers: [
     provideAnimations(),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([competitionIdInterceptor])),
     importProvidersFrom(
       AngularFireModule.initializeApp(environment.firebase),
       AngularFirestoreModule
