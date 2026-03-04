@@ -14,11 +14,13 @@ import { TabsModule } from 'primeng/tabs';
 import { Category } from '../../services/response/Category';
 import { RouteOption } from '../../services/response/RouteOption';
 import { DropdownModule } from 'primeng/dropdown';
+import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 @Component({
   selector: 'organizer-category-view',
   standalone: true,
-  imports: [CommonModule, TableModule, BackofficeMapComponent, DropdownModule, ReactiveFormsModule, FormsModule, DialogModule, AutoFocusModule, ButtonModule, SplitterModule, TabsModule],
+  imports: [CommonModule, TableModule, BackofficeMapComponent, DropdownModule, ReactiveFormsModule, FormsModule, DialogModule, AutoFocusModule, ButtonModule, SplitterModule, TabsModule, ProgressSpinnerModule],
   templateUrl: './organizer-category-view.component.html',
   styleUrls: ['./organizer-category-view.component.css']
 })
@@ -36,6 +38,13 @@ export class OrganizerCategoryViewComponent implements OnInit {
 
   isLoading: boolean = false;
 
+  // Map state - updated only after download completes
+  currentMapId: string | null = null;
+  currentMinZoom: number = 0;
+  currentMaxZoom: number = 0;
+  currentNorthEast: [number, number] = [0, 0];
+  currentSouthWest: [number, number] = [0, 0];
+
   addCategoryForm: FormGroup
   showAddCategoryForm: boolean = false;
 
@@ -45,7 +54,9 @@ export class OrganizerCategoryViewComponent implements OnInit {
 
   constructor(
     private formBuilder: FormBuilder,
-    private backofficeSendService: BackofficeSendService) {
+    private backofficeSendService: BackofficeSendService,
+    private mapDownloader: MapDownloaderService
+  ) {
       this.addCategoryForm = this.formBuilder.group({
         name: [''],
         routeId: ['']
@@ -74,6 +85,56 @@ export class OrganizerCategoryViewComponent implements OnInit {
     })
 
     this.updateCategories()
+  }
+
+  async onCategorySelect(category: Category | Category[] | undefined) {
+    if (!category || Array.isArray(category)) {
+      return;
+    }
+
+    if (category.backgroundMap?.id) {
+      this.isLoading = true;
+      try {
+        await this.mapDownloader.downloadMap(category.backgroundMap.id, {
+          name: category.backgroundMap.name,
+          minZoom: category.backgroundMap.minZoom,
+          maxZoom: category.backgroundMap.maxZoom,
+          bounds: {
+            north: category.backgroundMap.northEast?.[0],
+            east: category.backgroundMap.northEast?.[1],
+            south: category.backgroundMap.southWest?.[0],
+            west: category.backgroundMap.southWest?.[1]
+          }
+        });
+      } catch (err) {
+        console.error('[onCategorySelect] Error downloading map:', err);
+      } finally {
+        this.isLoading = false;
+      }
+    }
+
+    // Update map state AFTER download completes
+    this.currentMapId = category.backgroundMap?.id || null;
+    this.currentMinZoom = category.backgroundMap?.minZoom || 0;
+    this.currentMaxZoom = category.backgroundMap?.maxZoom || 0;
+    this.currentNorthEast = category.backgroundMap?.northEast || [0, 0];
+    this.currentSouthWest = category.backgroundMap?.southWest || [0, 0];
+
+    setTimeout(() => {
+      if (this.mapComponent) {
+        this.mapComponent.invalidateSizeAndKeepCenter();
+
+        // Wycentruj mapę na środek boundów
+        if (this.currentNorthEast[0] !== 0 && this.currentSouthWest[0] !== 0) {
+          const centerLat = (this.currentNorthEast[0] + this.currentSouthWest[0]) / 2;
+          const centerLng = (this.currentNorthEast[1] + this.currentSouthWest[1]) / 2;
+          this.mapComponent.panTo(centerLat, centerLng);
+        }
+
+        const stations = this.getStationsForCategory();
+        this.mapComponent.setStations(stations);
+      }
+    }, 200);
   }
 
   onCreateCategoryClick() {
