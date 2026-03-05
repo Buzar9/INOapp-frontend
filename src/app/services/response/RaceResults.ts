@@ -11,7 +11,8 @@ export type RaceResult = {
     startTime: string,
     finishTime: string,
     mainTime: string,
-    controlPoints: ControlPoint[]
+    controlPoints: ControlPoint[],
+    runTrackId: string | null
 }
 
 export type ControlPoint = {

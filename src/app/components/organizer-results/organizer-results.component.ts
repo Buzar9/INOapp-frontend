@@ -24,15 +24,16 @@ import { DialogModule } from 'primeng/dialog';
 import { AddControlPointRequest, CancelRunRequest } from '../../services/backoffice-requests';
 import { DatePicker } from 'primeng/datepicker';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { MapDownloaderService } from '../../services/map-downloader-dodo.service';
 import { OrganizerDataCacheService } from '../../services/organizer-data-cache.service';
 
 @Component({
   selector: 'app-organizer-results',
   standalone: true,
-  imports: [CommonModule, ScrollPanelModule, Select, TableModule, BackofficeMapComponent, TagModule, ButtonModule, SplitterModule, MultiSelectModule, FormsModule, ReactiveFormsModule, ProgressSpinnerModule, DialogModule, DatePicker, ConfirmDialogModule],
-  providers: [ConfirmationService],
+  imports: [CommonModule, ScrollPanelModule, Select, TableModule, BackofficeMapComponent, TagModule, ButtonModule, SplitterModule, MultiSelectModule, FormsModule, ReactiveFormsModule, ProgressSpinnerModule, DialogModule, DatePicker, ConfirmDialogModule, ToastModule],
+  providers: [ConfirmationService, MessageService],
   templateUrl: './organizer-results.component.html',
   styles: [`
     .results-container {
@@ -74,11 +75,16 @@ import { OrganizerDataCacheService } from '../../services/organizer-data-cache.s
     .canceled-row {
       opacity: 0.5;
     }
+    :host ::ng-deep .highlighted-row {
+      background-color: var(--primary-100, rgba(var(--primary-color-rgb), 0.15)) !important;
+    }
   `]
 })
 export class OrganizerResultsComponent implements OnInit {
   @ViewChild(BackofficeMapComponent) mapComponent!: BackofficeMapComponent;
   accuracyVisible = true;
+  trackVisible = false;
+  highlightedRunId: string | null = null;
   allRaceResults: RaceResult[] = [];
   raceResults: RaceResult[] = [];
   routes: Route[] = []
@@ -113,6 +119,7 @@ export class OrganizerResultsComponent implements OnInit {
     private backofficeSendService: BackofficeSendService,
     private formBuilder: FormBuilder,
     private confirmationService: ConfirmationService,
+    private messageService: MessageService,
     private mapDownloader: MapDownloaderService,
     private cache: OrganizerDataCacheService,
   ) {
@@ -273,6 +280,7 @@ export class OrganizerResultsComponent implements OnInit {
       if (this.allExpanded) {
         this.expandedRows = {};
         this.selectedControlPoints = [];
+        this.mapComponent.clearAllGpsTracks();
       } else {
         this.expandedRows = {};
         this.selectedControlPoints = [];
@@ -281,6 +289,9 @@ export class OrganizerResultsComponent implements OnInit {
           const cps = result.controlPoints.map(cp => ({ ...cp, participantNickname: result.participantNickname, participantUnit: result.participantUnit, categoryName: result.categoryName }));
           this.selectedControlPoints = [...this.selectedControlPoints, ...cps];
         }
+        if (this.trackVisible) {
+          this.fetchAndDisplayTracksForExpanded();
+        }
       }
       this.allExpanded = !this.allExpanded;
     }
@@ -288,6 +299,24 @@ export class OrganizerResultsComponent implements OnInit {
     onRowExpand(event: TableRowExpandEvent) {
       const cps = event.data.controlPoints.map((cp: ControlPoint) => ({ ...cp, participantNickname: event.data.participantNickname, participantUnit: event.data.participantUnit, categoryName: event.data.categoryName }));
       this.selectedControlPoints = [...this.selectedControlPoints, ...cps];
+      if (this.trackVisible && event.data.runTrackId) {
+        const cached = this.cache.gpsTracks.get(event.data.runTrackId);
+        if (cached) {
+          this.displayTrackFromCache(event.data.runId);
+        } else {
+          this.backofficeSendService.getGpsTrackBatch([event.data.runTrackId]).subscribe({
+            next: (tracks) => {
+              const track = tracks.find(t => t.runId === event.data.runTrackId);
+              if (track) {
+                this.cache.gpsTracks.set(event.data.runTrackId, track);
+                if (track.segments && track.segments.length > 0) {
+                  this.mapComponent.displayGpsTrack(event.data.runId, track.segments, event.data.participantNickname);
+                }
+              }
+            }
+          });
+        }
+      }
     }
 
     onRowCollapse(event: TableRowCollapseEvent) {
@@ -296,6 +325,9 @@ export class OrganizerResultsComponent implements OnInit {
       this.selectedControlPoints = this.selectedControlPoints.filter(
         cp => !(collapsedNames.has(cp.name) && cp.participantNickname === nickname)
       );
+      if (this.trackVisible) {
+        this.mapComponent.clearGpsTrack(event.data.runId);
+      }
     }
 
     onCategoryChange(selectedCategoryNames: string[]) {
@@ -444,6 +476,142 @@ export class OrganizerResultsComponent implements OnInit {
           });
         }
       });
+    }
+
+    toggleTrack() {
+      if (this.trackVisible) {
+        this.mapComponent.setTrackVisibility(false);
+        this.trackVisible = false;
+      } else {
+        this.fetchAndDisplayTracksForExpanded();
+        this.mapComponent.setTrackVisibility(true);
+        this.trackVisible = true;
+      }
+    }
+
+    toggleHighlightTrack(result: RaceResult) {
+      if (this.highlightedRunId === result.runId) {
+        this.mapComponent.unhighlightTrack(result.runId);
+        this.highlightedRunId = null;
+      } else {
+        if (this.highlightedRunId) {
+          this.mapComponent.unhighlightTrack(this.highlightedRunId);
+        }
+        if (!this.trackVisible) {
+          this.mapComponent.setTrackVisibility(true);
+          this.trackVisible = true;
+        }
+        this.ensureTrackDisplayed(result, () => {
+          this.mapComponent.highlightTrack(result.runId);
+          this.highlightedRunId = result.runId;
+        });
+      }
+    }
+
+    private ensureTrackDisplayed(result: RaceResult, callback: () => void) {
+      if (!result.runTrackId) return;
+      if (this.mapComponent.hasTrack(result.runId)) {
+        callback();
+        return;
+      }
+      const cached = this.cache.gpsTracks.get(result.runTrackId);
+      if (cached && cached.segments && cached.segments.length > 0) {
+        this.mapComponent.displayGpsTrack(result.runId, cached.segments, result.participantNickname);
+        callback();
+        return;
+      }
+      this.backofficeSendService.getGpsTrackBatch([result.runTrackId]).subscribe({
+        next: (tracks) => {
+          const track = tracks.find(t => t.runId === result.runTrackId);
+          if (track) {
+            this.cache.gpsTracks.set(result.runTrackId!, track);
+            if (track.segments && track.segments.length > 0) {
+              this.mapComponent.displayGpsTrack(result.runId, track.segments, result.participantNickname);
+              callback();
+            }
+          }
+        },
+        error: (err) => console.error('Error fetching GPS track', err)
+      });
+    }
+
+    onTrackClicked(runId: string) {
+      if (this.highlightedRunId && this.highlightedRunId !== runId) {
+        this.mapComponent.unhighlightTrack(this.highlightedRunId);
+      }
+      this.mapComponent.highlightTrack(runId);
+      this.highlightedRunId = runId;
+
+      const row = document.querySelector(`tr[data-run-id="${runId}"]`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    private fetchAndDisplayTracksForExpanded() {
+      const expandedRunIds = Object.keys(this.expandedRows).filter(id => this.expandedRows[id]);
+      const expandedResults = this.raceResults.filter(r => expandedRunIds.includes(r.runId));
+
+      const withoutTrack = expandedResults.filter(r => !r.runTrackId);
+      const withTrack = expandedResults.filter(r => r.runTrackId);
+
+      if (withoutTrack.length > 0) {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Brak tras',
+          detail: `Brak trasy GPS dla ${withoutTrack.length} z ${expandedResults.length} rozwiniętych uczestników.`,
+          life: 4000
+        });
+      }
+
+      const toFetch: string[] = [];
+      for (const result of withTrack) {
+        const cached = this.cache.gpsTracks.get(result.runTrackId!);
+        if (cached) {
+          if (cached.segments && cached.segments.length > 0) {
+            this.mapComponent.displayGpsTrack(result.runId, cached.segments, result.participantNickname);
+          }
+        } else {
+          toFetch.push(result.runTrackId!);
+        }
+      }
+
+      if (toFetch.length > 0) {
+        this.backofficeSendService.getGpsTrackBatch(toFetch).subscribe({
+          next: (tracks) => {
+            const trackMap = new Map(tracks.map(t => [t.runId, t]));
+            for (const result of withTrack) {
+              const trackId = result.runTrackId!;
+              if (!toFetch.includes(trackId)) continue;
+              const track = trackMap.get(trackId);
+              if (track) {
+                this.cache.gpsTracks.set(trackId, track);
+                if (track.segments && track.segments.length > 0) {
+                  this.mapComponent.displayGpsTrack(result.runId, track.segments, result.participantNickname);
+                }
+              }
+            }
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Błąd',
+              detail: 'Nie udało się pobrać tras GPS.',
+              life: 4000
+            });
+          }
+        });
+      }
+    }
+
+    private displayTrackFromCache(runId: string) {
+      const result = this.raceResults.find(r => r.runId === runId);
+      if (!result?.runTrackId) return;
+
+      const cached = this.cache.gpsTracks.get(result.runTrackId);
+      if (cached && cached.segments && cached.segments.length > 0) {
+        this.mapComponent.displayGpsTrack(runId, cached.segments, result.participantNickname);
+      }
     }
 
     private refreshResults() {

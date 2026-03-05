@@ -38,6 +38,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
 
   @Output() pickedCoordinates = new EventEmitter<Coordinates>();
   @Output() zoomChange = new EventEmitter<number>();
+  @Output() trackClicked = new EventEmitter<string>();
 
   private controlPointMarkers: L.Circle[] = [];
   private map!: L.Map;
@@ -47,11 +48,15 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private mapMoveSubscription!: Subscription;
   private stationPaneName = 'stationPane';
   private accuracyPaneName = 'accuracyPane';
+  private trackPaneName = 'trackPane';
   private stationMarkers: L.Layer[] = [];
   private interactivePolygons: L.Polygon[] = [];
   private openPopups: L.Popup[] = [];
   private scaleControl?: L.Control.Scale;
   private accuracyVisible = true;
+  private trackVisible = true;
+  private trackPolylines: Map<string, L.Polyline[]> = new Map();
+  private trackOriginalStyles: Map<string, { color: string, weight: number }[]> = new Map();
 
   private readonly DEFAULT_INTERACTIVE_RADIUS = 15;
   private readonly MIN_INTERACTIVE_RADIUS = 3;
@@ -88,6 +93,8 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (!this.map) return;
+
     if (this.dodoControlPoints != null) {
       this.clearControlPointMarkers();
       this.addGeoViewDodo(this.dodoControlPoints);
@@ -123,6 +130,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     if (this.map) {
       this.closeAllPopups();
       this.clearStations();
+      this.clearAllGpsTracks();
       this.map.off('move');
       this.map.off('zoomend');
       this.map.off('moveend');
@@ -208,6 +216,12 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     this.map.getPane(this.accuracyPaneName)!.style.zIndex = '200';
     if (!this.accuracyVisible) {
       this.map.getPane(this.accuracyPaneName)!.style.display = 'none';
+    }
+
+    this.map.createPane(this.trackPaneName);
+    this.map.getPane(this.trackPaneName)!.style.zIndex = '400';
+    if (!this.trackVisible) {
+      this.map.getPane(this.trackPaneName)!.style.display = 'none';
     }
 
     this.updateAllowedCenterBounds();
@@ -629,5 +643,173 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       pane.style.display = this.accuracyVisible ? '' : 'none';
     }
     return this.accuracyVisible;
+  }
+
+  setTrackVisibility(visible: boolean): void {
+    if (!this.map) return;
+    this.trackVisible = visible;
+    const pane = this.map.getPane(this.trackPaneName);
+    if (pane) {
+      pane.style.display = visible ? '' : 'none';
+    }
+  }
+
+  displayGpsTrack(runId: string, segments: any[], nickname: string = ''): void {
+    if (!this.map || !segments || segments.length === 0) return;
+
+    this.clearGpsTrack(runId);
+
+    const polylines: L.Polyline[] = [];
+    const originalStyles: { color: string, weight: number }[] = [];
+
+    for (const segment of segments) {
+      const startPoint = segment.startPoint;
+      const endPoint = segment.endPoint;
+      const velocity = segment.velocity;
+
+      const startLat = startPoint.coordinates[1];
+      const startLng = startPoint.coordinates[0];
+      const endLat = endPoint.coordinates[1];
+      const endLng = endPoint.coordinates[0];
+
+      const speedKmh = velocity.value;
+      const segmentColor = this.getSpeedColor(speedKmh);
+      const lineWeight = speedKmh < 1.0 ? 8 : 5;
+
+      const polyline = L.polyline([[startLat, startLng], [endLat, endLng]], {
+        color: segmentColor,
+        weight: lineWeight,
+        opacity: 0.85,
+        pane: this.trackPaneName
+      }).addTo(this.map);
+
+      const tooltipText = nickname ? `${nickname} | ${speedKmh.toFixed(1)} km/h` : `${speedKmh.toFixed(1)} km/h`;
+      polyline.bindTooltip(tooltipText, {
+        permanent: false,
+        direction: 'top'
+      });
+
+      polyline.on('click', () => {
+        this.trackClicked.emit(runId);
+      });
+
+      polylines.push(polyline);
+      originalStyles.push({ color: segmentColor, weight: lineWeight });
+    }
+
+    this.trackPolylines.set(runId, polylines);
+    this.trackOriginalStyles.set(runId, originalStyles);
+  }
+
+  clearGpsTrack(runId: string): void {
+    const polylines = this.trackPolylines.get(runId);
+    if (polylines) {
+      polylines.forEach(p => {
+        if (this.map.hasLayer(p)) this.map.removeLayer(p);
+      });
+      this.trackPolylines.delete(runId);
+      this.trackOriginalStyles.delete(runId);
+    }
+  }
+
+  clearAllGpsTracks(): void {
+    this.trackPolylines.forEach((polylines) => {
+      polylines.forEach(p => {
+        if (this.map.hasLayer(p)) this.map.removeLayer(p);
+      });
+    });
+    this.trackPolylines.clear();
+    this.trackOriginalStyles.clear();
+  }
+
+  hasTrack(runId: string): boolean {
+    return this.trackPolylines.has(runId);
+  }
+
+  highlightTrack(runId: string): void {
+    const polylines = this.trackPolylines.get(runId);
+    if (!polylines) return;
+    polylines.forEach(p => {
+      p.setStyle({ color: 'white', weight: 8, opacity: 1 });
+    });
+  }
+
+  unhighlightTrack(runId: string): void {
+    const polylines = this.trackPolylines.get(runId);
+    const styles = this.trackOriginalStyles.get(runId);
+    if (!polylines || !styles) return;
+    polylines.forEach((p, i) => {
+      p.setStyle({ color: styles[i].color, weight: styles[i].weight, opacity: 0.85 });
+    });
+  }
+
+  private getSpeedColor(speedKmh: number): string {
+    const thresholds = [
+      { speed: 0.0, color: '#0d47a1' },
+      { speed: 2.0, color: '#1565c0' },
+      { speed: 4.0, color: '#1976d2' },
+      { speed: 5.0, color: '#1e88e5' },
+      { speed: 5.5, color: '#039be5' },
+      { speed: 6.0, color: '#00acc1' },
+      { speed: 6.5, color: '#00bcd4' },
+      { speed: 7.0, color: '#26a69a' },
+      { speed: 7.5, color: '#66bb6a' },
+      { speed: 8.0, color: '#9ccc65' },
+      { speed: 8.5, color: '#c0ca33' },
+      { speed: 9.0, color: '#d4e157' },
+      { speed: 9.5, color: '#ffeb3b' },
+      { speed: 10.0, color: '#ffca28' },
+      { speed: 10.5, color: '#ffa726' },
+      { speed: 11.0, color: '#ff9800' },
+      { speed: 12.0, color: '#ff7043' },
+      { speed: 13.0, color: '#f4511e' },
+      { speed: 14.0, color: '#e53935' },
+      { speed: 15.0, color: '#d32f2f' },
+      { speed: 17.0, color: '#c62828' },
+      { speed: 20.0, color: '#b71c1c' },
+      { speed: 25.0, color: '#880e4f' },
+      { speed: 30.0, color: '#6a1b9a' },
+      { speed: 35.0, color: '#4a148c' },
+      { speed: 40.0, color: '#7b1fa2' },
+      { speed: 50, color: '#3e2723' },
+      { speed: 60, color: '#4e342e' },
+      { speed: 80, color: '#5d4037' },
+      { speed: 100, color: '#6d4c41' },
+      { speed: 120, color: '#795548' },
+      { speed: 150, color: '#8d6e63' }
+    ];
+
+    for (let i = 0; i < thresholds.length - 1; i++) {
+      if (speedKmh >= thresholds[i].speed && speedKmh < thresholds[i + 1].speed) {
+        const t = (speedKmh - thresholds[i].speed) / (thresholds[i + 1].speed - thresholds[i].speed);
+        return this.interpolateColor(thresholds[i].color, thresholds[i + 1].color, t);
+      }
+    }
+
+    if (speedKmh >= thresholds[thresholds.length - 1].speed) {
+      return thresholds[thresholds.length - 1].color;
+    }
+    return thresholds[0].color;
+  }
+
+  private interpolateColor(color1: string, color2: string, factor: number): string {
+    const c1 = this.hexToRgb(color1);
+    const c2 = this.hexToRgb(color2);
+    const r = Math.round(c1.r + factor * (c2.r - c1.r));
+    const g = Math.round(c1.g + factor * (c2.g - c1.g));
+    const b = Math.round(c1.b + factor * (c2.b - c1.b));
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  }
+
+  private hexToRgb(hex: string): { r: number, g: number, b: number } {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 0, g: 0, b: 0 };
   }
 }

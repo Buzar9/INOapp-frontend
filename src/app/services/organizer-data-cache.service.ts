@@ -5,6 +5,7 @@ import { DictionaryModel } from './response/DictionaryModel';
 import { BackgroundMapOption } from './response/BackgroundMapOption';
 import { BackgroundMap } from './response/BackgroundMap';
 import { RaceResult } from './response/RaceResults';
+import { GpsTrackResponse } from '../models/gps-track.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrganizerDataCacheService {
@@ -17,6 +18,7 @@ export class OrganizerDataCacheService {
   backgroundMapOptions: BackgroundMapOption[] | null = null;
   backgroundMaps: BackgroundMap[] | null = null;
   raceResults: RaceResult[] | null = null;
+  gpsTracks: Map<string, GpsTrackResponse> = new Map();
 
   clearAll(): void {
     this.routes = null;
@@ -28,5 +30,6 @@ export class OrganizerDataCacheService {
     this.backgroundMapOptions = null;
     this.backgroundMaps = null;
     this.raceResults = null;
+    this.gpsTracks.clear();
   }
 }

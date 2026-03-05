@@ -5,6 +5,7 @@ import { RaceResult } from "./response/RaceResults";
 import { AddStationToRouteRequest, CreateCategoryRequest, CreateCompetitionRequest, CreateUnitRequest, DeleteBackgroundMapRequest, DeleteCategoryRequest, DeleteRouteRequest, DeleteStationRequest, DeleteUnitRequest, EditRouteRequest, EditStationRequest, EditUnitRequest, ToggleStationMountRequest, GetConsolidatedRouteViewRequest, AddControlPointRequest, CancelRunRequest } from "./backoffice-requests";
 
 import { RunMetricAfterControlPoint } from "./response/RunMetricAfterControlPoint";
+import { GpsTrackResponse } from "../models/gps-track.model";
 import { CreateRouteRequest } from "./request/CreateRouteRequest"
 import { Station } from "../services/response/Station"
 import { Route } from "./response/Route";
@@ -172,5 +173,11 @@ export class BackofficeSendService {
 
     cancelRun(request: CancelRunRequest): Observable<any> {
       return this.http.post<any>(`${this.apiUrl}/runs/cancel`, request)
+    }
+
+    getGpsTrackBatch(runTrackIds: string[]): Observable<GpsTrackResponse[]> {
+      return this.http.post<GpsTrackResponse[]>(
+        `${this.apiUrl}/runs/tracks`, { runTrackIds }
+      );
     }
 }

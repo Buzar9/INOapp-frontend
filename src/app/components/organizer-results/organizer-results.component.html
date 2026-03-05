@@ -21,6 +21,8 @@
             <p-select [options]="backgroundMapsOptions" [(ngModel)]="selectedBackgroundMapId" (onChange)="changeMap($event)" [checkmark]="true" optionLabel="name" optionValue="id" placeholder="Mapa"></p-select>
             <p-button [label]="accuracyVisible ? 'Ukryj dokładność' : 'Pokaż dokładność'" [outlined]="true" size="small"
                       (click)="accuracyVisible = mapComponent.toggleAccuracyCircles()"></p-button>
+            <p-button [label]="trackVisible ? 'Ukryj trasy' : 'Pokaż trasy'" [outlined]="true" size="small"
+                      (click)="toggleTrack()"></p-button>
           </div>
         </div>
         <div class="table-section">
@@ -50,7 +52,7 @@
             </tr>
           </ng-template>
           <ng-template #body let-result let-expanded="expanded">
-            <tr [class.canceled-row]="isRunCanceled(result.status)">
+            <tr [class.canceled-row]="isRunCanceled(result.status)" [class.highlighted-row]="highlightedRunId === result.runId" [attr.data-run-id]="result.runId">
               <td>
                 <p-button type="button" pRipple [pRowToggler]="result" [text]="true" [rounded]="true" [plain]="true"
                           [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"/>
@@ -66,6 +68,9 @@
                           (click)="openAddControlPointDialog(result)" title="Zalicz punkt"></p-button>
                 <p-button *ngIf="!isRunCanceled(result.status)" icon="pi pi-ban" [text]="true" [rounded]="true" size="small"
                           severity="danger" (click)="onCancelRunClick(result)" title="Anuluj bieg"></p-button>
+                <p-button *ngIf="result.runTrackId" icon="pi pi-directions" [text]="true" [rounded]="true" size="small"
+                          [severity]="highlightedRunId === result.runId ? 'contrast' : 'success'"
+                          (click)="toggleHighlightTrack(result)" title="Podświetl trasę"></p-button>
               </td>
             </tr>
           </ng-template>
@@ -121,6 +126,7 @@
           [northEast]="selectedBackgroundMap?.northEast"
           [southWest]="selectedBackgroundMap?.southWest"
           [forceStationsGreen]="true"
+          (trackClicked)="onTrackClicked($event)"
         >
         </backoffice-map>
       </div>
@@ -150,3 +156,4 @@
 </p-dialog>
 
 <p-confirmDialog></p-confirmDialog>
+<p-toast position="bottom-right"></p-toast>
