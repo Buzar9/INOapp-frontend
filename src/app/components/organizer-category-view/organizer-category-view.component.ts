@@ -203,7 +203,7 @@ export class OrganizerCategoryViewComponent implements OnInit {
   }
 
   private updateCategories() {
-    this.backofficeSendService.getCategories().subscribe ({
+    this.backofficeSendService.getCategories({competitionId: 'Competition123'}).subscribe ({
         next: (response) => {
           this.categories = [...response]
         },

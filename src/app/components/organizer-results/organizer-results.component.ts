@@ -135,7 +135,10 @@ export class OrganizerResultsComponent implements OnInit {
 //  tłumaczenie wszystkich enumum, zeby nie wyciekalo
 
   ngOnInit(): void {
+    let request = {competitionId: 'Competition123'}
+
     let initRequest = {
+      competitionId: 'Competition123',
       filter: undefined,
       pageNumber: 0
     }
@@ -159,8 +162,6 @@ export class OrganizerResultsComponent implements OnInit {
       })
     }
 
-    let request = {competitionId: 'Competition123'}
-
     if (this.cache.routes !== null) {
       this.routes = this.cache.routes;
     } else {
@@ -177,7 +178,7 @@ export class OrganizerResultsComponent implements OnInit {
       this.categories = this.cache.categories;
       this.categoryOptions = this.cache.categoryOptions!;
     } else {
-      this.backofficeSendService.getCategories().subscribe({
+      this.backofficeSendService.getCategories(request).subscribe({
         next: (categories) => {
           this.categories = categories;
           this.categoryOptions = categories.map(category => category.name);
@@ -191,7 +192,7 @@ export class OrganizerResultsComponent implements OnInit {
     if (this.cache.units !== null) {
       this.teamOptions = this.cache.units;
     } else {
-      this.backofficeSendService.getUnits().subscribe({
+      this.backofficeSendService.getUnits(request).subscribe({
         next: (units) => {
           this.teamOptions = units.map(unit => unit.name);
           this.cache.units = this.teamOptions;
@@ -616,6 +617,7 @@ export class OrganizerResultsComponent implements OnInit {
 
     private refreshResults() {
       let request = {
+        competitionId: 'Competition123',
         filter: undefined,
         pageNumber: 0
       };

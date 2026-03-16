@@ -281,6 +281,7 @@ export class OrganizerBackgroudMapMenageComponent implements OnInit {
             name: this.uploadForm.value.name,
             minZoom: this.uploadForm.value.minZoom,
             maxZoom: this.uploadForm.value.maxZoom,
+            competitionId: 'Competition123',
         };
 
         this.showAddMapForm = false;

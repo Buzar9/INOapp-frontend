@@ -54,12 +54,13 @@ export class OrganizerUnitsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.backofficeSendService.getUnits().subscribe({
+        let request = {competitionId: 'Competition123'}
+        this.backofficeSendService.getUnits(request).subscribe({
             next: (units) => this.units = units,
             error: (err) => console.log('dodo zonk', err)
         })
 
-        this.backofficeSendService.getCategories().subscribe({
+        this.backofficeSendService.getCategories(request).subscribe({
             next: (categories) => this.categories = categories,
             error: (err) => console.log('dodo zonk', err)
         })
@@ -70,7 +71,7 @@ export class OrganizerUnitsComponent implements OnInit {
     }
 
     onAddUnitFormSubmit() {
-        let request = {name: this.addUnitForm.value.name}
+        let request = {competitionId: 'Competition123', name: this.addUnitForm.value.name}
         this.backofficeSendService.createUnit(request).subscribe({
             error: (err) => console.log('dodo zonk', err)
         })

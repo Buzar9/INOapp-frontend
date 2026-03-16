@@ -260,6 +260,7 @@ export class OrganizerRouteViewComponent implements OnInit {
       accept: async () => {
         const request = {
           routeId: routeToDelete.id,
+          competitionId: 'Competition123',
         }
 
         await this.untrackMapUsageForRoute(routeToDelete.id, routeToDelete.backgroundMap?.id);

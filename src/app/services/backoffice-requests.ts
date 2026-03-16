@@ -41,7 +41,8 @@ export type EditRouteRequest = {
 }
 
 export type DeleteRouteRequest = {
-    routeId: string
+    routeId: string,
+    competitionId: string
 }
 
 export type CreateCategoryRequest = {
@@ -55,6 +56,7 @@ export type DeleteCategoryRequest = {
 }
 
 export type CreateUnitRequest = {
+    competitionId: string,
     name: string
 }
 

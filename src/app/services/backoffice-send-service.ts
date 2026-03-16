@@ -53,12 +53,12 @@ export class BackofficeSendService {
       })})
     }
 
-    getCategories(): Observable<Category[]> {
-      return this.http.get<Category[]>(`${this.apiUrl}/categories`)
+    getCategories(request: {competitionId: string}): Observable<Category[]> {
+      return this.http.post<Category[]>(`${this.apiUrl}/categories`, request)
     }
 
-    getUnits(): Observable<Unit[]> {
-      return this.http.get<Unit[]>(`${this.apiUrl}/units`)
+    getUnits(request: {competitionId: string}): Observable<Unit[]> {
+      return this.http.post<Unit[]>(`${this.apiUrl}/units`, request)
     }
 
     createRoute(request: CreateRouteRequest): Observable<Route> {
@@ -149,7 +149,7 @@ export class BackofficeSendService {
       })})
     }
 
-    uploadBackgroundMap(file: File, metadata: {name: string; minZoom: number; maxZoom: number}) {
+    uploadBackgroundMap(file: File, metadata: {name: string; minZoom: number; maxZoom: number; competitionId: string}) {
       const formData = new FormData();
       formData.append('file', file);
 
