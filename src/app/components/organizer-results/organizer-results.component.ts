@@ -35,50 +35,7 @@ import { OrganizerDataCacheService } from '../../services/organizer-data-cache.s
   imports: [CommonModule, ScrollPanelModule, Select, TableModule, BackofficeMapComponent, TagModule, ButtonModule, SplitterModule, MultiSelectModule, FormsModule, ReactiveFormsModule, ProgressSpinnerModule, DialogModule, DatePicker, ConfirmDialogModule, ToastModule],
   providers: [ConfirmationService, MessageService],
   templateUrl: './organizer-results.component.html',
-  styles: [`
-    .results-container {
-      height: calc(100vh - 60px);
-      overflow: hidden;
-    }
-    .results-panel {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-      position: relative;
-    }
-    .filters-section {
-      flex-shrink: 0;
-    }
-    .map-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .table-section {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
-    }
-    .loading-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255, 255, 255, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .canceled-row {
-      opacity: 0.5;
-    }
-    :host ::ng-deep .highlighted-row {
-      background-color: var(--primary-100, rgba(var(--primary-color-rgb), 0.15)) !important;
-    }
-  `]
+  styleUrls: ['./organizer-results.component.css']
 })
 export class OrganizerResultsComponent implements OnInit {
   @ViewChild(BackofficeMapComponent) mapComponent!: BackofficeMapComponent;

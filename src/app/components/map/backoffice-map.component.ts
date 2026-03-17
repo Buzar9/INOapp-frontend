@@ -58,7 +58,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private trackPolylines: Map<string, L.Polyline[]> = new Map();
   private trackOriginalStyles: Map<string, { color: string, weight: number }[]> = new Map();
 
-  private readonly DEFAULT_INTERACTIVE_RADIUS = 15;
+  private readonly DEFAULT_INTERACTIVE_RADIUS = 60;
   private readonly MIN_INTERACTIVE_RADIUS = 3;
   private readonly POLYGON_SEGMENTS = 16;
 
@@ -529,9 +529,9 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private readCenterCoordinates() {
     const initialCenter = this.map.getCenter();
     this.circleMarker = L.circleMarker(initialCenter, {
-      radius: 1,
-      color: 'black',
-      fillColor: 'black',
+      radius: 2,
+      color: '#FFFF00',
+      fillColor: '#FFFF00',
       fillOpacity: 1,
       weight: 1,
       interactive: false

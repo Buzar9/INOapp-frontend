@@ -42,14 +42,14 @@
       </tr>
     </ng-template>
   </p-table>
-  <p-dialog header="Dodaj jednostkę" [modal]="true" [(visible)]="showAddUnitForm">
-    <form [formGroup]="addUnitForm" (ngSubmit)="onAddUnitFormSubmit()">
+  <p-dialog header="Dodaj jednostkę" [modal]="true" [(visible)]="showAddUnitForm" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
+    <form [formGroup]="addUnitForm" (ngSubmit)="onAddUnitFormSubmit()" class="dialog-form">
       <input type="text" pInputText formControlName="name" placeholder="Nazwa"/>
       <button pButton type="submit" [disabled]="addUnitForm.invalid">Dodaj</button>
     </form>
   </p-dialog>
-  <p-dialog header="Zmień nazwe" [modal]="true" [(visible)]="showEditUnitForm">
-    <form [formGroup]="editUnitForm" (ngSubmit)="onEditUnitFormSubmit()">
+  <p-dialog header="Zmień nazwe" [modal]="true" [(visible)]="showEditUnitForm" [dismissableMask]="true" [responsive]="true" [style]="{width: '90vw', maxWidth: '500px'}">
+    <form [formGroup]="editUnitForm" (ngSubmit)="onEditUnitFormSubmit()" class="dialog-form">
       <input type="text" pInputText formControlName="name" placeholder="Nazwa"/>
       <button pButton type="submit" [disabled]="editUnitForm.invalid">Dodaj</button>
     </form>

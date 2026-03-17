@@ -4,7 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { BackofficeSendService } from '../../services/backoffice-send-service';
 import { BackofficeMapComponent } from '../map/backoffice-map.component';
 import { DialogModule } from 'primeng/dialog';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { AutoFocusModule } from 'primeng/autofocus';
 import { TableModule, TableRowCollapseEvent, TableRowExpandEvent } from 'primeng/table';
 import { Route } from '../../services/response/Route';
@@ -78,8 +78,8 @@ export class OrganizerRouteViewComponent implements OnInit {
     private cache: OrganizerDataCacheService
   ) {
       this.addRouteForm = this.formBuilder.group({
-        name: [''],
-        backgroundMapId: ['']
+        name: ['', Validators.required],
+        backgroundMapId: ['', Validators.required]
       })
 
       this.addStationForm = this.formBuilder.group({

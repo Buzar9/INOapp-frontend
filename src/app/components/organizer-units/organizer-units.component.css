@@ -43,7 +43,6 @@
   z-index: 9999 !important;
 }
 
-/* Pozwól overlay wyświetlać się poza dialogiem */
 ::ng-deep .p-dialog .p-dialog-content {
   overflow: visible !important;
 }
@@ -53,14 +52,73 @@
 }
 
 /* =========================
-   RESPONSIVE
+   RESPONSIVE - MOBILE
    ========================= */
 @media (max-width: 768px) {
   .dialog-form {
     gap: 0.8rem;
   }
-  
+
   .dialog-form .form-field label {
     font-size: 0.85rem;
+  }
+
+  ::ng-deep th {
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  ::ng-deep td {
+    padding: 0.5rem 0.3rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .dialog-form input {
+    padding: 0.8rem !important;
+    font-size: 1rem !important;
+  }
+}
+
+/* =========================
+   RESPONSIVE - SMALL MOBILE
+   ========================= */
+@media (max-width: 480px) {
+  ::ng-deep th,
+  ::ng-deep td {
+    padding: 0.4rem 0.3rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  ::ng-deep .p-dialog {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+
+  ::ng-deep .p-dialog-header {
+    padding: 0.8rem !important;
+  }
+
+  ::ng-deep .p-dialog-content {
+    padding: 0.8rem !important;
+  }
+}
+
+/* =========================
+   TOUCH OPTIMIZATION
+   ========================= */
+@media (hover: none) and (pointer: coarse) {
+  ::ng-deep .p-button {
+    min-width: 2.8rem !important;
+    min-height: 2.8rem !important;
+  }
+
+  ::ng-deep .p-row-toggler {
+    padding: 0.8rem !important;
+  }
+
+  ::ng-deep .p-checkbox,
+  ::ng-deep .p-radiobutton {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
   }
 }

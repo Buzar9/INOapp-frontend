@@ -280,8 +280,118 @@
   border-radius: var(--radius);
 }
 
+/* =========================
+   RESPONSIVE - MOBILE
+   ========================= */
 @media (max-width: 768px) {
   .zoom-fields {
     grid-template-columns: 1fr;
+  }
+
+  .zoom-fields .form-field input {
+    max-width: unset;
+  }
+
+  ::ng-deep th {
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  ::ng-deep td {
+    padding: 0.5rem 0.3rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .map-details-expanded {
+    padding: 0.5rem;
+  }
+
+  .detail-row {
+    font-size: 0.8rem;
+  }
+
+  .upload-info-banner {
+    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+  }
+
+  .upload-info-banner p {
+    font-size: 0.85rem;
+  }
+}
+
+/* =========================
+   RESPONSIVE - SMALL MOBILE
+   ========================= */
+@media (max-width: 480px) {
+  ::ng-deep th,
+  ::ng-deep td {
+    padding: 0.4rem 0.3rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  ::ng-deep .p-dialog {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+
+  ::ng-deep .p-dialog-header {
+    padding: 0.8rem !important;
+  }
+
+  ::ng-deep .p-dialog-content {
+    padding: 0.8rem !important;
+  }
+}
+
+/* =========================
+   ORIENTATION - PORTRAIT
+   ========================= */
+@media (max-width: 768px) and (orientation: portrait) {
+  ::ng-deep .p-splitter {
+    flex-direction: column !important;
+    height: calc(100vh - 60px) !important;
+  }
+
+  ::ng-deep .p-splitter-panel {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 50% !important;
+  }
+
+  ::ng-deep .p-splitter-gutter {
+    display: none !important;
+  }
+}
+
+/* =========================
+   ORIENTATION - LANDSCAPE
+   ========================= */
+@media (max-width: 1024px) and (orientation: landscape) {
+  ::ng-deep .p-splitter {
+    flex-direction: row !important;
+    height: calc(100vh - 60px) !important;
+  }
+
+  ::ng-deep .p-splitter-panel {
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+
+  ::ng-deep .p-splitter-gutter {
+    display: flex !important;
+  }
+}
+
+/* =========================
+   TOUCH OPTIMIZATION
+   ========================= */
+@media (hover: none) and (pointer: coarse) {
+  ::ng-deep .p-button {
+    min-width: 2.8rem !important;
+    min-height: 2.8rem !important;
+  }
+
+  ::ng-deep .p-row-toggler {
+    padding: 0.8rem !important;
   }
 }
