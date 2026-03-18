@@ -56,6 +56,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   private stationCirclesMap: Map<string, L.Circle> = new Map(); // Mapowanie stationId → circle
   private interactivePolygons: L.Polygon[] = [];
   private isAnimatingStations: boolean = false;
+  private rippleCircles: L.Circle[] = [];
 
   // Kolory stanowisk
   private readonly STATION_COLOR_DEFAULT = '#ff2e00';   // Czerwony - niezeskanowane
@@ -436,61 +437,85 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public pulseStations(): void {
-    if (this.isAnimatingStations || this.stationCircles.length === 0) {
+    if (this.isAnimatingStations || this.stationCircles.length === 0 || !this.map) {
       return;
     }
 
     this.isAnimatingStations = true;
-    const originalRadius = 1;
-    const maxRadius = 15;
-    const animationDuration = 400; // ms na fazę powiększania/zmniejszania
-    const holdDuration = 600; // ms trzymania w powiększeniu
-    const steps = 20;
-    const stepDuration = animationDuration / steps;
+    const rippleCount = 3;
+    const rippleDelay = 1000; // ms między kolejnymi kręgami
+    const rippleDuration = 3000; // ms na animację jednego kręgu
+    const maxRadius = 120; // maksymalny promień kręgu w metrach
+    const steps = 30;
+    const stepDuration = rippleDuration / steps;
 
-    // Faza 1: Powiększanie
-    let currentStep = 0;
-    const growInterval = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / steps;
-      // Easing: ease-out quad
-      const easedProgress = 1 - (1 - progress) * (1 - progress);
-      const newRadius = originalRadius + (maxRadius - originalRadius) * easedProgress;
+    let ripplesLaunched = 0;
 
+    const launchRipple = () => {
+      if (this.destroyed || !this.map) {
+        this.isAnimatingStations = false;
+        return;
+      }
+
+      ripplesLaunched++;
+
+      // Utwórz krąg (tylko obwódka) dla każdego stanowiska
+      const currentRipples: L.Circle[] = [];
       this.stationCircles.forEach(circle => {
-        circle.setRadius(newRadius);
+        const ripple = L.circle(circle.getLatLng(), {
+          radius: 1,
+          color: circle.options.color || this.STATION_COLOR_DEFAULT,
+          fillOpacity: 0,
+          weight: 4,
+          opacity: 1,
+          interactive: false,
+        });
+        ripple.addTo(this.map!);
+        currentRipples.push(ripple);
+        this.rippleCircles.push(ripple);
       });
 
-      if (currentStep >= steps) {
-        clearInterval(growInterval);
+      // Animuj rozszerzanie się kręgu z zanikaniem
+      let currentStep = 0;
+      const animInterval = setInterval(() => {
+        currentStep++;
+        const progress = currentStep / steps;
+        // Ease-out: szybki start, wolne zakończenie
+        const easedProgress = 1 - (1 - progress) * (1 - progress);
+        const newRadius = 1 + (maxRadius - 1) * easedProgress;
+        // Opacity maleje w miarę rozszerzania
+        const newOpacity = Math.max(0, 1 - easedProgress);
 
-        // Faza 2: Trzymanie
-        setTimeout(() => {
-          // Faza 3: Zmniejszanie
-          let shrinkStep = 0;
-          const shrinkInterval = setInterval(() => {
-            shrinkStep++;
-            const shrinkProgress = shrinkStep / steps;
-            // Easing: ease-in quad
-            const easedShrinkProgress = shrinkProgress * shrinkProgress;
-            const newRadius = maxRadius - (maxRadius - originalRadius) * easedShrinkProgress;
+        currentRipples.forEach(ripple => {
+          ripple.setRadius(newRadius);
+          ripple.setStyle({ opacity: newOpacity, weight: Math.max(1, 4 * (1 - easedProgress)) });
+        });
 
-            this.stationCircles.forEach(circle => {
-              circle.setRadius(newRadius);
-            });
-
-            if (shrinkStep >= steps) {
-              clearInterval(shrinkInterval);
-              // Przywróć dokładnie oryginalny rozmiar
-              this.stationCircles.forEach(circle => {
-                circle.setRadius(originalRadius);
-              });
-              this.isAnimatingStations = false;
+        if (currentStep >= steps) {
+          clearInterval(animInterval);
+          // Usuń kręgi po zakończeniu animacji
+          currentRipples.forEach(ripple => {
+            if (this.map && this.map.hasLayer(ripple)) {
+              this.map.removeLayer(ripple);
             }
-          }, stepDuration);
-        }, holdDuration);
+            const idx = this.rippleCircles.indexOf(ripple);
+            if (idx > -1) this.rippleCircles.splice(idx, 1);
+          });
+        }
+      }, stepDuration);
+
+      // Uruchom następny krąg po opóźnieniu
+      if (ripplesLaunched < rippleCount) {
+        setTimeout(() => launchRipple(), rippleDelay);
+      } else {
+        // Ostatni krąg - poczekaj na zakończenie animacji
+        setTimeout(() => {
+          this.isAnimatingStations = false;
+        }, rippleDuration);
       }
-    }, stepDuration);
+    };
+
+    launchRipple();
   }
 
   private centerMapProperly(): void {
@@ -858,6 +883,14 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
     this.stationCircles = [];
+
+    // Wyczyść kręgi ripple
+    this.rippleCircles.forEach(ripple => {
+      if (this.map && this.map.hasLayer(ripple)) {
+        this.map.removeLayer(ripple);
+      }
+    });
+    this.rippleCircles = [];
 
     this.interactivePolygons.forEach(polygon => {
       if (this.map && this.map.hasLayer(polygon)) {

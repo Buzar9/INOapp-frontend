@@ -503,16 +503,38 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
 
       const circle = L.circle(coordinates, {
         color: color,
-        radius: 1
+        radius: 1,
+        interactive: false
       });
-      const popup = `<div style="text-align: center;">
+      this.addControlPointMarker(circle);
+
+      const popupHtml = `<div style="text-align: center;">
                         <h3>${controlPoint.name}</h3>
                         <div>${controlPoint.participantNickname}</div>
                         <div style="font-size: 0.85em; color: #b87333;">${controlPoint.participantUnit}</div>
                         <div style="font-size: 0.85em; color: #b87333;">${controlPoint.categoryName}</div>
                       </div>`;
-      circle.bindPopup(popup);
-      this.addControlPointMarker(circle);
+
+      const interactiveCircle = L.circle(coordinates, {
+        radius: this.DEFAULT_INTERACTIVE_RADIUS,
+        color: 'transparent',
+        fillColor: 'transparent',
+        fillOpacity: 0,
+        interactive: true
+      });
+      interactiveCircle.bindPopup(popupHtml);
+      interactiveCircle.on('popupopen', (e) => {
+        if (!this.openPopups.includes(e.popup)) {
+          this.openPopups.push(e.popup);
+        }
+      });
+      interactiveCircle.on('popupclose', (e) => {
+        const idx = this.openPopups.indexOf(e.popup);
+        if (idx > -1) {
+          this.openPopups.splice(idx, 1);
+        }
+      });
+      this.addControlPointMarker(interactiveCircle);
 
       const accuracyCircle = L.circle(coordinates, {
         weight: 1,

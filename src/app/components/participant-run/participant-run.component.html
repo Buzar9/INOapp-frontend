@@ -63,28 +63,30 @@
     <!-- Uchwyt do przeciągania (swipe indicator) -->
     <div class="swipe-handle" (click)="toggleSummaryPanel()"></div>
 
-    <!-- Skrócony widok gdy zwinięte - wszystkie statystyki na środku -->
+    <!-- Skrócony widok gdy zwinięte -->
     <div class="summary-collapsed-view" *ngIf="!isSummaryExpanded" (click)="toggleSummaryPanel()">
-      <span class="collapsed-stat" *ngIf="categoryName">
+      <div class="collapsed-category-row" *ngIf="categoryName">
         <i class="pi pi-tag"></i>
-        {{categoryName}}
-      </span>
-      <span class="collapsed-stat">
-        <i class="pi pi-stopwatch"></i>
-        {{trackStats?.totalDuration || raceTimeDisplay}}
-      </span>
-      <span class="collapsed-stat">
-        <i class="pi pi-map"></i>
-        {{trackStats?.totalDistance || '--'}}
-      </span>
-      <span class="collapsed-stat">
-        <i class="pi pi-gauge"></i>
-        {{trackStats?.averageSpeed || '--'}}
-      </span>
-      <span class="collapsed-stat">
-        <i class="pi pi-star"></i>
-        {{checkpointsNumber}}
-      </span>
+        <span>{{categoryName}}</span>
+      </div>
+      <div class="collapsed-stats-row">
+        <span class="collapsed-stat">
+          <i class="pi pi-star"></i>
+          {{checkpointsNumber}}
+        </span>
+        <span class="collapsed-stat">
+          <i class="pi pi-stopwatch"></i>
+          {{trackStats?.totalDuration || raceTimeDisplay}}
+        </span>
+        <span class="collapsed-stat">
+          <i class="pi pi-map"></i>
+          {{trackStats?.totalDistance || '--'}}
+        </span>
+        <span class="collapsed-stat">
+          <i class="pi pi-gauge"></i>
+          {{trackStats?.averageSpeed || '--'}}
+        </span>
+      </div>
     </div>
 
     <!-- Dwukolumnowy kontener - tylko gdy rozwinięte -->
@@ -97,6 +99,10 @@
 
       <!-- Lewa kolumna - statystyki -->
       <div class="stats-column">
+        <div class="stat-item" title="Punkty kontrolne">
+          <i class="pi pi-star"></i>
+          <span>{{checkpointsNumber}}</span>
+        </div>
         <div class="stat-item" title="Czas trasy">
           <i class="pi pi-stopwatch"></i>
           <span>{{trackStats?.totalDuration || raceTimeDisplay}}</span>
@@ -109,10 +115,6 @@
           <i class="pi pi-gauge"></i>
           <span>{{trackStats?.averageSpeed || '--'}}</span>
         </div>
-        <div class="stat-item" title="Punkty kontrolne">
-          <i class="pi pi-star"></i>
-          <span>{{checkpointsNumber}}</span>
-        </div>
       </div>
 
       <!-- Prawa kolumna - przewijalna lista stanowisk -->
@@ -123,8 +125,8 @@
         <div class="stations-list" *ngIf="scannedStations.length > 0" (click)="$event.stopPropagation()">
           <div class="station-item" *ngFor="let station of scannedStations">
             <span class="station-name">{{station.stationName}}</span>
-            <span class="station-type">{{station.stationTypeLabel}}</span>
             <span class="station-time">{{station.scannedAt}}</span>
+            <span class="station-type">{{station.stationTypeLabel}}</span>
           </div>
         </div>
         <div class="stations-placeholder" *ngIf="scannedStations.length === 0">
