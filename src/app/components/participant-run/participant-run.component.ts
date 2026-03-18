@@ -99,6 +99,9 @@
     dialogAutoTrackingEnabled: boolean = true; // Enabled by default in dialog
     dialogAutoTrackingDelay: number = 60; // seconds (default 1 minute)
 
+    // RunId trzymany w pamięci komponentu (odporny na eviction localStorage)
+    currentRunId: string = this.getLocalStorageItem('runId');
+
     // Nazwa kategorii (wyświetlana przed aktywacją biegu)
     categoryName: string = this.getLocalStorageItem('categoryName');
 
@@ -133,6 +136,8 @@
       const runId = this.getLocalStorageItem('runId');
 
       if (runId) {
+        this.currentRunId = runId;
+
         const savedWasRunActivate = this.getLocalStorageItem('wasRunActivate');
         const savedIsRunFinished = this.getLocalStorageItem('isRunFinished');
         const savedRaceTimeDisplay = this.getLocalStorageItem('raceTimeDisplay');
@@ -164,6 +169,7 @@
             this.setLocalStorageItem('checkpointsNumber', String(sessionBackup.checkpointsNumber));
             this.setLocalStorageItem('pendingRequests', JSON.stringify(sessionBackup.pendingRequests));
 
+            this.currentRunId = sessionBackup.runId;
             this.wasRunActivate = sessionBackup.wasRunActivate;
             this.isRunFinished = sessionBackup.isRunFinished;
             this.runStartTime = sessionBackup.runStartTime;
@@ -246,9 +252,11 @@
       this.timerSubscription.unsubscribe();
       this.subscriptions.unsubscribe();
 
-      // Stop GPS tracking
+      // Stop GPS tracking or warm-up
       if (this.gpsTrackingEnabled) {
         this.gpsTrackingService.stopTracking();
+      } else {
+        this.gpsTrackingService.stopWarmUp();
       }
 
       // Exit tracking mode if active
@@ -273,7 +281,7 @@
       let requestId = crypto.randomUUID()
 
       let request = {
-        runId: this.getLocalStorageItem('runId'),
+        runId: this.currentRunId || this.getLocalStorageItem('runId'),
         stationId: scan,
         location: location,
         timestamp: timestamp.toString()
@@ -405,7 +413,7 @@
       // Pobierz stanowiska po aktywacji biegu
       this.loadStations();
 
-      const runId = this.getLocalStorageItem('runId');
+      const runId = this.currentRunId || this.getLocalStorageItem('runId');
       console.log('[ParticipantRun] Run activated. RunId:', runId, 'GPS Mode:', this.currentGpsMode);
 
       if (runId) {
@@ -436,7 +444,7 @@
       console.log('[ParticipantRun] GPS tracking stopped');
 
       // Pobierz i wyświetl trasę GPS z backendu
-      const runId = this.getLocalStorageItem('runId');
+      const runId = this.currentRunId || this.getLocalStorageItem('runId');
       if (runId) {
         await this.loadAndDisplayGpsTrack(runId);
       }
@@ -552,7 +560,6 @@
 
   async onNewRoute(): Promise<void> {
     this.router.navigateByUrl('').then(async () => {
-      const runId = this.getLocalStorageItem('runId');
 
       // Stop GPS tracking
       if (this.gpsTrackingEnabled) {
@@ -578,6 +585,7 @@
       this.stationsToShow = [];
       this.backgroundMap = null;
 
+      this.currentRunId = '';
       localStorage.clear();
       this.participantStateService.clear();
 
@@ -612,10 +620,16 @@
    * Wywoływane po każdej istotnej zmianie stanu (skanowanie checkpointu, rozpoczęcie biegu itp.)
    */
   private saveSessionBackup(): void {
+    const runId = this.currentRunId || this.getLocalStorageItem('runId');
+    if (!runId) {
+      console.warn('[ParticipantRun] Skipping session backup - no runId available');
+      return;
+    }
+
     const pendingRequests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
 
     const sessionState = {
-      runId: this.getLocalStorageItem('runId'),
+      runId: runId,
       categoryId: this.getLocalStorageItem('categoryId'),
       competitionId: this.participantStateService.competitionId,
       participantUnit: this.participantStateService.participantUnit,
@@ -644,6 +658,11 @@
     const preferences = this.gpsTrackingService.getPreferences();
     this.currentGpsMode = preferences.mode;
     this.autoAdjustEnabled = preferences.autoAdjustOnLowBattery;
+
+    // Rozgrzej GPS od razu - telefon będzie gotowy do zbierania danych gdy bieg się rozpocznie
+    if (!this.isRunFinished) {
+      this.gpsTrackingService.warmUpGps();
+    }
 
     // Subskrybuj status trackingu
     this.subscriptions.add(
@@ -1240,7 +1259,7 @@
         acceptButtonStyleClass: 'p-button-danger',
         rejectButtonStyleClass: 'p-button-outlined',
         accept: () => {
-          const runId = this.getLocalStorageItem('runId');
+          const runId = this.currentRunId || this.getLocalStorageItem('runId');
           if (!runId) return;
 
           this.sendService.cancelRun(runId).subscribe({

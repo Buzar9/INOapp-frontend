@@ -23,6 +23,7 @@ const DEFAULT_PREFERENCES: UserTrackingPreferences = {
 })
 export class GpsTrackingService {
   private watchId: number | null = null;
+  private warmUpWatchId: number | null = null;
   private currentRunId: string | null = null;
   private currentMode: TrackingMode = TrackingMode.AUTO;
   private currentConfig: TrackingConfig = TRACKING_CONFIGS[TrackingMode.AUTO];
@@ -50,11 +51,109 @@ export class GpsTrackingService {
   }
 
   /**
+   * Rozgrzewa GPS - uruchamia nasłuchiwanie pozycji bez zapisywania punktów.
+   * Dzięki temu GPS jest gotowy do zbierania danych gdy bieg się rozpocznie.
+   * Wywołaj jak najwcześniej (np. przy ładowaniu mapy / inicjalizacji komponentu).
+   */
+  private warmUpRetryCount = 0;
+  private readonly MAX_WARM_UP_RETRIES = 5;
+  private warmUpRetryTimeoutId: any = null;
+
+  warmUpGps(): void {
+    if (this.watchId !== null || this.warmUpWatchId !== null) {
+      console.log('[GpsTrackingService] GPS already active, skipping warm-up');
+      return;
+    }
+
+    this.warmUpRetryCount = 0;
+    this.attemptWarmUp();
+  }
+
+  private attemptWarmUp(): void {
+    if (this.watchId !== null || this.warmUpWatchId !== null) {
+      return;
+    }
+
+    console.log('[GpsTrackingService] ===== WARMING UP GPS ===== (attempt', this.warmUpRetryCount + 1, '/', this.MAX_WARM_UP_RETRIES, ')');
+
+    if (!('geolocation' in navigator)) {
+      console.error('[GpsTrackingService] Geolocation API not available');
+      this.lastError$.next({ message: 'Geolocation not supported', code: -1 });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log('[GpsTrackingService] GPS warm-up: initial position acquired', {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        });
+        this.lastSavedPoint = position;
+        this.warmUpRetryCount = 0;
+
+        this.warmUpWatchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            this.lastSavedPoint = pos;
+            if (this.lastError$.value !== null) {
+              this.lastError$.next(null);
+            }
+          },
+          (error) => this.handleError(error),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+        console.log('[GpsTrackingService] GPS warm-up watch started. Watch ID:', this.warmUpWatchId);
+      },
+      (error) => {
+        console.error('[GpsTrackingService] GPS warm-up failed:', error);
+        this.handleError(error);
+        this.retryWarmUp();
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  private retryWarmUp(): void {
+    this.warmUpRetryCount++;
+    if (this.warmUpRetryCount >= this.MAX_WARM_UP_RETRIES) {
+      console.error('[GpsTrackingService] GPS warm-up failed after', this.MAX_WARM_UP_RETRIES, 'attempts');
+      return;
+    }
+
+    // Nie robimy retry jeśli w międzyczasie tracking się uruchomił
+    if (this.watchId !== null || this.warmUpWatchId !== null) {
+      return;
+    }
+
+    const delay = Math.min(2000 * Math.pow(2, this.warmUpRetryCount - 1), 15000);
+    console.log('[GpsTrackingService] Retrying GPS warm-up in', delay, 'ms');
+    this.warmUpRetryTimeoutId = setTimeout(() => {
+      this.warmUpRetryTimeoutId = null;
+      this.attemptWarmUp();
+    }, delay);
+  }
+
+  /**
+   * Zatrzymuje warm-up GPS (jeśli aktywny).
+   */
+  stopWarmUp(): void {
+    if (this.warmUpRetryTimeoutId !== null) {
+      clearTimeout(this.warmUpRetryTimeoutId);
+      this.warmUpRetryTimeoutId = null;
+    }
+    if (this.warmUpWatchId !== null) {
+      console.log('[GpsTrackingService] Stopping GPS warm-up');
+      navigator.geolocation.clearWatch(this.warmUpWatchId);
+      this.warmUpWatchId = null;
+    }
+  }
+
+  /**
    * Rozpoczyna tracking GPS dla danego biegu
    * UWAGA: GPS działa zawsze (dla checkpointów), OFF = nie zapisuje trasy
    */
   async startTracking(runId: string): Promise<void> {
-    if (this.isTracking$.value) {
+    if (this.isTracking$.value && this.watchId !== null) {
       console.warn('[GpsTrackingService] Tracking already active');
       return;
     }
@@ -62,6 +161,13 @@ export class GpsTrackingService {
     console.log('[GpsTrackingService] ===== STARTING GPS TRACKING =====');
     console.log('[GpsTrackingService] Run ID:', runId);
     this.currentRunId = runId;
+
+    // Zatrzymaj warm-up watch - tracking przejmuje GPS
+    if (this.warmUpWatchId !== null) {
+      console.log('[GpsTrackingService] Stopping warm-up watch, switching to full tracking');
+      navigator.geolocation.clearWatch(this.warmUpWatchId);
+      this.warmUpWatchId = null;
+    }
 
     const preferences = this.getPreferences();
     this.currentMode = preferences.mode;
@@ -72,14 +178,21 @@ export class GpsTrackingService {
     console.log('[GpsTrackingService] Config:', this.currentConfig);
     console.log('[GpsTrackingService] Preferences:', preferences);
 
+    // Zatrzymaj ewentualny retry warm-up
+    if (this.warmUpRetryTimeoutId !== null) {
+      clearTimeout(this.warmUpRetryTimeoutId);
+      this.warmUpRetryTimeoutId = null;
+    }
+
     // GPS tracking ZAWSZE działa (potrzebne dla checkpointów)
     // Tryb OFF = nie zapisuje punktów trasy, ale GPS nadal działa
     console.log('[GpsTrackingService] Starting geolocation watch (mode:', this.currentMode, ')');
+    this.trackingStartRetryCount = 0;
     this.startGeolocationWatch();
     this.startBatteryMonitoring();
     this.startUploadInterval();
-    this.isTracking$.next(true);
-    console.log('[GpsTrackingService] GPS tracking started successfully');
+    // isTracking$ jest ustawiane w startGeolocationWatch po faktycznym uruchomieniu watcha
+    console.log('[GpsTrackingService] GPS tracking initialization started');
   }
 
   /**
@@ -88,9 +201,24 @@ export class GpsTrackingService {
   async stopTracking(): Promise<void> {
     console.log('[GpsTrackingService] Stopping GPS tracking');
 
+    if (this.trackingStartRetryTimeoutId !== null) {
+      clearTimeout(this.trackingStartRetryTimeoutId);
+      this.trackingStartRetryTimeoutId = null;
+    }
+
+    if (this.warmUpRetryTimeoutId !== null) {
+      clearTimeout(this.warmUpRetryTimeoutId);
+      this.warmUpRetryTimeoutId = null;
+    }
+
     if (this.watchId !== null) {
       navigator.geolocation.clearWatch(this.watchId);
       this.watchId = null;
+    }
+
+    if (this.warmUpWatchId !== null) {
+      navigator.geolocation.clearWatch(this.warmUpWatchId);
+      this.warmUpWatchId = null;
     }
 
     this.stopBatteryMonitoring();
@@ -194,11 +322,15 @@ export class GpsTrackingService {
     }
   }
 
+  private trackingStartRetryCount = 0;
+  private readonly MAX_TRACKING_START_RETRIES = 5;
+  private trackingStartRetryTimeoutId: any = null;
+
   /**
    * Rozpoczyna nasłuchiwanie pozycji GPS
    */
   private startGeolocationWatch(): void {
-    console.log('[GpsTrackingService] startGeolocationWatch() called');
+    console.log('[GpsTrackingService] startGeolocationWatch() called (attempt', this.trackingStartRetryCount + 1, ')');
 
     // Check if geolocation is available
     if (!('geolocation' in navigator)) {
@@ -239,18 +371,42 @@ export class GpsTrackingService {
             options
           );
 
+          this.trackingStartRetryCount = 0;
+          this.isTracking$.next(true);
           console.log('[GpsTrackingService] Geolocation watch started successfully. Watch ID:', this.watchId);
         } catch (error) {
           console.error('[GpsTrackingService] Exception while starting geolocation watch:', error);
           this.lastError$.next({ message: 'Failed to start GPS watch', code: -1 });
+          this.retryTrackingStart();
         }
       },
       (error) => {
         console.error('[GpsTrackingService] Initial GPS permission denied or error:', error);
         this.handleError(error);
+        // Nie robimy retry jeśli użytkownik odrzucił uprawnienia
+        if (error.code !== error.PERMISSION_DENIED) {
+          this.retryTrackingStart();
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
+  }
+
+  private retryTrackingStart(): void {
+    this.trackingStartRetryCount++;
+    if (this.trackingStartRetryCount >= this.MAX_TRACKING_START_RETRIES) {
+      console.error('[GpsTrackingService] GPS tracking start failed after', this.MAX_TRACKING_START_RETRIES, 'attempts');
+      // Ustaw isTracking mimo to, żeby nie blokować reszty aplikacji
+      this.isTracking$.next(true);
+      return;
+    }
+
+    const delay = Math.min(2000 * Math.pow(2, this.trackingStartRetryCount - 1), 15000);
+    console.log('[GpsTrackingService] Retrying GPS tracking start in', delay, 'ms');
+    this.trackingStartRetryTimeoutId = setTimeout(() => {
+      this.trackingStartRetryTimeoutId = null;
+      this.startGeolocationWatch();
+    }, delay);
   }
 
   /**

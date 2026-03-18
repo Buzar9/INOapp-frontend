@@ -63,7 +63,7 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
   private readonly STATION_COLOR_SCANNED = '#00c853';   // Zielony - zeskanowane
 
   // Konfiguracja interaktywnych stref stanowisk
-  private readonly DEFAULT_INTERACTIVE_RADIUS = 15; // Domyślny promień w metrach (bez sąsiadów)
+  private readonly DEFAULT_INTERACTIVE_RADIUS = 50; // Domyślny promień w metrach (bez sąsiadów)
   private readonly MIN_INTERACTIVE_RADIUS = 3; // Minimalny promień w metrach
   private readonly POLYGON_SEGMENTS = 16; // Liczba segmentów poligonu (więcej = gładszy kształt)
 
