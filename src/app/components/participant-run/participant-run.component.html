@@ -28,6 +28,12 @@
       <i class="pi pi-clock"></i>
       {{currentTime}}
     </span>
+    <span class="compact-stat battery-stat" title="Bateria"
+          [class.battery-low]="batteryLevel <= 15"
+          [class.battery-medium]="batteryLevel > 15 && batteryLevel <= 30">
+      <i class="pi pi-bolt"></i>
+      {{batteryLevel}}%
+    </span>
   </div>
 
   <!-- Hamburger Menu Button (top-right) - ukryty po zakończeniu biegu -->

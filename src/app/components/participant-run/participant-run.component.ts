@@ -559,48 +559,48 @@
   }
 
   async onNewRoute(): Promise<void> {
-    this.router.navigateByUrl('').then(async () => {
+    // Stop GPS tracking before navigation
+    if (this.gpsTrackingEnabled) {
+      await this.gpsTrackingService.stopTracking();
+    }
 
-      // Stop GPS tracking
-      if (this.gpsTrackingEnabled) {
-        await this.gpsTrackingService.stopTracking();
-      }
+    // Usuń GPS track points
+    try {
+      await this.gpsTrackingService.clearAllTrackPoints();
+    } catch (error) {
+      console.error('[ParticipantRun] Error clearing GPS track:', error);
+    }
 
-      // Usuń GPS track points
-      try {
-        await this.gpsTrackingService.clearAllTrackPoints();
-      } catch (error) {
-        console.error('[ParticipantRun] Error clearing GPS track:', error);
-      }
+    // Reset flags BEFORE navigation so RunGuard allows deactivation
+    this.runStartTime = 0;
+    this.runFinishTime = 0;
+    this.raceTimeDisplay = '00:00';
+    this.checkpointsNumber = 0;
+    this.wasRunActivate = false;
+    this.isRunFinished = false;
+    this.showScanner = false;
+    this.isScanning = false;
 
-      this.runStartTime = 0;
-      this.runFinishTime = 0;
-      this.raceTimeDisplay = '00:00';
-      this.checkpointsNumber = 0;
-      this.wasRunActivate = false;
-      this.isRunFinished = false;
-      this.showScanner = false;
-      this.isScanning = false;
+    this.stationsToShow = [];
+    this.backgroundMap = null;
 
-      this.stationsToShow = [];
-      this.backgroundMap = null;
+    this.currentRunId = '';
+    localStorage.clear();
+    this.participantStateService.clear();
 
-      this.currentRunId = '';
-      localStorage.clear();
-      this.participantStateService.clear();
+    // Usuń backup sesji z IndexedDB
+    try {
+      await this.tileDbService.clearParticipantSession();
+    } catch (error) {
+      console.error('[ParticipantRun] Error clearing session backup:', error);
+    }
 
-      // Usuń backup sesji z IndexedDB
-      try {
-        await this.tileDbService.clearParticipantSession();
-      } catch (error) {
-        console.error('[ParticipantRun] Error clearing session backup:', error);
-      }
-
-      // Usuń mapy z IndexedDB
-      this.tileDbService.clearAllMaps().catch(error => {
-        console.error('[ParticipantRun] Error clearing maps from IndexedDB:', error);
-      });
+    // Usuń mapy z IndexedDB
+    this.tileDbService.clearAllMaps().catch(error => {
+      console.error('[ParticipantRun] Error clearing maps from IndexedDB:', error);
     });
+
+    this.router.navigateByUrl('');
   }
 
   resetMapView() {
