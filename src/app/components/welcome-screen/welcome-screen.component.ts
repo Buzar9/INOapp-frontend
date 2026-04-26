@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./welcome-screen.component.css']
 })
 export class WelcomeScreenComponent {
-  @Input() showOrganizerOption: boolean = true;
+  @Input() showOrganizerOption: boolean = false;
 
   constructor(private router: Router) {}
 
