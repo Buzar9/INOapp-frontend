@@ -667,7 +667,8 @@ export class ParticipantMapComponent implements OnInit, OnChanges, OnDestroy {
     if (allBounds.length > 0) {
       const bounds = L.latLngBounds(allBounds);
       this.map.fitBounds(bounds, {
-        padding: [50, 50]
+        padding: [50, 50],
+        maxZoom: this.maxZoom || this.defaultMaxZoom
       });
     }
 

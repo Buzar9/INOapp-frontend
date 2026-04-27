@@ -39,6 +39,8 @@ export class OrganizerRouteViewComponent implements OnInit {
   @ViewChild(BackofficeMapComponent)
   mapComponent!: BackofficeMapComponent;
 
+  private gpsAccuracyTimeout?: ReturnType<typeof setTimeout>;
+
   routes: Route[] = []
   selectedRoute?: Route
   consolidatedRouteView?: ConsolidatedRouteView
@@ -334,6 +336,12 @@ export class OrganizerRouteViewComponent implements OnInit {
       (position) => {
         if (this.mapComponent) {
           this.mapComponent.panTo(position.coords.latitude, position.coords.longitude);
+
+          clearTimeout(this.gpsAccuracyTimeout);
+          this.mapComponent.updateGpsAccuracy(position.coords.accuracy);
+          this.gpsAccuracyTimeout = setTimeout(() => {
+            this.mapComponent.updateGpsAccuracy(null);
+          }, 20000);
         }
       },
       (error) => {

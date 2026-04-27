@@ -35,6 +35,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() stationsToShow: Station[] = [];
   @Input() useIndexedDb: boolean = true; // NOWE: przełącznik źródła kafelków (IndexedDB vs assets)
   @Input() forceStationsGreen: boolean = false;
+  @Input() gpsAccuracy: number | null = null;
 
   @Output() pickedCoordinates = new EventEmitter<Coordinates>();
   @Output() zoomChange = new EventEmitter<number>();
@@ -44,6 +45,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
   private map!: L.Map;
   private currentTileLayer!: L.TileLayer;
   private circleMarker!: L.CircleMarker;
+  private centerAccuracyCircle?: L.Circle;
   private coordinatesDisplay!: HTMLElement;
   private mapMoveSubscription!: Subscription;
   private stationPaneName = 'stationPane';
@@ -112,6 +114,10 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       void this.switchBaseMap(this.backgroundMapId);
     }
 
+    if (changes['gpsAccuracy']) {
+      this.updateGpsAccuracy(this.gpsAccuracy);
+    }
+
     if ((changes['minZoom'] || changes['maxZoom']) && this.map) {
       if (this.minZoom != null) this.map.setMinZoom(this.minZoom);
       if (this.maxZoom != null) this.map.setMaxZoom(this.maxZoom);
@@ -131,6 +137,7 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       this.closeAllPopups();
       this.clearStations();
       this.clearAllGpsTracks();
+      if (this.centerAccuracyCircle) this.map.removeLayer(this.centerAccuracyCircle);
       this.map.off('move');
       this.map.off('zoomend');
       this.map.off('moveend');
@@ -559,11 +566,24 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
       interactive: false
     }).addTo(this.map);
 
+    if (this.gpsAccuracy != null && this.gpsAccuracy > 0) {
+      this.centerAccuracyCircle = L.circle(initialCenter, {
+        radius: this.gpsAccuracy,
+        color: '#FFFF00',
+        weight: 1,
+        opacity: 0.4,
+        fillColor: '#FFFF00',
+        fillOpacity: 0.1,
+        interactive: false
+      }).addTo(this.map);
+    }
+
     this.updateCoordinates(initialCenter.lat, initialCenter.lng);
 
     this.map.on('move', () => {
       const newCenter = this.map.getCenter();
       this.circleMarker.setLatLng(newCenter);
+      this.centerAccuracyCircle?.setLatLng(newCenter);
       this.updateCoordinates(newCenter.lat, newCenter.lng);
     });
   }
@@ -572,7 +592,51 @@ export class BackofficeMapComponent implements AfterViewInit, OnDestroy, OnChang
     if (this.circleMarker && this.map) {
       const center = this.map.getCenter();
       this.circleMarker.setLatLng(center);
+      this.centerAccuracyCircle?.setLatLng(center);
       this.updateCoordinates(center.lat, center.lng);
+    }
+  }
+
+  updateGpsAccuracy(accuracy: number | null): void {
+    this.gpsAccuracy = accuracy;
+    if (!this.map) return;
+
+    if (accuracy != null && accuracy > 0) {
+      const center = this.map.getCenter();
+      if (this.centerAccuracyCircle) {
+        this.centerAccuracyCircle.setRadius(accuracy);
+        const el = this.centerAccuracyCircle.getElement() as SVGElement | undefined;
+        if (el) { el.style.transition = ''; el.style.opacity = '1'; }
+      } else {
+        this.centerAccuracyCircle = L.circle(center, {
+          radius: accuracy,
+          color: '#FFFF00',
+          weight: 1,
+          opacity: 0.4,
+          fillColor: '#FFFF00',
+          fillOpacity: 0.1,
+          interactive: false
+        }).addTo(this.map);
+      }
+    } else if (this.centerAccuracyCircle) {
+      this.fadeOutCenterAccuracyCircle();
+    }
+  }
+
+  private fadeOutCenterAccuracyCircle(): void {
+    if (!this.centerAccuracyCircle) return;
+    const circle = this.centerAccuracyCircle;
+    const el = circle.getElement() as SVGElement | undefined;
+    if (el) {
+      el.style.transition = 'opacity 1.5s ease-out';
+      el.style.opacity = '0';
+      setTimeout(() => {
+        if (this.map.hasLayer(circle)) this.map.removeLayer(circle);
+        if (this.centerAccuracyCircle === circle) this.centerAccuracyCircle = undefined;
+      }, 1500);
+    } else {
+      this.map.removeLayer(circle);
+      this.centerAccuracyCircle = undefined;
     }
   }
 
